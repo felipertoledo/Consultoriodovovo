@@ -56,7 +56,17 @@ const Router = (() => {
   }
 
   function navigate(path) {
-    location.hash = path.startsWith('/') ? path : '/' + path;
+    const newHash = path.startsWith('/') ? path : '/' + path;
+    const currentHash = location.hash.startsWith('#') ? location.hash.slice(1) : location.hash;
+    const normalizedCurrent = currentHash || '/';
+
+    if (normalizedCurrent === newHash) {
+      // Hash já é igual — hashchange não dispara, força resolve manualmente
+      resolve();
+    } else {
+      location.hash = newHash;
+      // O evento hashchange vai disparar resolve automaticamente
+    }
   }
 
   function onChange(fn) {
