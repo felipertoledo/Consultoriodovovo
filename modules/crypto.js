@@ -111,7 +111,7 @@ const CryptoModule = (() => {
       'raw', data, kek,
       { name: 'AES-GCM', iv },
       { name: 'AES-GCM', length: AES_KEY_LENGTH },
-      false,
+      true,  // extractable: true — necessário para permitir troca de senha (re-wrap)
       ['encrypt', 'decrypt']
     );
   }

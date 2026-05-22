@@ -1,6 +1,6 @@
 {
-  "version": "0.2.0",
+  "version": "0.2.1",
   "buildDate": "2026-05-22",
   "codename": "Prontuário",
-  "notes": "Sprint 2: consultas com 11 seções clínicas, exame psíquico estruturado (18 domínios Dalgalarrondo ou 10 da APS), autocomplete REMUME, geração de prosa, copiar sem identificadores para teleorientação."
+  "notes": "Sprint 2 + hotfix: DEK marcada como extractable no unwrapKey para permitir troca de senha após login via chave de recuperação."
 }
