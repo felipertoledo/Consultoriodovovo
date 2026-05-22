@@ -1,0 +1,6 @@
+{
+  "version": "0.1.0",
+  "buildDate": "2026-05-22",
+  "codename": "Fundação",
+  "notes": "MVP local-first com cadastro de pacientes e criptografia AES-GCM 256."
+}

@@ -1,0 +1,23 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# Node (caso adicione build no futuro)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Logs / locais
+*.log
+.env
+.env.local
+
+# Backups locais
+*.bak
+*.json.enc
