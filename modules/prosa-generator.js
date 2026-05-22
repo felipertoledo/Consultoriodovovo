@@ -4,6 +4,32 @@
 
 const ProsaGenerator = (() => {
 
+  // Prefixos por domínio. Quando há seleções, a prosa fica "prefixo: lista de seleções".
+  // Domínios cujas opções já são descritivas por si só (ex: "Vigil", "Orientado") usam prefixo vazio.
+  const PREFIXOS_DOMINIO = {
+    // Exame completo (18 domínios Dalgalarrondo)
+    apresentacao: 'apresenta-se com',
+    consciencia: '',
+    atencao: 'atenção',
+    orientacao: '',
+    memoria: 'memória',
+    sensopercepcao: 'sensopercepção',
+    pensamento_forma: 'pensamento de forma',
+    pensamento_curso: 'curso do pensamento',
+    pensamento_conteudo: 'conteúdo do pensamento:',
+    linguagem: 'linguagem',
+    vontade: 'pragmatismo',
+    psicomotricidade: 'psicomotricidade',
+    inteligencia: 'inteligência',
+    insight: 'insight e crítica',
+    juizo: 'juízo de realidade',
+    comportamento: 'comportamento',
+    // Versão breve (10 domínios consolidados)
+    consciencia_orientacao: '',
+    afeto_humor: 'afeto e humor',
+    pensamento: 'pensamento'
+  };
+
   // ---- Concatena lista com vírgulas e "e" final ----
   function concatList(items) {
     if (!items || items.length === 0) return '';
@@ -12,13 +38,22 @@ const ProsaGenerator = (() => {
     return items.slice(0, -1).join(', ') + ' e ' + items[items.length - 1];
   }
 
+  // ---- Detecta se a opção já contém o nome do domínio (evita redundância) ----
+  function opcaoJaContemDominio(opcao, prefixo) {
+    if (!prefixo) return false;
+    const opLower = opcao.toLowerCase();
+    // Pega a primeira palavra significativa do prefixo
+    const palavraChave = prefixo.toLowerCase().split(/\s|:/)[0];
+    return opLower.startsWith(palavraChave) || opLower.includes(' ' + palavraChave);
+  }
+
   // ---- Gera prosa de um domínio do exame psíquico ----
   function gerarProsaDominio(dominio, selecoes) {
     if (!selecoes || selecoes.length === 0) {
       return dominio.sumarioDefault;
     }
 
-    // Se for severity (afeto/humor), o primeiro é o estado, o resto modificador
+    // Severity (afeto/humor no exame completo): primeiro = estado, resto = modificadores
     if (dominio.tipo === 'severity') {
       const estado = selecoes[0];
       const modificadores = selecoes.slice(1);
@@ -30,8 +65,25 @@ const ProsaGenerator = (() => {
       return `${nomeDominio} ${estado.toLowerCase()}`;
     }
 
-    // Para domínios single/multi, monta a frase
-    return concatList(selecoes.map(s => s.toLowerCase()));
+    // Single/multi: usa prefixo do domínio + lista de seleções
+    const prefixo = PREFIXOS_DOMINIO[dominio.id] !== undefined
+      ? PREFIXOS_DOMINIO[dominio.id]
+      : dominio.nome.toLowerCase();
+
+    // Se a opção única já contém o nome do domínio, evita repetição
+    if (selecoes.length === 1 && prefixo && opcaoJaContemDominio(selecoes[0], prefixo)) {
+      return selecoes[0].toLowerCase();
+    }
+
+    const listaConcat = concatList(selecoes.map(s => s.toLowerCase()));
+
+    if (!prefixo) {
+      return listaConcat;
+    }
+
+    // Se prefixo termina com ":" usa ele direto; senão adiciona espaço
+    const conector = prefixo.endsWith(':') ? ' ' : ' ';
+    return prefixo + conector + listaConcat;
   }
 
   // ---- Gera prosa do exame psíquico inteiro ----

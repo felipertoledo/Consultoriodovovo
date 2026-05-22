@@ -1,6 +1,6 @@
 {
-  "version": "0.2.3",
+  "version": "0.2.4",
   "buildDate": "2026-05-22",
   "codename": "Prontuário",
-  "notes": "Hotfix: injeção de id no x-data dos forms estava gerando aspas duplas aninhadas, quebrando o HTML. Corrigido em paciente-form e consulta-form."
+  "notes": "Hotfix prosa: cada domínio do exame psíquico agora carrega seu nome na prosa gerada. Frases como 'Normal. Preservado. Adequado.' agora viram 'Psicomotricidade normal. Insight e crítica preservado. Comportamento adequado.'"
 }
