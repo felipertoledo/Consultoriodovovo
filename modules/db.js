@@ -160,35 +160,82 @@ const DB = (() => {
     return db.pacientes.where('deleted').equals(0).count();
   }
 
-  // ---- CONSULTAS (placeholder p/ Sprint 2) ----
+  // ---- CONSULTAS ----
   async function createConsulta(consultaData) {
     const dek = getDEK();
     const now = new Date().toISOString();
+    const dataHora = consultaData.dataHora || now;
     const encryptedPayload = await CryptoModule.encrypt(dek, consultaData);
     const id = await db.consultas.add({
       pacienteId: consultaData.pacienteId,
-      dataHora: consultaData.dataHora || now,
+      dataHora,
       createdAt: now,
       updatedAt: now,
       deleted: 0,
       data: encryptedPayload
     });
-    await audit('CREATE', 'consulta', id);
+    await audit('CREATE', 'consulta', id, { pacienteId: consultaData.pacienteId });
     return id;
+  }
+
+  async function getConsulta(id) {
+    const dek = getDEK();
+    const row = await db.consultas.get(id);
+    if (!row || row.deleted) return null;
+    const decoded = await CryptoModule.decrypt(dek, row.data);
+    return {
+      id: row.id,
+      pacienteId: row.pacienteId,
+      dataHora: row.dataHora,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      ...decoded
+    };
+  }
+
+  async function updateConsulta(id, consultaData) {
+    const dek = getDEK();
+    const now = new Date().toISOString();
+    const encryptedPayload = await CryptoModule.encrypt(dek, consultaData);
+    await db.consultas.update(id, {
+      dataHora: consultaData.dataHora || now,
+      updatedAt: now,
+      data: encryptedPayload
+    });
+    await audit('UPDATE', 'consulta', id, { pacienteId: consultaData.pacienteId });
+    return id;
+  }
+
+  async function softDeleteConsulta(id) {
+    await db.consultas.update(id, { deleted: 1, updatedAt: new Date().toISOString() });
+    await audit('DELETE', 'consulta', id);
   }
 
   async function listConsultasByPaciente(pacienteId) {
     const dek = getDEK();
+    const pid = typeof pacienteId === 'string' ? parseInt(pacienteId, 10) : pacienteId;
     const rows = await db.consultas
-      .where('pacienteId').equals(pacienteId)
-      .and(r => !r.deleted)
-      .reverse()
-      .sortBy('dataHora');
+      .where('pacienteId').equals(pid)
+      .toArray();
     const items = [];
     for (const row of rows) {
-      const decoded = await CryptoModule.decrypt(dek, row.data);
-      items.push({ id: row.id, dataHora: row.dataHora, ...decoded });
+      if (row.deleted) continue;
+      try {
+        const decoded = await CryptoModule.decrypt(dek, row.data);
+        items.push({
+          id: row.id,
+          pacienteId: row.pacienteId,
+          dataHora: row.dataHora,
+          createdAt: row.createdAt,
+          updatedAt: row.updatedAt,
+          ...decoded
+        });
+      } catch (e) {
+        console.error('Erro ao decifrar consulta', row.id, e);
+      }
     }
+    // Ordena por dataHora decrescente (mais recente primeiro)
+    items.sort((a, b) => (b.dataHora || '').localeCompare(a.dataHora || ''));
     return items;
   }
 
@@ -230,8 +277,9 @@ const DB = (() => {
     // Pacientes
     createPaciente, getPaciente, updatePaciente, softDeletePaciente,
     listPacientes, countPacientes,
-    // Consultas (stub p/ Sprint 2)
-    createConsulta, listConsultasByPaciente,
+    // Consultas
+    createConsulta, getConsulta, updateConsulta, softDeleteConsulta,
+    listConsultasByPaciente,
     // Audit
     audit, getRecentAudit,
     // Danger

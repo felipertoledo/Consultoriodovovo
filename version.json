@@ -1,6 +1,6 @@
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "buildDate": "2026-05-22",
-  "codename": "Fundação",
-  "notes": "MVP local-first com cadastro de pacientes e criptografia AES-GCM 256."
+  "codename": "Prontuário",
+  "notes": "Sprint 2: consultas com 11 seções clínicas, exame psíquico estruturado (18 domínios Dalgalarrondo ou 10 da APS), autocomplete REMUME, geração de prosa, copiar sem identificadores para teleorientação."
 }

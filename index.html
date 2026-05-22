@@ -39,6 +39,8 @@
   <script src="./modules/db.js"></script>
   <script src="./modules/auth.js"></script>
   <script src="./modules/router.js"></script>
+  <script src="./modules/clinical-data.js"></script>
+  <script src="./modules/prosa-generator.js"></script>
 
   <!-- Componentes de tela -->
   <script src="./components/setup-wizard.js"></script>
@@ -46,6 +48,8 @@
   <script src="./components/dashboard.js"></script>
   <script src="./components/pacientes-lista.js"></script>
   <script src="./components/paciente-form.js"></script>
+  <script src="./components/exame-psiquico.js"></script>
+  <script src="./components/consulta-form.js"></script>
   <script src="./components/config.js"></script>
 
   <!-- Bootstrap da aplicação -->
@@ -148,6 +152,12 @@
         if (!Auth.isUnlocked()) { Router.navigate('/'); return; }
         const target = renderAppShell('/paciente');
         renderPacienteForm(target, id);
+      });
+
+      Router.register('/paciente/:id/consulta/:consultaId', ({ id, consultaId }) => {
+        if (!Auth.isUnlocked()) { Router.navigate('/'); return; }
+        const target = renderAppShell('/paciente');
+        renderConsultaForm(target, id, consultaId);
       });
 
       Router.register('/config', () => {

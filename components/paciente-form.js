@@ -225,6 +225,56 @@ function renderPacienteForm(container, id) {
         </div>
       </div>
 
+      <!-- ========== TIMELINE DE CONSULTAS ========== -->
+      <div class="card mt-4" x-show="!isNew">
+        <div class="flex justify-between items-center mb-4" style="flex-wrap: wrap; gap: var(--space-3)">
+          <h3 class="card-title">📋 Consultas (<span x-text="consultas.length"></span>)</h3>
+          <button class="btn btn-primary" @click="novaConsulta()">+ Nova consulta</button>
+        </div>
+
+        <div x-show="loadingConsultas" class="empty-state">
+          <div class="spinner" style="margin: 0 auto"></div>
+        </div>
+
+        <div x-show="!loadingConsultas && consultas.length === 0" class="empty-state">
+          <h3>Nenhuma consulta registrada</h3>
+          <p>Comece registrando a primeira consulta deste paciente.</p>
+          <button class="btn btn-primary mt-3" @click="novaConsulta()">+ Registrar primeira consulta</button>
+        </div>
+
+        <div class="consultas-timeline" x-show="!loadingConsultas && consultas.length > 0">
+          <template x-for="c in consultas" :key="c.id">
+            <div class="consulta-item" @click="abrirConsulta(c.id)">
+              <div class="consulta-data">
+                <div class="consulta-data-day" x-text="formatConsultaDay(c.dataHora)"></div>
+                <div class="consulta-data-month" x-text="formatConsultaMonth(c.dataHora)"></div>
+                <div class="consulta-data-time" x-text="formatConsultaTime(c.dataHora)"></div>
+              </div>
+              <div class="consulta-info">
+                <div class="consulta-titulo">
+                  <span x-text="c.queixaPrincipal || 'Consulta'"></span>
+                  <span x-show="c.queixaDuracao" class="text-sm muted"
+                        x-text="' · ' + c.queixaDuracao"></span>
+                </div>
+                <div class="consulta-resumo">
+                  <span x-show="c.hipoteses && c.hipoteses.length > 0">
+                    Hipóteses: <span x-text="(c.hipoteses || []).slice(0, 2).join(', ')"></span>
+                    <span x-show="c.hipoteses.length > 2"
+                          x-text="' (+' + (c.hipoteses.length - 2) + ')'"></span>
+                  </span>
+                  <span x-show="!c.hipoteses || c.hipoteses.length === 0" class="muted">
+                    Sem hipóteses registradas
+                  </span>
+                </div>
+              </div>
+              <div class="consulta-acoes">
+                <button class="btn btn-ghost text-sm">Abrir →</button>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
       <div class="mt-6 mb-6 flex justify-between items-center" style="flex-wrap: wrap; gap: var(--space-3)">
         <span class="text-xs muted">
           🔒 Dados criptografados localmente com AES-GCM 256
@@ -249,6 +299,8 @@ function pacienteForm(id) {
     touched: false,
     saving: false,
     autoSaveStatus: '',
+    consultas: [],
+    loadingConsultas: false,
 
     async load() {
       if (!this.isNew) {
@@ -261,6 +313,8 @@ function pacienteForm(id) {
             this.$nextTick(() => {
               document.querySelectorAll('.textarea.auto-grow').forEach(el => UI.autoGrowTextarea(el));
             });
+            // Carrega consultas
+            this.carregarConsultas();
           } else {
             UI.toast('Paciente não encontrado', 'error');
             Router.navigate('/pacientes');
@@ -269,6 +323,44 @@ function pacienteForm(id) {
           UI.toast('Erro ao carregar: ' + e.message, 'error');
         }
       }
+    },
+
+    async carregarConsultas() {
+      this.loadingConsultas = true;
+      try {
+        const numericId = typeof this.id === 'string' ? parseInt(this.id, 10) : this.id;
+        this.consultas = await DB.listConsultasByPaciente(numericId);
+      } catch (e) {
+        console.error('Erro ao carregar consultas:', e);
+      } finally {
+        this.loadingConsultas = false;
+      }
+    },
+
+    novaConsulta() {
+      const pid = typeof this.id === 'string' ? this.id : String(this.id);
+      Router.navigate('/paciente/' + pid + '/consulta/nova');
+    },
+
+    abrirConsulta(consultaId) {
+      const pid = typeof this.id === 'string' ? this.id : String(this.id);
+      Router.navigate('/paciente/' + pid + '/consulta/' + consultaId);
+    },
+
+    formatConsultaDay(iso) {
+      if (!iso) return '?';
+      return new Date(iso).getDate().toString().padStart(2, '0');
+    },
+
+    formatConsultaMonth(iso) {
+      if (!iso) return '';
+      const months = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+      return months[new Date(iso).getMonth()] + '/' + new Date(iso).getFullYear().toString().slice(-2);
+    },
+
+    formatConsultaTime(iso) {
+      if (!iso) return '';
+      return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     },
 
     touch() {
