@@ -1,6 +1,6 @@
 {
-  "version": "0.2.2",
+  "version": "0.2.3",
   "buildDate": "2026-05-22",
   "codename": "Prontuário",
-  "notes": "Sprint 2 + hotfix router: força resolve() quando navigate aponta para o hash atual (corrige login que não renderizava dashboard)."
+  "notes": "Hotfix: injeção de id no x-data dos forms estava gerando aspas duplas aninhadas, quebrando o HTML. Corrigido em paciente-form e consulta-form."
 }

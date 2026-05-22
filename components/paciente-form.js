@@ -6,8 +6,9 @@
 
 function renderPacienteForm(container, id) {
   const isNew = (id === 'novo' || id == null);
+  const idParam = isNew ? 'null' : parseInt(id, 10);
   container.innerHTML = `
-    <div x-data="pacienteForm(${isNew ? 'null' : JSON.stringify(id)})" x-init="load()">
+    <div x-data="pacienteForm(${idParam})" x-init="load()">
       <div class="page-header">
         <div>
           <button class="btn btn-ghost" @click="$dispatch('navigate', '/pacientes')">

@@ -6,8 +6,10 @@
 
 function renderConsultaForm(container, pacienteId, consultaId) {
   const isNew = !consultaId || consultaId === 'nova';
+  const pidParam = parseInt(pacienteId, 10);
+  const cidParam = isNew ? 'null' : parseInt(consultaId, 10);
   container.innerHTML = `
-    <div x-data="consultaForm('${pacienteId}', ${isNew ? 'null' : JSON.stringify(consultaId)})"
+    <div x-data="consultaForm(${pidParam}, ${cidParam})"
          x-init="load()">
       <div class="page-header">
         <div>
