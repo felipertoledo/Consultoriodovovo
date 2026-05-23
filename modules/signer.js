@@ -285,38 +285,54 @@ const Signer = (() => {
       throw new Error('Lib zgapdfsigner não carregada');
     }
 
-    // Re-valida a senha
-    parseP12(stored.p12Bytes, password); // lança se errada
+    // CRITICAL: desabilita urlFetch do Zga para pular o buildChain online.
+    // No Brasil, as ACs (Soluti, Certisign, etc) ainda servem certificados
+    // intermediários via HTTP, o que o browser bloqueia (Mixed Content) quando
+    // a página está em HTTPS. Sem isso, qualquer assinatura quebra com
+    // "Failed to fetch". A validação da assinatura continua funcionando porque
+    // o Adobe Reader e o verificador ITI gov.br já confiam na raiz ICP-Brasil
+    // e baixam a cadeia eles mesmos no momento da verificação.
+    const originalUrlFetch = Zga.urlFetch;
+    Zga.urlFetch = null;
 
-    // Cacheia se solicitado
-    if (opcoes.lembrarSenha) cachePassword(password);
-
-    // PDF como ArrayBuffer
-    const pdfAB = pdfBlob instanceof Blob ? await pdfBlob.arrayBuffer() : pdfBlob;
-
-    // Configurações da assinatura
-    const sopt = {
-      p12cert: stored.p12Bytes,
-      pwd: password,
-      permission: opcoes.permission || 1, // 1 = permite anotações; 2 = só formulários; 3 = nada
-      reason: opcoes.reason || 'Prescrição médica',
-      location: opcoes.location || 'USF Estiva Gerbi - SP',
-      contact: opcoes.contact || 'felipertoledo@gmail.com',
-      signdate: '1' // usa data atual
-    };
-
-    const signer = new Zga.PdfSigner(sopt);
-    const signedBytes = await signer.sign(new Uint8Array(pdfAB));
-
-    // Audit
     try {
-      await DB.audit('SIGN_PDF', 'documento', null, {
-        commonName: stored.info.commonName,
-        reason: sopt.reason
-      });
-    } catch {}
+      // Re-valida a senha
+      parseP12(stored.p12Bytes, password); // lança se errada
 
-    return new Blob([signedBytes], { type: 'application/pdf' });
+      // Cacheia se solicitado
+      if (opcoes.lembrarSenha) cachePassword(password);
+
+      // PDF como ArrayBuffer
+      const pdfAB = pdfBlob instanceof Blob ? await pdfBlob.arrayBuffer() : pdfBlob;
+
+      // Configurações da assinatura
+      // Importante: NÃO passar signdate como string (zgapdfsigner interpreta como URL de TSA);
+      // omitir resulta em new Date() (data atual). Se quiser data específica, passar Date object.
+      const sopt = {
+        p12cert: stored.p12Bytes,
+        pwd: password,
+        permission: opcoes.permission || 1, // 1 = permite anotações; 2 = só formulários; 3 = nada
+        reason: opcoes.reason || 'Prescrição médica',
+        location: opcoes.location || 'USF Estiva Gerbi - SP',
+        contact: opcoes.contact || 'felipertoledo@gmail.com'
+      };
+
+      const signer = new Zga.PdfSigner(sopt);
+      const signedBytes = await signer.sign(new Uint8Array(pdfAB));
+
+      // Audit
+      try {
+        await DB.audit('SIGN_PDF', 'documento', null, {
+          commonName: stored.info.commonName,
+          reason: sopt.reason
+        });
+      } catch {}
+
+      return new Blob([signedBytes], { type: 'application/pdf' });
+    } finally {
+      // Restaura urlFetch (não deve afetar próximos chamados, mas por bom-cidadão)
+      Zga.urlFetch = originalUrlFetch;
+    }
   }
 
   return {
