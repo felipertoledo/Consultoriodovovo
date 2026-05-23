@@ -320,8 +320,12 @@ function prescricaoRapida() {
       if (this.modoPaciente === 'cadastrado' && this.pacienteSelecionado) {
         return { ...this.pacienteSelecionado };
       }
-      // Avulso: monta objeto compatível com o que o pdf-documents espera
+      // Avulso: monta objeto compatível com o que o pdf-documents espera.
+      // O usuário digita um endereço em UMA linha. Como os PDFs de controle/azul
+      // leem campos separados (logradouro/numero/bairro/cidade/uf), colocamos
+      // também a string completa em `logradouro` para que o PDF a renderize.
       const idade = this.calcularIdade(this.pacienteAvulso.dataNascimento);
+      const enderecoLivre = (this.pacienteAvulso.endereco || '').trim();
       return {
         id: null,
         nome: this.pacienteAvulso.nome.trim(),
@@ -329,8 +333,25 @@ function prescricaoRapida() {
         dataNascimento: this.pacienteAvulso.dataNascimento,
         idade: idade,
         sexo: this.pacienteAvulso.sexo,
-        endereco: this.pacienteAvulso.endereco
+        endereco: enderecoLivre,
+        logradouro: enderecoLivre  // fallback para PDFs que leem campos separados
       };
+    },
+
+    /* Helper: verifica se o paciente tem qualquer endereço utilizável.
+       Aceita tanto o esquema novo (campos separados, salvos por paciente-form)
+       quanto o legado (campo `endereco` único, usado por paciente avulso). */
+    temEnderecoValido(p) {
+      if (!p) return false;
+      // Campo único (paciente avulso ou cadastros antigos)
+      if (p.endereco && p.endereco.trim()) return true;
+      // Campos separados (paciente cadastrado pelo paciente-form)
+      const log = (p.logradouro || '').trim();
+      const cid = (p.cidade || '').trim();
+      if (log && cid) return true;
+      // Aceita também só logradouro preenchido (cobre cadastros parciais)
+      if (log) return true;
+      return false;
     },
 
     calcularIdade(dataNasc) {
@@ -352,9 +373,9 @@ function prescricaoRapida() {
 
       const paciente = this.obterPacienteParaPDF();
 
-      // Valida endereço para controle/azul
+      // Valida endereço para controle/azul (aceita campos separados OU string única)
       if ((this.tipoReceita === 'controle' || this.tipoReceita === 'azul')
-          && !paciente.endereco) {
+          && !this.temEnderecoValido(paciente)) {
         UI.toast('Endereço do paciente é obrigatório para receituários de controle especial e azul.', 'error', 7000);
         return;
       }
