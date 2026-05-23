@@ -20,6 +20,20 @@ const DB = (() => {
     config: 'key'
   });
 
+  // ---- Schema v2 (Sprint A1: agendamentos) ----
+  // Migração não destrutiva — Dexie preserva os dados das tabelas existentes
+  db.version(2).stores({
+    pacientes: '++id, nameHash, createdAt, updatedAt, deleted',
+    consultas: '++id, pacienteId, dataHora, createdAt, updatedAt, deleted',
+    auditLog: '++id, timestamp, action, entity',
+    config: 'key',
+    // agendamentos: id auto, FK paciente, índice por data (YYYY-MM-DD) e status
+    // 'data' = data do agendamento (YYYY-MM-DD)
+    // 'status' = marcado | realizado | faltou | cancelado
+    // PII (observacao, cache de nome) ficam criptografadas em `payload`
+    agendamentos: '++id, pacienteId, data, status, createdAt, deleted'
+  });
+
   // ---- Estado interno (DEK em memória, NUNCA persistida) ----
   let currentDEK = null;
   let nameHashSalt = null;
@@ -240,6 +254,167 @@ const DB = (() => {
   }
 
   // ---- AUDIT ----
+  // ============================================================
+  // AGENDAMENTOS (Sprint A1)
+  // ============================================================
+  /**
+   * Cria um agendamento.
+   * @param {Object} ag - { pacienteId, data (YYYY-MM-DD), hora?, tipo?, status?, observacao?, consultaOrigemId?, pacienteNome? }
+   */
+  async function createAgendamento(ag) {
+    const dek = getDEK();
+    const now = new Date().toISOString();
+    const payload = {
+      observacao: ag.observacao || '',
+      pacienteNome: ag.pacienteNome || ''  // cache para exibição
+    };
+    const ciphered = await CryptoModule.encrypt(dek, payload);
+    const id = await db.agendamentos.add({
+      pacienteId: ag.pacienteId,
+      data: ag.data,                         // YYYY-MM-DD
+      hora: ag.hora || '',                   // HH:MM ou vazio
+      tipo: ag.tipo || 'consulta',           // consulta | retorno | grupo | outro
+      status: ag.status || 'marcado',        // marcado | realizado | faltou | cancelado
+      consultaOrigemId: ag.consultaOrigemId || null,  // se foi auto-criado por uma consulta
+      consultaRealizadaId: null,             // preenchido quando vira "realizado"
+      payload: ciphered,
+      createdAt: now,
+      updatedAt: now,
+      deleted: 0
+    });
+    await audit('CREATE_AGENDAMENTO', 'agendamento', id, { data: ag.data });
+    return id;
+  }
+
+  async function getAgendamento(id) {
+    const dek = getDEK();
+    const a = await db.agendamentos.get(id);
+    if (!a || a.deleted) return null;
+    const decrypted = a.payload ? await CryptoModule.decrypt(dek, a.payload) : {};
+    return { ...a, ...decrypted, payload: undefined };
+  }
+
+  async function updateAgendamento(id, ag) {
+    const dek = getDEK();
+    const existing = await db.agendamentos.get(id);
+    if (!existing) throw new Error('Agendamento não encontrado');
+
+    const oldPayload = existing.payload ? await CryptoModule.decrypt(dek, existing.payload) : {};
+    const merged = {
+      observacao: ag.observacao !== undefined ? ag.observacao : (oldPayload.observacao || ''),
+      pacienteNome: ag.pacienteNome !== undefined ? ag.pacienteNome : (oldPayload.pacienteNome || '')
+    };
+    const ciphered = await CryptoModule.encrypt(dek, merged);
+
+    const update = {
+      payload: ciphered,
+      updatedAt: new Date().toISOString()
+    };
+    if (ag.data !== undefined) update.data = ag.data;
+    if (ag.hora !== undefined) update.hora = ag.hora;
+    if (ag.tipo !== undefined) update.tipo = ag.tipo;
+    if (ag.status !== undefined) update.status = ag.status;
+    if (ag.consultaRealizadaId !== undefined) update.consultaRealizadaId = ag.consultaRealizadaId;
+
+    await db.agendamentos.update(id, update);
+    await audit('UPDATE_AGENDAMENTO', 'agendamento', id, { status: ag.status });
+    return id;
+  }
+
+  async function softDeleteAgendamento(id) {
+    await db.agendamentos.update(id, { deleted: 1, updatedAt: new Date().toISOString() });
+    await audit('DELETE_AGENDAMENTO', 'agendamento', id);
+  }
+
+  /**
+   * Lista agendamentos por intervalo de datas (inclusivo).
+   * @param {Object} opts - { dataInicio (YYYY-MM-DD), dataFim, status? (string ou array), pacienteId?, incluirRealizados? }
+   */
+  async function listAgendamentos({ dataInicio, dataFim, status, pacienteId, incluirRealizados } = {}) {
+    const dek = getDEK();
+    let collection = db.agendamentos.toCollection();
+
+    if (dataInicio && dataFim) {
+      collection = db.agendamentos.where('data').between(dataInicio, dataFim, true, true);
+    } else if (dataInicio) {
+      collection = db.agendamentos.where('data').aboveOrEqual(dataInicio);
+    } else if (dataFim) {
+      collection = db.agendamentos.where('data').belowOrEqual(dataFim);
+    }
+
+    let rows = await collection.toArray();
+    // Filtros pós-query (deleted, status, pacienteId)
+    rows = rows.filter(a => !a.deleted);
+    if (pacienteId !== undefined && pacienteId !== null) {
+      rows = rows.filter(a => a.pacienteId === pacienteId);
+    }
+    if (status) {
+      const statusList = Array.isArray(status) ? status : [status];
+      rows = rows.filter(a => statusList.includes(a.status));
+    } else if (!incluirRealizados) {
+      // Default: não inclui realizados/cancelados
+      rows = rows.filter(a => a.status === 'marcado' || a.status === 'faltou');
+    }
+
+    // Ordena: data asc, depois hora asc
+    rows.sort((a, b) => {
+      if (a.data !== b.data) return a.data.localeCompare(b.data);
+      return (a.hora || '').localeCompare(b.hora || '');
+    });
+
+    // Decifra observação e nome cache de cada um
+    const out = [];
+    for (const r of rows) {
+      try {
+        const dec = r.payload ? await CryptoModule.decrypt(dek, r.payload) : {};
+        out.push({ ...r, ...dec, payload: undefined });
+      } catch (e) {
+        console.warn('Falha decifrar agendamento', r.id, e);
+        out.push({ ...r, observacao: '', pacienteNome: '?', payload: undefined });
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Atalho: agendamentos de hoje (data >= hoje, status marcado).
+   */
+  async function listAgendaHoje() {
+    const hoje = new Date().toISOString().slice(0, 10);
+    return listAgendamentos({ dataInicio: hoje, dataFim: hoje, status: 'marcado' });
+  }
+
+  /**
+   * Atalho: faltosos = agendamentos com data <= ontem ainda como "marcado".
+   * (Auto-marcação como "faltou" pode ser feita pelo componente.)
+   */
+  async function listFaltosos(diasAtras) {
+    const dias = diasAtras || 30;
+    const ontem = new Date();
+    ontem.setDate(ontem.getDate() - 1);
+    const inicio = new Date();
+    inicio.setDate(inicio.getDate() - dias);
+    return listAgendamentos({
+      dataInicio: inicio.toISOString().slice(0, 10),
+      dataFim: ontem.toISOString().slice(0, 10),
+      status: 'marcado'
+    });
+  }
+
+  /**
+   * Métricas básicas: consultas realizadas no período.
+   * Conta na tabela CONSULTAS (não agendamentos) — fonte da verdade.
+   */
+  async function contarConsultasPeriodo(dataInicio, dataFim) {
+    // dataHora = ISO completo; converto para comparação
+    const inicioIso = dataInicio + 'T00:00:00.000Z';
+    const fimIso = dataFim + 'T23:59:59.999Z';
+    const rows = await db.consultas
+      .where('dataHora').between(inicioIso, fimIso, true, true)
+      .toArray();
+    return rows.filter(c => !c.deleted).length;
+  }
+
   async function audit(action, entity, entityId, extra = {}) {
     try {
       await db.auditLog.add({
@@ -262,6 +437,7 @@ const DB = (() => {
   async function wipeEverything() {
     await db.pacientes.clear();
     await db.consultas.clear();
+    await db.agendamentos.clear();
     await db.auditLog.clear();
     await db.config.clear();
     lock();
@@ -280,6 +456,9 @@ const DB = (() => {
     // Consultas
     createConsulta, getConsulta, updateConsulta, softDeleteConsulta,
     listConsultasByPaciente,
+    // Agendamentos (Sprint A1)
+    createAgendamento, getAgendamento, updateAgendamento, softDeleteAgendamento,
+    listAgendamentos, listAgendaHoje, listFaltosos, contarConsultasPeriodo,
     // Audit
     audit, getRecentAudit,
     // Danger

@@ -46,6 +46,73 @@ function renderDashboard(container) {
         </div>
       </div>
 
+      <!-- Sprint A1: Bloco operacional — hoje, faltosos, métricas -->
+      <div class="card mb-4" x-show="agendaHoje.length > 0 || faltosos.length > 0 || metricas.consultasHoje > 0">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <h3 style="margin:0">📅 Operacional do dia</h3>
+          <button class="btn btn-ghost btn-sm" @click="$dispatch('navigate', '/agenda')" style="margin-left:auto">
+            Ver agenda completa →
+          </button>
+        </div>
+
+        <!-- Métricas em grid -->
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 12px;">
+          <div style="padding:10px; background:#dcfce7; border-radius:8px; text-align:center;">
+            <div style="font-size:1.8em; font-weight:bold; color:#166534" x-text="metricas.consultasHoje"></div>
+            <div style="font-size:0.85em; color:#166534">consultas hoje</div>
+          </div>
+          <div style="padding:10px; background:#fef3c7; border-radius:8px; text-align:center;">
+            <div style="font-size:1.8em; font-weight:bold; color:#92400e" x-text="metricas.consultasSemana"></div>
+            <div style="font-size:0.85em; color:#92400e">consultas esta semana</div>
+          </div>
+          <div style="padding:10px; background:#dbeafe; border-radius:8px; text-align:center;">
+            <div style="font-size:1.8em; font-weight:bold; color:#1e40af" x-text="metricas.consultasMes"></div>
+            <div style="font-size:0.85em; color:#1e40af">consultas este mês</div>
+          </div>
+          <div style="padding:10px; background:#fee2e2; border-radius:8px; text-align:center; cursor:pointer"
+               @click="$dispatch('navigate', '/agenda')">
+            <div style="font-size:1.8em; font-weight:bold; color:#991b1b" x-text="faltosos.length"></div>
+            <div style="font-size:0.85em; color:#991b1b">faltosos (busca ativa)</div>
+          </div>
+        </div>
+
+        <!-- Hoje na agenda -->
+        <div x-show="agendaHoje.length > 0" style="margin-top: 16px;">
+          <div style="font-weight:600; margin-bottom:8px;">📋 Chegam hoje (<span x-text="agendaHoje.length"></span>)</div>
+          <template x-for="ag in agendaHoje" :key="ag.id">
+            <div style="padding: 8px 12px; background: #f0fdf4; border-radius: 6px; margin-bottom: 4px; display:flex; align-items:center; gap:12px;">
+              <div style="font-weight:600; color:#166534; min-width:60px;" x-text="ag.hora || '—'"></div>
+              <div style="flex:1; cursor:pointer;" @click="$dispatch('navigate', '/paciente/' + ag.pacienteId)">
+                <span x-text="ag.pacienteNome || '(sem nome)'" style="font-weight:500"></span>
+                <span x-show="ag.observacao" x-text="' · ' + ag.observacao" style="opacity:0.7"></span>
+              </div>
+              <button class="btn btn-sm btn-primary" @click="$dispatch('navigate', '/paciente/' + ag.pacienteId + '/consulta/nova?agendamento=' + ag.id)">
+                ▶ Atender
+              </button>
+            </div>
+          </template>
+        </div>
+
+        <!-- Faltosos -->
+        <div x-show="faltosos.length > 0" style="margin-top: 16px;">
+          <div style="font-weight:600; margin-bottom:8px; color: #991b1b;">⚠️ Para busca ativa (<span x-text="faltosos.length"></span>)</div>
+          <template x-for="ag in faltosos.slice(0, 5)" :key="ag.id">
+            <div style="padding: 8px 12px; background: #fef2f2; border-radius: 6px; margin-bottom: 4px; display:flex; align-items:center; gap:12px;">
+              <div style="font-weight:600; color:#991b1b; min-width:90px; font-size:0.9em;" x-text="formatarDataDash(ag.data)"></div>
+              <div style="flex:1; cursor:pointer;" @click="$dispatch('navigate', '/paciente/' + ag.pacienteId)">
+                <span x-text="ag.pacienteNome || '(sem nome)'" style="font-weight:500"></span>
+                <span x-show="ag.observacao" x-text="' · ' + ag.observacao" style="opacity:0.7"></span>
+              </div>
+            </div>
+          </template>
+          <div x-show="faltosos.length > 5" style="text-align:center; margin-top:8px;">
+            <button class="btn btn-ghost btn-sm" @click="$dispatch('navigate', '/agenda')">
+              + <span x-text="faltosos.length - 5"></span> mais — ver todos
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-8);">
         <div class="card">
           <div class="text-sm muted">Pacientes cadastrados</div>
@@ -141,6 +208,14 @@ function dashboardScreen() {
       loaded: false
     },
     working: false,
+    // Sprint A1
+    agendaHoje: [],
+    faltosos: [],
+    metricas: { consultasHoje: 0, consultasSemana: 0, consultasMes: 0 },
+
+    formatarDataDash(iso) {
+      return window.Agenda ? Agenda.formatarData(iso) : iso;
+    },
 
     async load() {
       this.today = new Date().toLocaleDateString('pt-BR', {
@@ -169,6 +244,28 @@ function dashboardScreen() {
         this.backupStatus = { ...s, loaded: true };
       } catch (e) {
         console.error('Erro ao verificar status de backup:', e);
+      }
+
+      // Sprint A1: agenda + faltosos + métricas
+      try {
+        if (window.Agenda && window.DB.listAgendaHoje) {
+          this.agendaHoje = await DB.listAgendaHoje();
+          this.faltosos = await DB.listFaltosos(30);
+
+          const hoje = Agenda.hojeIso();
+          const inicioSemana = new Date();
+          inicioSemana.setDate(inicioSemana.getDate() - 7);
+          const inicioSemanaIso = inicioSemana.toISOString().slice(0, 10);
+          const inicioMes = new Date();
+          inicioMes.setDate(1);
+          const inicioMesIso = inicioMes.toISOString().slice(0, 10);
+
+          this.metricas.consultasHoje = await DB.contarConsultasPeriodo(hoje, hoje);
+          this.metricas.consultasSemana = await DB.contarConsultasPeriodo(inicioSemanaIso, hoje);
+          this.metricas.consultasMes = await DB.contarConsultasPeriodo(inicioMesIso, hoje);
+        }
+      } catch (e) {
+        console.warn('Erro ao carregar operacional:', e);
       }
     },
 

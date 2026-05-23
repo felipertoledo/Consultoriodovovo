@@ -660,8 +660,13 @@ function consultaForm(pacienteId, consultaId) {
         delete data.createdAt;
         delete data.updatedAt;
 
+        let consultaIdFinal;
+        let consultaNova = false;
+
         if (this.isNew) {
           const newId = await DB.createConsulta(data);
+          consultaIdFinal = newId;
+          consultaNova = true;
           if (!silencioso) UI.toast('Consulta salva', 'success');
           this.consultaId = newId;
           this.isNew = false;
@@ -671,8 +676,44 @@ function consultaForm(pacienteId, consultaId) {
         } else {
           const cId = typeof this.consultaId === 'string' ? parseInt(this.consultaId, 10) : this.consultaId;
           await DB.updateConsulta(cId, data);
+          consultaIdFinal = cId;
           if (!silencioso) UI.toast('Alterações salvas', 'success');
           this.autoSaveStatus = '✓ Salvo ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // === Sprint A1: integração com agenda ===
+        // 1. Se veio de um agendamento (?agendamento=N na URL), marcar como realizado
+        try {
+          const urlParams = new URLSearchParams(location.hash.split('?')[1] || '');
+          const agOrigemId = urlParams.get('agendamento');
+          if (agOrigemId && consultaNova) {
+            await DB.updateAgendamento(parseInt(agOrigemId, 10), {
+              status: 'realizado',
+              consultaRealizadaId: consultaIdFinal
+            });
+          }
+        } catch (e) {
+          console.warn('Falha ao marcar agendamento original como realizado:', e);
+        }
+
+        // 2. Auto-criar agendamento de retorno se campo "retorno" tiver prazo parseável
+        try {
+          if (consultaNova && this.consulta.retorno && window.Agenda) {
+            const dataRetorno = Agenda.calcularRetornoDe(this.consulta.retorno, new Date());
+            if (dataRetorno) {
+              await DB.createAgendamento({
+                pacienteId: this.pacienteId,
+                pacienteNome: this.paciente.nome,
+                data: dataRetorno,
+                tipo: 'retorno',
+                observacao: this.consulta.retorno,
+                consultaOrigemId: consultaIdFinal
+              });
+              if (!silencioso) UI.toast(`📅 Retorno agendado para ${Agenda.formatarData(dataRetorno)}`, 'success');
+            }
+          }
+        } catch (e) {
+          console.warn('Falha ao auto-criar agendamento de retorno:', e);
         }
       } catch (e) {
         UI.toast('Erro ao salvar: ' + e.message, 'error');

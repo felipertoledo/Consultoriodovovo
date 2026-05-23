@@ -25,9 +25,10 @@ const Backup = (() => {
     await markBackupDone();
 
     // Coleta todos os registros de todas as tabelas
-    const [pacientes, consultas, auditLog, config] = await Promise.all([
+    const [pacientes, consultas, agendamentos, auditLog, config] = await Promise.all([
       dexie.pacientes.toArray(),
       dexie.consultas.toArray(),
+      dexie.agendamentos.toArray(),
       dexie.auditLog.toArray(),
       dexie.config.toArray()
     ]);
@@ -43,12 +44,14 @@ const Backup = (() => {
       counts: {
         pacientes: pacientes.length,
         consultas: consultas.length,
+        agendamentos: agendamentos.length,
         auditLog: auditLog.length,
         config: config.length
       },
       data: {
         pacientes,
         consultas,
+        agendamentos,
         auditLog,
         config
       }
@@ -167,10 +170,11 @@ const Backup = (() => {
     }
 
     // Limpa todas as tabelas
-    await dexie.transaction('rw', dexie.pacientes, dexie.consultas, dexie.auditLog, dexie.config,
+    await dexie.transaction('rw', dexie.pacientes, dexie.consultas, dexie.agendamentos, dexie.auditLog, dexie.config,
       async () => {
         await dexie.pacientes.clear();
         await dexie.consultas.clear();
+        await dexie.agendamentos.clear();
         await dexie.auditLog.clear();
         await dexie.config.clear();
 
@@ -180,6 +184,10 @@ const Backup = (() => {
         }
         if (envelope.data.consultas.length > 0) {
           await dexie.consultas.bulkAdd(envelope.data.consultas);
+        }
+        // Sprint A1: backups antigos (pre-v0.10.0) não têm agendamentos — retrocompatível
+        if (envelope.data.agendamentos && envelope.data.agendamentos.length > 0) {
+          await dexie.agendamentos.bulkAdd(envelope.data.agendamentos);
         }
         if (envelope.data.auditLog.length > 0) {
           await dexie.auditLog.bulkAdd(envelope.data.auditLog);

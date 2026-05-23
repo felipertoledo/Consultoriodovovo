@@ -76,6 +76,7 @@
   <script src="./modules/pdf-documents.js"></script>
   <script src="./modules/pdf-documents-extra.js"></script>
   <script src="./modules/backup.js"></script>
+  <script src="./modules/agenda.js"></script>
 
   <!-- Componentes de tela -->
   <script src="./components/setup-wizard.js"></script>
@@ -87,6 +88,7 @@
   <script src="./components/consulta-form.js"></script>
   <script src="./components/documentos.js"></script>
   <script src="./components/prescricao-rapida.js"></script>
+  <script src="./components/agenda.js"></script>
   <script src="./components/config.js"></script>
 
   <!-- Captura do prompt de instalação do PWA -->
@@ -209,6 +211,10 @@
                         onclick="Router.navigate('/pacientes')">
                   👥 Pacientes
                 </button>
+                <button class="nav-item ${activeRoute === '/agenda' ? 'active' : ''}"
+                        onclick="Router.navigate('/agenda')">
+                  📅 Agenda
+                </button>
                 <button class="nav-item ${activeRoute === '/prescricao' ? 'active' : ''}"
                         onclick="Router.navigate('/prescricao')">
                   💊 Nova prescrição
@@ -306,6 +312,12 @@
         if (!Auth.isUnlocked()) { Router.navigate('/'); return; }
         const target = renderAppShell('/prescricao');
         renderPrescricaoRapida(target);
+      });
+
+      Router.register('/agenda', () => {
+        if (!Auth.isUnlocked()) { Router.navigate('/'); return; }
+        const target = renderAppShell('/agenda');
+        renderAgenda(target);
       });
 
       // Listener para navegação programática a partir dos componentes
