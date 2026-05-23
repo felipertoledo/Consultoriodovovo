@@ -359,7 +359,7 @@ const PDFBuilder = (() => {
   }
 
   // ---- Helper completo para abrir um modal de preview ----
-  function previewModal(doc, nomeArquivo, tipo) {
+  function previewModal(doc, nomeArquivo, tipo, paciente) {
     const blob = doc.output('blob');
     const url = URL.createObjectURL(blob);
 
@@ -370,13 +370,17 @@ const PDFBuilder = (() => {
       <div class="pdf-preview-modal">
         <div class="pdf-preview-header">
           <h3 style="margin:0">${tipo}</h3>
-          <div class="flex gap-2">
+          <div class="flex gap-2" style="flex-wrap: wrap">
+            <button class="btn btn-success text-sm" id="pdf-btn-whatsapp" title="Enviar PDF para o paciente via WhatsApp">
+              <span style="color: #25D366">📱</span> WhatsApp
+            </button>
             <button class="btn btn-secondary text-sm" id="pdf-btn-print">🖨️ Imprimir</button>
             <button class="btn btn-primary text-sm" id="pdf-btn-download">💾 Baixar PDF</button>
             <button class="btn btn-ghost text-sm" id="pdf-btn-close">✕ Fechar</button>
           </div>
         </div>
         <iframe class="pdf-preview-iframe" src="${url}"></iframe>
+        <div id="pdf-instructions" style="display: none; padding: 12px 16px; background: #FEF3C7; color: #92400E; font-size: 13px; border-top: 1px solid #F59E0B"></div>
       </div>
     `;
     document.body.appendChild(overlay);
@@ -394,6 +398,37 @@ const PDFBuilder = (() => {
     };
     overlay.querySelector('#pdf-btn-print').onclick = () => {
       imprimir(doc);
+    };
+    overlay.querySelector('#pdf-btn-whatsapp').onclick = async () => {
+      if (typeof ShareService === 'undefined') {
+        alert('Serviço de compartilhamento indisponível');
+        return;
+      }
+      try {
+        const result = await ShareService.compartilharPDF(
+          blob,
+          nomeArquivo.endsWith('.pdf') ? nomeArquivo : nomeArquivo + '.pdf',
+          paciente || { nome: 'Paciente' },
+          tipo
+        );
+        if (result.askedToDownload || result.method === 'wa.me') {
+          const instr = overlay.querySelector('#pdf-instructions');
+          instr.style.display = 'block';
+          instr.innerHTML = `<strong>📥 PDF baixado.</strong> ${result.message}`;
+          if (typeof DB !== 'undefined' && paciente && paciente.id) {
+            DB.audit('SHARE_PDF', 'documento', null, {
+              tipo, method: result.method, hasNumber: !!result.numero, pacienteId: paciente.id
+            }).catch(() => {});
+          }
+        }
+      } catch (e) {
+        console.error(e);
+        if (typeof UI !== 'undefined' && UI.toast) {
+          UI.toast('Erro ao compartilhar: ' + e.message, 'error');
+        } else {
+          alert('Erro ao compartilhar: ' + e.message);
+        }
+      }
     };
   }
 

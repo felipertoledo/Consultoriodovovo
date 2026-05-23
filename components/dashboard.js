@@ -18,19 +18,19 @@ function renderDashboard(container) {
       </div>
 
       <!-- Aviso de backup pendente -->
-      <div x-show="backupStatus.loaded && backupStatus.precisaBackup" class="alert alert-warning mb-4"
+      <div x-show="backupStatus?.loaded && backupStatus?.precisaBackup" class="alert alert-warning mb-4"
            style="border-left: 4px solid var(--color-warning, #d97706)">
         <div style="display: flex; gap: var(--space-3); align-items: flex-start; flex-wrap: wrap">
           <div style="flex: 1; min-width: 250px">
             <strong>⚠ Backup recomendado</strong>
             <div class="text-sm mt-1">
-              <span x-show="backupStatus.lastBackupAt === null">
+              <span x-show="backupStatus?.lastBackupAt === null">
                 Você ainda não tem nenhum backup. Se o navegador limpar os dados,
-                você perderá <strong x-text="backupStatus.consultasDesdeBackup + ' consultas'"></strong>.
+                você perderá <strong x-text="backupStatus?.consultasDesdeBackup + ' consultas'"></strong>.
               </span>
-              <span x-show="backupStatus.lastBackupAt !== null">
-                Último backup há <strong x-text="backupStatus.daysSinceBackup + ' dias'"></strong>.
-                <strong x-text="backupStatus.consultasDesdeBackup"></strong> consultas novas desde então.
+              <span x-show="backupStatus?.lastBackupAt !== null">
+                Último backup há <strong x-text="backupStatus?.daysSinceBackup + ' dias'"></strong>.
+                <strong x-text="backupStatus?.consultasDesdeBackup"></strong> consultas novas desde então.
               </span>
             </div>
           </div>

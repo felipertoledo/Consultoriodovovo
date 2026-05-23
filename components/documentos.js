@@ -797,7 +797,7 @@ function documentosScreen(pacienteId, tipoInicial) {
         );
         const nomeArquivo = `Receita_${(this.paciente.nome || 'paciente').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}`;
         DB.audit('GENERATE_PDF', 'documento', null, { tipo: 'receita', codigo, pacienteId: this.pacienteId });
-        PDFBuilder.previewModal(doc, nomeArquivo, 'Receituário');
+        PDFBuilder.previewModal(doc, nomeArquivo, 'Receituário', { ...this.paciente, id: this.pacienteId });
       } catch (e) {
         console.error(e);
         UI.toast('Erro ao gerar PDF: ' + e.message, 'error');
@@ -826,7 +826,7 @@ function documentosScreen(pacienteId, tipoInicial) {
         );
         const nomeArquivo = `Atestado_${(this.paciente.nome || 'paciente').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}`;
         DB.audit('GENERATE_PDF', 'documento', null, { tipo: 'atestado', codigo, pacienteId: this.pacienteId });
-        PDFBuilder.previewModal(doc, nomeArquivo, 'Atestado médico');
+        PDFBuilder.previewModal(doc, nomeArquivo, 'Atestado médico', { ...this.paciente, id: this.pacienteId });
       } catch (e) {
         console.error(e);
         UI.toast('Erro ao gerar PDF: ' + e.message, 'error');
@@ -874,7 +874,7 @@ function documentosScreen(pacienteId, tipoInicial) {
         );
         const nomeArquivo = `Exames_${(this.paciente.nome || 'paciente').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}`;
         DB.audit('GENERATE_PDF', 'documento', null, { tipo: 'exames', codigo, pacienteId: this.pacienteId });
-        PDFBuilder.previewModal(doc, nomeArquivo, 'Solicitação de exames');
+        PDFBuilder.previewModal(doc, nomeArquivo, 'Solicitação de exames', { ...this.paciente, id: this.pacienteId });
       } catch (e) {
         console.error(e);
         UI.toast('Erro ao gerar PDF: ' + e.message, 'error');
@@ -899,7 +899,7 @@ function documentosScreen(pacienteId, tipoInicial) {
         );
         const nomeArquivo = `Receita_Controle_${(this.paciente.nome || 'paciente').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}`;
         DB.audit('GENERATE_PDF', 'documento', null, { tipo: 'controle', codigo, pacienteId: this.pacienteId });
-        PDFBuilder.previewModal(doc, nomeArquivo, 'Receituário de controle especial');
+        PDFBuilder.previewModal(doc, nomeArquivo, 'Receituário de controle especial', { ...this.paciente, id: this.pacienteId });
       } catch (e) {
         console.error(e);
         UI.toast('Erro ao gerar PDF: ' + e.message, 'error');
@@ -928,7 +928,7 @@ function documentosScreen(pacienteId, tipoInicial) {
         );
         const nomeArquivo = `Receita_Azul_${(this.paciente.nome || 'paciente').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}`;
         DB.audit('GENERATE_PDF', 'documento', null, { tipo: 'azul', codigo, pacienteId: this.pacienteId });
-        PDFBuilder.previewModal(doc, nomeArquivo, 'Receituário azul B1/B2');
+        PDFBuilder.previewModal(doc, nomeArquivo, 'Receituário azul B1/B2', { ...this.paciente, id: this.pacienteId });
       } catch (e) {
         console.error(e);
         UI.toast('Erro ao gerar PDF: ' + e.message, 'error');
@@ -958,7 +958,7 @@ function documentosScreen(pacienteId, tipoInicial) {
         );
         const nomeArquivo = `Relatorio_${(this.paciente.nome || 'paciente').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}`;
         DB.audit('GENERATE_PDF', 'documento', null, { tipo: 'relatorio', codigo, pacienteId: this.pacienteId });
-        PDFBuilder.previewModal(doc, nomeArquivo, 'Relatório clínico');
+        PDFBuilder.previewModal(doc, nomeArquivo, 'Relatório clínico', { ...this.paciente, id: this.pacienteId });
       } catch (e) {
         console.error(e);
         UI.toast('Erro ao gerar PDF: ' + e.message, 'error');
@@ -978,7 +978,7 @@ function documentosScreen(pacienteId, tipoInicial) {
         );
         const nomeArquivo = `Prontuario_${(this.paciente.nome || 'paciente').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}`;
         DB.audit('GENERATE_PDF', 'documento', null, { tipo: 'prontuario', codigo, pacienteId: this.pacienteId });
-        PDFBuilder.previewModal(doc, nomeArquivo, 'Cópia integral do prontuário');
+        PDFBuilder.previewModal(doc, nomeArquivo, 'Cópia integral do prontuário', { ...this.paciente, id: this.pacienteId });
       } catch (e) {
         console.error(e);
         UI.toast('Erro ao gerar PDF: ' + e.message, 'error');

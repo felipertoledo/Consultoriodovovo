@@ -15,31 +15,31 @@ function renderConfig(container) {
       <div class="card mt-4" style="border-color: var(--color-primary); border-width: 2px">
         <h3 class="card-title mb-4">💾 Backup do cofre</h3>
 
-        <div x-show="!backupStatus.loaded" class="muted text-sm">Carregando status…</div>
+        <div x-show="!backupStatus?.loaded" class="muted text-sm">Carregando status…</div>
 
-        <div x-show="backupStatus.loaded">
+        <div x-show="backupStatus?.loaded">
           <!-- Status atual -->
           <div class="mb-4" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-3);">
             <div style="background: var(--bg-sunken); padding: var(--space-3); border-radius: var(--radius-md);">
               <div class="text-xs muted">Último backup</div>
               <div class="text-sm" style="font-weight: var(--weight-semibold)"
-                   x-text="backupStatus.lastBackupAt ? formatDate(backupStatus.lastBackupAt) : 'Nunca feito'"></div>
+                   x-text="backupStatus?.lastBackupAt ? formatDate(backupStatus?.lastBackupAt) : 'Nunca feito'"></div>
             </div>
             <div style="background: var(--bg-sunken); padding: var(--space-3); border-radius: var(--radius-md);">
               <div class="text-xs muted">Tempo decorrido</div>
               <div class="text-sm" style="font-weight: var(--weight-semibold)"
-                   x-text="backupStatus.daysSinceBackup === null ? '—' : (backupStatus.daysSinceBackup + ' dias')"></div>
+                   x-text="backupStatus?.daysSinceBackup === null ? '—' : (backupStatus?.daysSinceBackup + ' dias')"></div>
             </div>
             <div style="background: var(--bg-sunken); padding: var(--space-3); border-radius: var(--radius-md);">
               <div class="text-xs muted">Consultas novas desde então</div>
               <div class="text-sm" style="font-weight: var(--weight-semibold)"
-                   :style="backupStatus.precisaBackup ? 'color: var(--color-danger)' : ''"
-                   x-text="backupStatus.consultasDesdeBackup"></div>
+                   :style="backupStatus?.precisaBackup ? 'color: var(--color-danger)' : ''"
+                   x-text="backupStatus?.consultasDesdeBackup"></div>
             </div>
           </div>
 
           <!-- Alerta de necessidade -->
-          <div x-show="backupStatus.precisaBackup" class="alert alert-warning mb-4">
+          <div x-show="backupStatus?.precisaBackup" class="alert alert-warning mb-4">
             <div>
               <strong>Recomendado fazer backup agora.</strong>
               Você tem novas consultas registradas. Se o navegador limpar os dados,

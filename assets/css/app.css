@@ -59,6 +59,8 @@ p  { color: var(--text-secondary); line-height: var(--leading-relaxed); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-primary { background: var(--color-primary); color: var(--text-on-primary); }
 .btn-primary:hover:not(:disabled) { background: var(--color-primary-900); }
+.btn-success { background: #DCFCE7; color: #14532D; border-color: #86EFAC; }
+.btn-success:hover:not(:disabled) { background: #BBF7D0; border-color: #4ADE80; }
 .btn-secondary { background: var(--bg-surface); color: var(--text-primary); border-color: var(--border-default); }
 .btn-secondary:hover:not(:disabled) { background: var(--bg-sunken); }
 .btn-ghost { background: transparent; color: var(--text-secondary); }
