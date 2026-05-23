@@ -176,7 +176,44 @@ function renderPrescricaoRapida(container) {
 
       <!-- ============ PASSO 3: Medicamentos ============ -->
       <div class="card" x-show="step === 3">
-        <h3 class="card-title mb-4">3. Medicamentos</h3>
+        <div class="flex justify-between items-center mb-3" style="flex-wrap: wrap; gap: var(--space-2);">
+          <h3 class="card-title" style="margin: 0;">3. Medicamentos</h3>
+          <button class="btn btn-sm" @click="abrirPickerTemplate()" x-show="templatesDisponiveis.length > 0">
+            📋 Carregar template
+          </button>
+          <button class="btn btn-sm btn-ghost" @click="$dispatch('navigate', '/templates')" x-show="templatesDisponiveis.length === 0"
+                  title="Cadastrar templates para acelerar prescrições futuras">
+            📋 Criar templates
+          </button>
+        </div>
+
+        <!-- Dropdown de templates (Sprint A2) -->
+        <div x-show="pickerTemplateAberto" x-cloak
+             style="border: 2px solid #166534; border-radius: 8px; padding: 12px; background: #f0fdf4; margin-bottom: var(--space-3);">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <strong>📋 Escolha um template</strong>
+            <button class="btn btn-sm" style="margin-left:auto" @click="pickerTemplateAberto = false">×</button>
+          </div>
+          <div style="max-height: 240px; overflow-y: auto; background:#fff; border-radius:6px;">
+            <template x-for="t in templatesDisponiveis" :key="t.id">
+              <div @click="carregarTemplate(t)"
+                   style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #e5e7eb;"
+                   :style="t.tipo !== tipoReceita ? 'opacity: 0.55' : ''">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <strong x-text="t.nome"></strong>
+                  <span style="font-size:0.8em; padding:1px 6px; background:#f3f4f6; border-radius:4px;"
+                        x-text="t.tipo === 'simples' ? 'comum' : (t.tipo === 'controle' ? 'controle' : 'azul')"></span>
+                  <span x-show="t.usoCount > 0" style="font-size:0.8em; opacity:0.6;" x-text="'usado ' + t.usoCount + 'x'"></span>
+                </div>
+                <div style="font-size:0.85em; opacity:0.75; margin-top:3px;"
+                     x-text="(t.medicacoes || []).map(m => m.nome).filter(Boolean).join(' + ')"></div>
+                <div x-show="t.tipo !== tipoReceita" style="font-size:0.75em; color:#92400e; margin-top:3px;">
+                  ⚠️ Trocará o tipo de receituário para <strong x-text="t.tipo === 'simples' ? 'Comum' : (t.tipo === 'controle' ? 'Controle especial' : 'Azul B1/B2')"></strong>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
 
         <div class="form-group">
           <label class="label">Alerta clínico (alergias, comorbidades importantes)
@@ -267,6 +304,10 @@ function prescricaoRapida() {
     alertaClinico: '',
     medicacoes: [{ nome: '', posologia: '', duracao: '', quantidadeTotal: '' }],
 
+    // Sprint A2: integração com templates
+    templatesDisponiveis: [],
+    pickerTemplateAberto: false,
+
     async load() {
       // Pré-carrega lista para busca instantânea
       try {
@@ -275,6 +316,46 @@ function prescricaoRapida() {
       } catch (e) {
         console.error('Erro ao carregar pacientes:', e);
         this._todosPacientes = [];
+      }
+
+      // Sprint A2: carregar templates disponíveis
+      try {
+        if (DB.listTemplates) {
+          this.templatesDisponiveis = await DB.listTemplates();
+        }
+      } catch (e) {
+        console.warn('Erro ao carregar templates:', e);
+        this.templatesDisponiveis = [];
+      }
+    },
+
+    // Sprint A2: ações do picker de templates
+    abrirPickerTemplate() {
+      this.pickerTemplateAberto = true;
+    },
+
+    async carregarTemplate(t) {
+      try {
+        // Trocar tipo de receita se necessário
+        if (t.tipo && t.tipo !== this.tipoReceita) {
+          this.tipoReceita = t.tipo;
+        }
+        // Preencher medicações (clone para não modificar template)
+        if (Array.isArray(t.medicacoes) && t.medicacoes.length > 0) {
+          this.medicacoes = JSON.parse(JSON.stringify(t.medicacoes));
+        }
+        // Alerta clínico (só sobrescreve se template tiver)
+        if (t.alertaClinico) {
+          this.alertaClinico = t.alertaClinico;
+        }
+        // Incrementa uso do template
+        if (DB.incrementarUsoTemplate) {
+          await DB.incrementarUsoTemplate(t.id);
+        }
+        this.pickerTemplateAberto = false;
+        UI.toast(`Template "${t.nome}" carregado`, 'success');
+      } catch (e) {
+        UI.toast('Erro ao carregar template: ' + e.message, 'error');
       }
     },
 

@@ -89,6 +89,7 @@
   <script src="./components/documentos.js"></script>
   <script src="./components/prescricao-rapida.js"></script>
   <script src="./components/agenda.js"></script>
+  <script src="./components/templates-prescricao.js"></script>
   <script src="./components/config.js"></script>
 
   <!-- Captura do prompt de instalação do PWA -->
@@ -219,6 +220,10 @@
                         onclick="Router.navigate('/prescricao')">
                   💊 Nova prescrição
                 </button>
+                <button class="nav-item ${activeRoute === '/templates' ? 'active' : ''}"
+                        onclick="Router.navigate('/templates')">
+                  📋 Templates
+                </button>
               </div>
               <div class="nav-section">
                 <div class="nav-section-title">Sistema</div>
@@ -318,6 +323,12 @@
         if (!Auth.isUnlocked()) { Router.navigate('/'); return; }
         const target = renderAppShell('/agenda');
         renderAgenda(target);
+      });
+
+      Router.register('/templates', () => {
+        if (!Auth.isUnlocked()) { Router.navigate('/'); return; }
+        const target = renderAppShell('/templates');
+        renderTemplates(target);
       });
 
       // Listener para navegação programática a partir dos componentes

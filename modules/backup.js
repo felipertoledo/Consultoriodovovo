@@ -25,10 +25,11 @@ const Backup = (() => {
     await markBackupDone();
 
     // Coleta todos os registros de todas as tabelas
-    const [pacientes, consultas, agendamentos, auditLog, config] = await Promise.all([
+    const [pacientes, consultas, agendamentos, templatesPrescricao, auditLog, config] = await Promise.all([
       dexie.pacientes.toArray(),
       dexie.consultas.toArray(),
       dexie.agendamentos.toArray(),
+      dexie.templatesPrescricao.toArray(),
       dexie.auditLog.toArray(),
       dexie.config.toArray()
     ]);
@@ -45,6 +46,7 @@ const Backup = (() => {
         pacientes: pacientes.length,
         consultas: consultas.length,
         agendamentos: agendamentos.length,
+        templatesPrescricao: templatesPrescricao.length,
         auditLog: auditLog.length,
         config: config.length
       },
@@ -52,6 +54,7 @@ const Backup = (() => {
         pacientes,
         consultas,
         agendamentos,
+        templatesPrescricao,
         auditLog,
         config
       }
@@ -170,11 +173,12 @@ const Backup = (() => {
     }
 
     // Limpa todas as tabelas
-    await dexie.transaction('rw', dexie.pacientes, dexie.consultas, dexie.agendamentos, dexie.auditLog, dexie.config,
+    await dexie.transaction('rw', dexie.pacientes, dexie.consultas, dexie.agendamentos, dexie.templatesPrescricao, dexie.auditLog, dexie.config,
       async () => {
         await dexie.pacientes.clear();
         await dexie.consultas.clear();
         await dexie.agendamentos.clear();
+        await dexie.templatesPrescricao.clear();
         await dexie.auditLog.clear();
         await dexie.config.clear();
 
@@ -188,6 +192,10 @@ const Backup = (() => {
         // Sprint A1: backups antigos (pre-v0.10.0) não têm agendamentos — retrocompatível
         if (envelope.data.agendamentos && envelope.data.agendamentos.length > 0) {
           await dexie.agendamentos.bulkAdd(envelope.data.agendamentos);
+        }
+        // Sprint A2: backups antigos (pre-v0.11.0) não têm templates — retrocompatível
+        if (envelope.data.templatesPrescricao && envelope.data.templatesPrescricao.length > 0) {
+          await dexie.templatesPrescricao.bulkAdd(envelope.data.templatesPrescricao);
         }
         if (envelope.data.auditLog.length > 0) {
           await dexie.auditLog.bulkAdd(envelope.data.auditLog);

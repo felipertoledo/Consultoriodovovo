@@ -34,6 +34,19 @@ const DB = (() => {
     agendamentos: '++id, pacienteId, data, status, createdAt, deleted'
   });
 
+  // ---- Schema v3 (Sprint A2: templates de prescrição) ----
+  db.version(3).stores({
+    pacientes: '++id, nameHash, createdAt, updatedAt, deleted',
+    consultas: '++id, pacienteId, dataHora, createdAt, updatedAt, deleted',
+    auditLog: '++id, timestamp, action, entity',
+    config: 'key',
+    agendamentos: '++id, pacienteId, data, status, createdAt, deleted',
+    // templatesPrescricao: id auto, ordenação por uso e nome (este último em payload cifrado)
+    // tipo = simples | controle | azul
+    // medicações + nome + orientações criptografadas em `payload`
+    templatesPrescricao: '++id, tipo, usoCount, createdAt, deleted'
+  });
+
   // ---- Estado interno (DEK em memória, NUNCA persistida) ----
   let currentDEK = null;
   let nameHashSalt = null;
@@ -415,6 +428,116 @@ const DB = (() => {
     return rows.filter(c => !c.deleted).length;
   }
 
+  // ============================================================
+  // TEMPLATES DE PRESCRIÇÃO (Sprint A2)
+  // ============================================================
+  /**
+   * Cria um template.
+   * @param {Object} t - { nome, tipo (simples|controle|azul), medicacoes (Array<string>), orientacoes? }
+   */
+  async function createTemplate(t) {
+    const dek = getDEK();
+    const now = new Date().toISOString();
+    const payload = {
+      nome: t.nome || '',
+      medicacoes: Array.isArray(t.medicacoes) ? t.medicacoes : [],
+      orientacoes: t.orientacoes || '',
+      alertaClinico: t.alertaClinico || ''
+    };
+    const ciphered = await CryptoModule.encrypt(dek, payload);
+    const id = await db.templatesPrescricao.add({
+      tipo: t.tipo || 'simples',
+      usoCount: 0,
+      payload: ciphered,
+      createdAt: now,
+      updatedAt: now,
+      deleted: 0
+    });
+    await audit('CREATE_TEMPLATE', 'template', id, { tipo: t.tipo });
+    return id;
+  }
+
+  async function getTemplate(id) {
+    const dek = getDEK();
+    const t = await db.templatesPrescricao.get(id);
+    if (!t || t.deleted) return null;
+    const decrypted = t.payload ? await CryptoModule.decrypt(dek, t.payload) : {};
+    return { ...t, ...decrypted, payload: undefined };
+  }
+
+  async function updateTemplate(id, t) {
+    const dek = getDEK();
+    const existing = await db.templatesPrescricao.get(id);
+    if (!existing) throw new Error('Template não encontrado');
+
+    const oldPayload = existing.payload ? await CryptoModule.decrypt(dek, existing.payload) : {};
+    const merged = {
+      nome: t.nome !== undefined ? t.nome : (oldPayload.nome || ''),
+      medicacoes: t.medicacoes !== undefined ? t.medicacoes : (oldPayload.medicacoes || []),
+      orientacoes: t.orientacoes !== undefined ? t.orientacoes : (oldPayload.orientacoes || ''),
+      alertaClinico: t.alertaClinico !== undefined ? t.alertaClinico : (oldPayload.alertaClinico || '')
+    };
+    const ciphered = await CryptoModule.encrypt(dek, merged);
+
+    const update = {
+      payload: ciphered,
+      updatedAt: new Date().toISOString()
+    };
+    if (t.tipo !== undefined) update.tipo = t.tipo;
+    if (t.usoCount !== undefined) update.usoCount = t.usoCount;
+
+    await db.templatesPrescricao.update(id, update);
+    await audit('UPDATE_TEMPLATE', 'template', id);
+    return id;
+  }
+
+  async function softDeleteTemplate(id) {
+    await db.templatesPrescricao.update(id, { deleted: 1, updatedAt: new Date().toISOString() });
+    await audit('DELETE_TEMPLATE', 'template', id);
+  }
+
+  /**
+   * Lista templates (não deletados), ordenado por usoCount desc, depois createdAt desc.
+   * Decifra todos para retornar nome+medicações+orientações em claro.
+   */
+  async function listTemplates(opts) {
+    opts = opts || {};
+    const dek = getDEK();
+    let rows = await db.templatesPrescricao.toArray();
+    rows = rows.filter(r => !r.deleted);
+    if (opts.tipo) rows = rows.filter(r => r.tipo === opts.tipo);
+
+    const out = [];
+    for (const r of rows) {
+      try {
+        const dec = r.payload ? await CryptoModule.decrypt(dek, r.payload) : {};
+        out.push({ ...r, ...dec, payload: undefined });
+      } catch (e) {
+        console.warn('Falha decifrar template', r.id, e);
+        out.push({ ...r, nome: '(erro)', medicacoes: [], orientacoes: '', payload: undefined });
+      }
+    }
+
+    // Ordena por uso descendente, depois nome alfabético
+    out.sort((a, b) => {
+      if ((b.usoCount || 0) !== (a.usoCount || 0)) return (b.usoCount || 0) - (a.usoCount || 0);
+      return (a.nome || '').localeCompare(b.nome || '');
+    });
+    return out;
+  }
+
+  /**
+   * Incrementa o contador de uso de um template (usado quando carregado na Prescrição Rápida).
+   */
+  async function incrementarUsoTemplate(id) {
+    const t = await db.templatesPrescricao.get(id);
+    if (!t) return;
+    await db.templatesPrescricao.update(id, {
+      usoCount: (t.usoCount || 0) + 1,
+      updatedAt: new Date().toISOString()
+    });
+  }
+
   async function audit(action, entity, entityId, extra = {}) {
     try {
       await db.auditLog.add({
@@ -438,6 +561,7 @@ const DB = (() => {
     await db.pacientes.clear();
     await db.consultas.clear();
     await db.agendamentos.clear();
+    await db.templatesPrescricao.clear();
     await db.auditLog.clear();
     await db.config.clear();
     lock();
@@ -459,6 +583,9 @@ const DB = (() => {
     // Agendamentos (Sprint A1)
     createAgendamento, getAgendamento, updateAgendamento, softDeleteAgendamento,
     listAgendamentos, listAgendaHoje, listFaltosos, contarConsultasPeriodo,
+    // Templates de prescrição (Sprint A2)
+    createTemplate, getTemplate, updateTemplate, softDeleteTemplate,
+    listTemplates, incrementarUsoTemplate,
     // Audit
     audit, getRecentAudit,
     // Danger

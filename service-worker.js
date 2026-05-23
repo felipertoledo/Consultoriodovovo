@@ -14,7 +14,7 @@
    `updatefound`; o index.html mostra banner pro usuário.
    ============================================================ */
 
-const CACHE_VERSION = 'v0.10.0';
+const CACHE_VERSION = 'v0.11.0';
 const CACHE_NAME = `cdv-cache-${CACHE_VERSION}`;
 
 // Lista exaustiva de arquivos a pré-cachear no install
@@ -70,7 +70,8 @@ const PRECACHE_ASSETS = [
   './components/documentos.js',
   './components/config.js',
   './components/prescricao-rapida.js',
-  './components/agenda.js'
+  './components/agenda.js',
+  './components/templates-prescricao.js'
 ];
 
 // -----------------------------------------------------------
