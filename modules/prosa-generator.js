@@ -196,14 +196,31 @@ const ProsaGenerator = (() => {
   }
 
   // ---- Versão sem identificadores (para teleorientação) ----
-  function gerarProsaSemIdentificadores(consulta, paciente) {
+  // Inclui contexto clínico relevante: profissão, escolaridade, convênio
+  // e medicações de uso contínuo (puxadas automaticamente da última consulta)
+  function gerarProsaSemIdentificadores(consulta, paciente, ultimaConsulta) {
     const idade = paciente.dataNascimento ?
       UI.calculateAge(paciente.dataNascimento) : null;
 
-    let header = `CONSULTA — ${new Date(consulta.dataHora || consulta.createdAt).toLocaleDateString('pt-BR')}\n`;
+    let header = `CONSULTA — ${new Date(consulta.dataHora || consulta.createdAt || Date.now()).toLocaleDateString('pt-BR')}\n`;
     header += `Paciente: ${paciente.sexo || 'sem registro de sexo'}`;
     if (idade !== null) header += `, ${idade} anos`;
+
+    // Contexto sociodemográfico (sem identificar a pessoa)
+    const contextoSocial = [];
+    if (paciente.profissao) contextoSocial.push(`profissão/ocupação: ${paciente.profissao}`);
+    if (paciente.escolaridade) contextoSocial.push(`escolaridade: ${paciente.escolaridade}`);
+    if (paciente.convenio) contextoSocial.push(`cobertura: ${paciente.convenio}`);
+    if (contextoSocial.length > 0) {
+      header += `. ${contextoSocial.join('; ')}`;
+    }
     header += '.\n';
+
+    // Medicações de uso contínuo (da última consulta do paciente)
+    if (ultimaConsulta && ultimaConsulta.medicacoesUso && ultimaConsulta.medicacoesUso.length > 0) {
+      header += `Medicações em uso contínuo: ${ultimaConsulta.medicacoesUso.join('; ')}.\n`;
+    }
+
     header += '_(Identificação completa omitida — uso para discussão clínica)_\n\n';
 
     return header + gerarProsaConsulta(consulta);

@@ -22,7 +22,9 @@ function renderDocumentos(container, pacienteId, tipo) {
       <!-- Menu de seleção de tipo -->
       <div x-show="tipo === 'menu'" class="card">
         <h3 class="card-title mb-4">Selecione o tipo de documento</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-3);">
+
+        <div class="text-sm muted mb-3" style="margin-top: var(--space-2)">Prescrições</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-6);">
           <button class="btn btn-secondary" style="padding: var(--space-4); text-align: left; height: auto;"
                   @click="abrirTipo('receita')">
             <div>
@@ -30,6 +32,24 @@ function renderDocumentos(container, pacienteId, tipo) {
               <div class="text-xs muted mt-2">Medicações comuns sem controle especial</div>
             </div>
           </button>
+          <button class="btn btn-secondary" style="padding: var(--space-4); text-align: left; height: auto;"
+                  @click="abrirTipo('controle')">
+            <div>
+              <div style="font-weight: var(--weight-semibold); font-size: var(--text-base);">📑 Receituário de controle especial</div>
+              <div class="text-xs muted mt-2">Branco em 2 vias — antimicrobianos, retinoides (Lista C1)</div>
+            </div>
+          </button>
+          <button class="btn btn-secondary" style="padding: var(--space-4); text-align: left; height: auto;"
+                  @click="abrirTipo('azul')">
+            <div>
+              <div style="font-weight: var(--weight-semibold); font-size: var(--text-base);">📘 Receituário azul B1/B2</div>
+              <div class="text-xs muted mt-2">Psicotrópicos — benzodiazepínicos, hipnóticos (Lista B)</div>
+            </div>
+          </button>
+        </div>
+
+        <div class="text-sm muted mb-3">Atestados e solicitações</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-6);">
           <button class="btn btn-secondary" style="padding: var(--space-4); text-align: left; height: auto;"
                   @click="abrirTipo('atestado')">
             <div>
@@ -46,11 +66,22 @@ function renderDocumentos(container, pacienteId, tipo) {
           </button>
         </div>
 
-        <div class="alert alert-info mt-6">
-          <div>
-            <strong>Em breve (Sprint 3 - parte 2):</strong> receituário controlado (branco e azul B1/B2),
-            relatório clínico para outros profissionais e cópia integral do prontuário.
-          </div>
+        <div class="text-sm muted mb-3">Documentos clínicos e legais</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-3);">
+          <button class="btn btn-secondary" style="padding: var(--space-4); text-align: left; height: auto;"
+                  @click="abrirTipo('relatorio')">
+            <div>
+              <div style="font-weight: var(--weight-semibold); font-size: var(--text-base);">📄 Relatório clínico</div>
+              <div class="text-xs muted mt-2">Para outros profissionais, parecer, encaminhamento</div>
+            </div>
+          </button>
+          <button class="btn btn-secondary" style="padding: var(--space-4); text-align: left; height: auto;"
+                  @click="abrirTipo('prontuario')">
+            <div>
+              <div style="font-weight: var(--weight-semibold); font-size: var(--text-base);">📚 Cópia do prontuário</div>
+              <div class="text-xs muted mt-2">Cópia integral para o paciente (LGPD art. 18, IV)</div>
+            </div>
+          </button>
         </div>
       </div>
 
@@ -273,12 +304,244 @@ function renderDocumentos(container, pacienteId, tipo) {
                     placeholder="Ex: Jejum de 12h para exames de sangue. Trazer resultados na próxima consulta."></textarea>
         </div>
 
+      <!-- ============== FORMULÁRIO: RECEITUÁRIO CONTROLE ESPECIAL ============== -->
+      <div x-show="tipo === 'controle'">
+        <div class="alert alert-warning">
+          <div>
+            <strong>Receituário de controle especial (branco em 2 vias).</strong>
+            Aplica-se a antimicrobianos, retinoides, anticonvulsivantes específicos e demais
+            substâncias da Lista C1 da Portaria 344/98. O PDF gera as duas vias na mesma página
+            (com linha de recorte) para entrega e farmácia.
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="flex justify-between items-center mb-3" style="flex-wrap: wrap; gap: var(--space-2)">
+            <h3 class="card-title">Medicações</h3>
+            <button class="btn btn-secondary text-sm" @click="adicionarMedicacao()">+ Adicionar</button>
+          </div>
+          <template x-for="(m, i) in dados.medicacoes" :key="i">
+            <div class="card mt-3" style="background: var(--bg-sunken); padding: var(--space-4)">
+              <div class="flex justify-between items-center mb-2">
+                <strong x-text="'Medicação ' + (i + 1)"></strong>
+                <button class="btn btn-ghost text-sm" @click="removerMedicacao(i)" style="color: var(--color-danger)">Remover</button>
+              </div>
+              <div class="form-group" style="position: relative">
+                <label class="label text-sm">Nome e dose</label>
+                <input class="input" x-model="m.nome"
+                       @input="atualizarSugestoes(i)" @keydown.escape="fecharSugestoes(i)"
+                       placeholder="Ex: Amoxicilina 500mg">
+                <div x-show="sugestoesPorIndex[i] && sugestoesPorIndex[i].length > 0" class="autocomplete-list" x-cloak>
+                  <template x-for="(s, idx) in sugestoesPorIndex[i]" :key="idx">
+                    <div class="autocomplete-item" @click="escolherSugestao(i, s)" x-text="s"></div>
+                  </template>
+                </div>
+              </div>
+              <div class="form-row cols-2">
+                <div class="form-group">
+                  <label class="label text-sm">Posologia</label>
+                  <input class="input" x-model="m.posologia" placeholder="Ex: 1 cápsula a cada 8h por 7 dias">
+                </div>
+                <div class="form-group">
+                  <label class="label text-sm">Quantidade</label>
+                  <input class="input" x-model="m.quantidade" placeholder="Ex: 21 cápsulas">
+                </div>
+              </div>
+            </div>
+          </template>
+          <div x-show="dados.medicacoes.length === 0" class="empty-state">
+            <p>Nenhuma medicação adicionada.</p>
+            <button class="btn btn-primary mt-3" @click="adicionarMedicacao()">+ Adicionar a primeira</button>
+          </div>
+        </div>
+
         <div class="flex gap-2 justify-between" style="flex-wrap: wrap">
           <button class="btn btn-ghost" @click="tipo = 'menu'">← Outro tipo</button>
-          <button class="btn btn-primary" @click="gerarExames()"
-                  :disabled="totalExames === 0">
+          <button class="btn btn-primary" @click="gerarControle()" :disabled="dados.medicacoes.length === 0">
             👁️ Pré-visualizar PDF
           </button>
+        </div>
+      </div>
+
+      <!-- ============== FORMULÁRIO: RECEITUÁRIO AZUL B1/B2 ============== -->
+      <div x-show="tipo === 'azul'">
+        <div class="alert alert-info" style="background: #DBEAFE; color: #1E40AF; border-color: #93C5FD">
+          <div>
+            <strong>Receituário azul — Notificação de Receita Lista B.</strong>
+            Para benzodiazepínicos, hipnóticos e outras substâncias psicotrópicas da Lista B
+            da Portaria 344/98. O documento sai com fundo azul claro e campo para identificação
+            do comprador na farmácia.
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <h3 class="card-title mb-3">Alerta clínico</h3>
+          <textarea class="textarea auto-grow" rows="2" x-model="dados.alertaClinico"
+                    @input="autoGrow($event.target)"
+                    :placeholder="alertaSugerido"></textarea>
+          <button class="btn btn-ghost text-sm mt-2" @click="usarAlertaSugerido()" x-show="alertaSugerido">
+            Usar alertas do prontuário
+          </button>
+        </div>
+
+        <div class="card mb-4">
+          <div class="flex justify-between items-center mb-3" style="flex-wrap: wrap; gap: var(--space-2)">
+            <h3 class="card-title">Medicações</h3>
+            <button class="btn btn-secondary text-sm" @click="adicionarMedicacao()">+ Adicionar</button>
+          </div>
+          <template x-for="(m, i) in dados.medicacoes" :key="i">
+            <div class="card mt-3" style="background: var(--bg-sunken); padding: var(--space-4)">
+              <div class="flex justify-between items-center mb-2">
+                <strong x-text="'Medicação ' + (i + 1)"></strong>
+                <button class="btn btn-ghost text-sm" @click="removerMedicacao(i)" style="color: var(--color-danger)">Remover</button>
+              </div>
+              <div class="form-group" style="position: relative">
+                <label class="label text-sm">Nome e dose</label>
+                <input class="input" x-model="m.nome"
+                       @input="atualizarSugestoes(i)" @keydown.escape="fecharSugestoes(i)"
+                       placeholder="Ex: Clonazepam 2mg">
+                <div x-show="sugestoesPorIndex[i] && sugestoesPorIndex[i].length > 0" class="autocomplete-list" x-cloak>
+                  <template x-for="(s, idx) in sugestoesPorIndex[i]" :key="idx">
+                    <div class="autocomplete-item" @click="escolherSugestao(i, s)" x-text="s"></div>
+                  </template>
+                </div>
+              </div>
+              <div class="form-row cols-2">
+                <div class="form-group">
+                  <label class="label text-sm">Posologia</label>
+                  <input class="input" x-model="m.posologia" placeholder="Ex: 1 comprimido ao deitar, por 30 dias">
+                </div>
+                <div class="form-group">
+                  <label class="label text-sm">Quantidade</label>
+                  <input class="input" x-model="m.quantidade" placeholder="Ex: 30 comprimidos">
+                </div>
+              </div>
+            </div>
+          </template>
+          <div x-show="dados.medicacoes.length === 0" class="empty-state">
+            <p>Nenhuma medicação adicionada.</p>
+            <button class="btn btn-primary mt-3" @click="adicionarMedicacao()">+ Adicionar a primeira</button>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <h3 class="card-title mb-3">Orientações ao paciente</h3>
+          <textarea class="textarea auto-grow" rows="2" x-model="dados.orientacoes"
+                    @input="autoGrow($event.target)"
+                    placeholder="Ex: Evitar associação com álcool. Não dirigir após o uso. Retornar em 30 dias."></textarea>
+        </div>
+
+        <div class="flex gap-2 justify-between" style="flex-wrap: wrap">
+          <button class="btn btn-ghost" @click="tipo = 'menu'">← Outro tipo</button>
+          <button class="btn btn-primary" @click="gerarAzul()" :disabled="dados.medicacoes.length === 0">
+            👁️ Pré-visualizar PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- ============== FORMULÁRIO: RELATÓRIO CLÍNICO ============== -->
+      <div x-show="tipo === 'relatorio'">
+        <div class="card mb-4">
+          <h3 class="card-title mb-3">Destinatário</h3>
+          <input class="input" x-model="relatorio.destinatario"
+                 placeholder='Ex: "Cardiologista da rede", "Dr. João Silva", "A quem possa interessar"'>
+        </div>
+
+        <div class="card mb-4">
+          <h3 class="card-title mb-3">Alerta clínico</h3>
+          <textarea class="textarea auto-grow" rows="2" x-model="dados.alertaClinico"
+                    @input="autoGrow($event.target)" :placeholder="alertaSugerido"></textarea>
+          <button class="btn btn-ghost text-sm mt-2" @click="usarAlertaSugerido()" x-show="alertaSugerido">
+            Usar alertas do prontuário
+          </button>
+        </div>
+
+        <div class="card mb-4">
+          <h3 class="card-title mb-3">Antecedentes relevantes</h3>
+          <textarea class="textarea auto-grow" rows="3" x-model="relatorio.antecedentes"
+                    @input="autoGrow($event.target)"
+                    placeholder="Ex: HAS há 15 anos em uso de losartana. DM2 há 10 anos. IAM em 2019."></textarea>
+          <button class="btn btn-ghost text-sm mt-2" @click="preencherDeUltimaConsulta()" x-show="ultimaConsultaCarregada">
+            Preencher a partir da última consulta
+          </button>
+        </div>
+
+        <div class="card mb-4">
+          <h3 class="card-title mb-3">Medicações em uso</h3>
+          <textarea class="textarea auto-grow" rows="3" x-model="relatorio.medicacoesUso"
+                    @input="autoGrow($event.target)"
+                    placeholder="Liste as medicações em uso contínuo com dose e posologia"></textarea>
+        </div>
+
+        <div class="card mb-4">
+          <h3 class="card-title mb-3">Quadro clínico atual</h3>
+          <textarea class="textarea auto-grow" rows="4" x-model="relatorio.quadroAtual"
+                    @input="autoGrow($event.target)"
+                    placeholder="Descreva o motivo do contato e a evolução do quadro"></textarea>
+        </div>
+
+        <div class="card mb-4">
+          <h3 class="card-title mb-3">Achados do exame</h3>
+          <textarea class="textarea auto-grow" rows="3" x-model="relatorio.exame"
+                    @input="autoGrow($event.target)"
+                    placeholder="Sinais vitais, exame físico relevante, exame psíquico se aplicável"></textarea>
+        </div>
+
+        <div class="card mb-4">
+          <h3 class="card-title mb-3">Hipóteses diagnósticas</h3>
+          <textarea class="textarea auto-grow" rows="2" x-model="relatorio.hipoteses"
+                    @input="autoGrow($event.target)"
+                    placeholder="Ex: 1. Cefaleia tensional crônica. 2. HAS de difícil controle."></textarea>
+        </div>
+
+        <div class="card mb-4">
+          <h3 class="card-title mb-3">Conduta realizada</h3>
+          <textarea class="textarea auto-grow" rows="3" x-model="relatorio.conduta"
+                    @input="autoGrow($event.target)"
+                    placeholder="O que foi feito, exames solicitados, prescrições"></textarea>
+        </div>
+
+        <div class="card mb-4">
+          <h3 class="card-title mb-3">Solicitação / motivo do encaminhamento</h3>
+          <textarea class="textarea auto-grow" rows="2" x-model="relatorio.solicitacao"
+                    @input="autoGrow($event.target)"
+                    placeholder="Ex: avaliação cardiológica para investigação de palpitações"></textarea>
+        </div>
+
+        <div class="flex gap-2 justify-between" style="flex-wrap: wrap">
+          <button class="btn btn-ghost" @click="tipo = 'menu'">← Outro tipo</button>
+          <button class="btn btn-primary" @click="gerarRelatorio()">👁️ Pré-visualizar PDF</button>
+        </div>
+      </div>
+
+      <!-- ============== FORMULÁRIO: CÓPIA DO PRONTUÁRIO ============== -->
+      <div x-show="tipo === 'prontuario'">
+        <div class="alert alert-info">
+          <div>
+            <strong>Cópia integral do prontuário.</strong>
+            Gera um documento completo com todas as consultas registradas para entrega ao paciente,
+            conforme direito previsto na LGPD (Art. 18, II e IV) e Lei 13.787/2018.
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <h3 class="card-title mb-3">Resumo do prontuário</h3>
+          <p class="text-sm mb-2">
+            <strong>Paciente:</strong> <span x-text="paciente.nome"></span>
+          </p>
+          <p class="text-sm mb-2">
+            <strong>Total de consultas registradas:</strong> <span x-text="totalConsultasPaciente"></span>
+          </p>
+          <p class="text-sm muted mt-3">
+            O PDF inclui todos os dados clínicos das consultas: queixa, HPMA, antecedentes,
+            exame físico, exame psíquico, hipóteses, conduta e retorno. Cabeçalho com identificação
+            completa do paciente e declaração de cópia fiel.
+          </p>
+        </div>
+
+        <div class="flex gap-2 justify-between" style="flex-wrap: wrap">
+          <button class="btn btn-ghost" @click="tipo = 'menu'">← Outro tipo</button>
+          <button class="btn btn-primary" @click="gerarProntuario()">👁️ Pré-visualizar PDF</button>
         </div>
       </div>
     </div>
@@ -293,8 +556,12 @@ function documentosScreen(pacienteId, tipoInicial) {
     sugestoesPorIndex: {},
     inputsExame: { sangue: '', urina: '', imagem: '', outros: '' },
     alertaSugerido: '',
+    ultimaConsultaCarregada: null,
+    totalConsultasPaciente: 0,
+    todasConsultas: [],
+
     dados: {
-      // Receita
+      // Receita / Controle / Azul
       alertaClinico: '',
       medicacoes: [],
       orientacoes: '',
@@ -310,6 +577,18 @@ function documentosScreen(pacienteId, tipoInicial) {
       // Exames
       hipotese: '',
       exames: { sangue: [], urina: [], imagem: [], outros: [] }
+    },
+
+    // Estado próprio do relatório clínico
+    relatorio: {
+      destinatario: '',
+      antecedentes: '',
+      medicacoesUso: '',
+      quadroAtual: '',
+      exame: '',
+      hipoteses: '',
+      conduta: '',
+      solicitacao: ''
     },
 
     categoriasExames: [
@@ -345,8 +624,12 @@ function documentosScreen(pacienteId, tipoInicial) {
       const titulos = {
         menu: 'Gerar documento',
         receita: 'Receituário',
+        controle: 'Receituário de controle especial',
+        azul: 'Receituário azul (Lista B)',
         atestado: 'Atestado médico',
-        exames: 'Solicitação de exames'
+        exames: 'Solicitação de exames',
+        relatorio: 'Relatório clínico',
+        prontuario: 'Cópia integral do prontuário'
       };
       return titulos[this.tipo] || 'Documento';
     },
@@ -378,9 +661,12 @@ function documentosScreen(pacienteId, tipoInicial) {
     async construirAlertaSugerido() {
       try {
         const consultas = await DB.listConsultasByPaciente(this.pacienteId);
+        this.todasConsultas = consultas;
+        this.totalConsultasPaciente = consultas.length;
         if (consultas.length === 0) return;
         // Pega a consulta mais recente
         const ultima = consultas[0];
+        this.ultimaConsultaCarregada = ultima;
         const alertas = [];
         // Antecedentes graves
         const graves = (ultima.antecedentes || []).filter(a =>
@@ -397,6 +683,47 @@ function documentosScreen(pacienteId, tipoInicial) {
       } catch (e) {
         console.error('Erro ao buscar consultas para alerta:', e);
       }
+    },
+
+    preencherDeUltimaConsulta() {
+      if (!this.ultimaConsultaCarregada) return;
+      const c = this.ultimaConsultaCarregada;
+      const antecedentes = [];
+      if (c.antecedentes && c.antecedentes.length > 0) antecedentes.push(c.antecedentes.join(', '));
+      if (c.antecedentesTexto) antecedentes.push(c.antecedentesTexto);
+      if (antecedentes.length > 0 && !this.relatorio.antecedentes) {
+        this.relatorio.antecedentes = antecedentes.join('. ');
+      }
+      if (c.medicacoesUso && c.medicacoesUso.length > 0 && !this.relatorio.medicacoesUso) {
+        this.relatorio.medicacoesUso = c.medicacoesUso.join('; ');
+      }
+      if (c.queixaPrincipal && !this.relatorio.quadroAtual) {
+        let qa = c.queixaPrincipal;
+        if (c.queixaDuracao) qa += ` (${c.queixaDuracao})`;
+        if (c.hpma) qa += '. ' + c.hpma;
+        this.relatorio.quadroAtual = qa;
+      }
+      if ((c.hipoteses && c.hipoteses.length > 0) && !this.relatorio.hipoteses) {
+        this.relatorio.hipoteses = c.hipoteses.join('; ');
+      }
+      if (c.conduta && !this.relatorio.conduta) {
+        this.relatorio.conduta = c.conduta;
+      }
+      // Exame (sinais vitais + descrição + exame psíquico)
+      if (!this.relatorio.exame) {
+        const exame = [];
+        const sv = [];
+        if (c.pa) sv.push('PA ' + c.pa);
+        if (c.fc) sv.push('FC ' + c.fc + ' bpm');
+        if (c.fr) sv.push('FR ' + c.fr + ' irpm');
+        if (c.tax) sv.push('Tax ' + c.tax + '°C');
+        if (c.imc) sv.push('IMC ' + c.imc);
+        if (sv.length > 0) exame.push(sv.join(', '));
+        if (c.exameFisicoDescricao) exame.push(c.exameFisicoDescricao);
+        if (c.examePsiquicoProsa) exame.push('Exame psíquico: ' + c.examePsiquicoProsa);
+        if (exame.length > 0) this.relatorio.exame = exame.join('. ');
+      }
+      UI.toast('Campos preenchidos a partir da última consulta', 'success');
     },
 
     usarAlertaSugerido() {
@@ -539,6 +866,110 @@ function documentosScreen(pacienteId, tipoInicial) {
         const nomeArquivo = `Exames_${(this.paciente.nome || 'paciente').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}`;
         DB.audit('GENERATE_PDF', 'documento', null, { tipo: 'exames', codigo, pacienteId: this.pacienteId });
         PDFBuilder.previewModal(doc, nomeArquivo, 'Solicitação de exames');
+      } catch (e) {
+        console.error(e);
+        UI.toast('Erro ao gerar PDF: ' + e.message, 'error');
+      }
+    },
+
+    // ---- Controle especial ----
+    gerarControle() {
+      if (!window.jspdf) {
+        UI.toast('Biblioteca PDF ainda não carregou.', 'error');
+        return;
+      }
+      const medsValidas = this.dados.medicacoes.filter(m => m.nome && m.nome.trim());
+      if (medsValidas.length === 0) {
+        UI.toast('Adicione pelo menos uma medicação com nome', 'error');
+        return;
+      }
+      try {
+        const { doc, codigo } = PDFDocumentsExtra.receituarioControleEspecial(
+          { ...this.paciente, id: this.pacienteId },
+          { medicacoes: medsValidas }
+        );
+        const nomeArquivo = `Receita_Controle_${(this.paciente.nome || 'paciente').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}`;
+        DB.audit('GENERATE_PDF', 'documento', null, { tipo: 'controle', codigo, pacienteId: this.pacienteId });
+        PDFBuilder.previewModal(doc, nomeArquivo, 'Receituário de controle especial');
+      } catch (e) {
+        console.error(e);
+        UI.toast('Erro ao gerar PDF: ' + e.message, 'error');
+      }
+    },
+
+    // ---- Azul B1/B2 ----
+    gerarAzul() {
+      if (!window.jspdf) {
+        UI.toast('Biblioteca PDF ainda não carregou.', 'error');
+        return;
+      }
+      const medsValidas = this.dados.medicacoes.filter(m => m.nome && m.nome.trim());
+      if (medsValidas.length === 0) {
+        UI.toast('Adicione pelo menos uma medicação com nome', 'error');
+        return;
+      }
+      try {
+        const { doc, codigo } = PDFDocumentsExtra.receituarioAzul(
+          { ...this.paciente, id: this.pacienteId },
+          {
+            alertaClinico: this.dados.alertaClinico,
+            medicacoes: medsValidas,
+            orientacoes: this.dados.orientacoes
+          }
+        );
+        const nomeArquivo = `Receita_Azul_${(this.paciente.nome || 'paciente').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}`;
+        DB.audit('GENERATE_PDF', 'documento', null, { tipo: 'azul', codigo, pacienteId: this.pacienteId });
+        PDFBuilder.previewModal(doc, nomeArquivo, 'Receituário azul B1/B2');
+      } catch (e) {
+        console.error(e);
+        UI.toast('Erro ao gerar PDF: ' + e.message, 'error');
+      }
+    },
+
+    // ---- Relatório clínico ----
+    gerarRelatorio() {
+      if (!window.jspdf) {
+        UI.toast('Biblioteca PDF ainda não carregou.', 'error');
+        return;
+      }
+      try {
+        const { doc, codigo } = PDFDocumentsExtra.relatorioClinico(
+          { ...this.paciente, id: this.pacienteId },
+          {
+            destinatario: this.relatorio.destinatario,
+            alertaClinico: this.dados.alertaClinico,
+            antecedentes: this.relatorio.antecedentes,
+            medicacoesUso: this.relatorio.medicacoesUso,
+            quadroAtual: this.relatorio.quadroAtual,
+            exame: this.relatorio.exame,
+            hipoteses: this.relatorio.hipoteses,
+            conduta: this.relatorio.conduta,
+            solicitacao: this.relatorio.solicitacao
+          }
+        );
+        const nomeArquivo = `Relatorio_${(this.paciente.nome || 'paciente').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}`;
+        DB.audit('GENERATE_PDF', 'documento', null, { tipo: 'relatorio', codigo, pacienteId: this.pacienteId });
+        PDFBuilder.previewModal(doc, nomeArquivo, 'Relatório clínico');
+      } catch (e) {
+        console.error(e);
+        UI.toast('Erro ao gerar PDF: ' + e.message, 'error');
+      }
+    },
+
+    // ---- Cópia do prontuário ----
+    gerarProntuario() {
+      if (!window.jspdf) {
+        UI.toast('Biblioteca PDF ainda não carregou.', 'error');
+        return;
+      }
+      try {
+        const { doc, codigo } = PDFDocumentsExtra.copiaProntuario(
+          { ...this.paciente, id: this.pacienteId },
+          this.todasConsultas
+        );
+        const nomeArquivo = `Prontuario_${(this.paciente.nome || 'paciente').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}`;
+        DB.audit('GENERATE_PDF', 'documento', null, { tipo: 'prontuario', codigo, pacienteId: this.pacienteId });
+        PDFBuilder.previewModal(doc, nomeArquivo, 'Cópia integral do prontuário');
       } catch (e) {
         console.error(e);
         UI.toast('Erro ao gerar PDF: ' + e.message, 'error');

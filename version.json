@@ -1,6 +1,6 @@
 {
-  "version": "0.3.0",
-  "buildDate": "2026-05-22",
-  "codename": "Documentos",
-  "notes": "Sprint 3 Parte 1: geração de PDFs client-side. 3 documentos disponíveis: receituário simples, atestado médico (comparecimento ou afastamento, CID opcional), solicitação de exames (4 categorias com sugestões). Cabeçalho institucional padronizado, identificação completa do paciente, caixa de alerta clínico, bloco de assinatura com data de emissão e código único do documento."
+  "version": "0.4.0",
+  "buildDate": "2026-05-23",
+  "codename": "Documentos Plus",
+  "notes": "Sprint 3 Parte 2: 4 novos PDFs e melhoria do 'copiar sem identificadores'. Novos documentos: (1) Receituário de controle especial branco em 2 vias com linha de recorte; (2) Receituário azul B1/B2 com fundo azul claro e Notificação Lista B; (3) Relatório clínico estruturado em SOAP para outros profissionais; (4) Cópia integral do prontuário em conformidade com LGPD art. 18, II e IV. Melhoria: 'copiar sem identificadores' agora inclui profissão, escolaridade, convênio e medicações de uso contínuo (puxadas automaticamente da última consulta do paciente). 7 tipos de PDF disponíveis no total, todos com cabeçalho institucional, código único, trilha de auditoria e preview modal."
 }

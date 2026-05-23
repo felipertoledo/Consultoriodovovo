@@ -517,12 +517,27 @@ function consultaForm(pacienteId, consultaId) {
       }
     },
 
-    copiarSemId() {
-      const texto = ProsaGenerator.gerarProsaSemIdentificadores(this.consulta, this.paciente);
-      navigator.clipboard.writeText(texto).then(
-        () => UI.toast('Texto sem identificadores copiado para área de transferência', 'success', 5000),
-        () => UI.toast('Falha ao copiar', 'error')
-      );
+    async copiarSemId() {
+      try {
+        // Busca a última consulta para puxar medicações em uso contínuo
+        const todas = await DB.listConsultasByPaciente(this.pacienteId);
+        // listConsultasByPaciente já retorna ordenado por dataHora desc — a primeira é a mais recente
+        // Mas se estamos editando a mais recente, queremos a anterior à atual (se houver)
+        const idAtual = typeof this.consultaId === 'string' ? parseInt(this.consultaId, 10) : this.consultaId;
+        let ultima = null;
+        if (todas.length > 0) {
+          // Se a consulta atual está sendo editada, pula ela; senão, usa a mais recente
+          ultima = todas.find(c => c.id !== idAtual) || todas[0];
+        }
+        const texto = ProsaGenerator.gerarProsaSemIdentificadores(
+          this.consulta, this.paciente, ultima
+        );
+        await navigator.clipboard.writeText(texto);
+        UI.toast('Texto sem identificadores copiado para área de transferência', 'success', 5000);
+      } catch (e) {
+        console.error(e);
+        UI.toast('Falha ao copiar: ' + e.message, 'error');
+      }
     },
 
     voltar() {
