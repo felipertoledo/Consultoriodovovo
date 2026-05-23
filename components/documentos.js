@@ -772,7 +772,12 @@ function documentosScreen(pacienteId, tipoInicial) {
         this.relatorio.quadroAtual = qa;
       }
       if ((c.hipoteses && c.hipoteses.length > 0) && !this.relatorio.hipoteses) {
-        this.relatorio.hipoteses = c.hipoteses.join('; ');
+        // Sprint B1: usa CodigosClinicos para formatar hipóteses (mistas: strings legadas + objetos novos)
+        const CC = window.CodigosClinicos;
+        this.relatorio.hipoteses = c.hipoteses.map(h => {
+          if (CC) return CC.formatarCompleto(h);
+          return typeof h === 'string' ? h : (h && h.texto) || '';
+        }).filter(Boolean).join('; ');
       }
       if (c.conduta && !this.relatorio.conduta) {
         this.relatorio.conduta = c.conduta;

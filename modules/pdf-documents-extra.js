@@ -636,7 +636,15 @@ const PDFDocumentsExtra = (() => {
     }
 
     if (c.examePsiquicoProsa) escreverCampo('Exame psíquico', c.examePsiquicoProsa);
-    if (c.hipoteses && c.hipoteses.length > 0) escreverCampo('Hipóteses diagnósticas', c.hipoteses);
+    if (c.hipoteses && c.hipoteses.length > 0) {
+      // Sprint B1: formata hipóteses misturando legado (string) e novo (objeto com códigos)
+      const CC = window.CodigosClinicos;
+      const formatadas = c.hipoteses.map(h => {
+        if (CC) return CC.formatarCompleto(h);
+        return typeof h === 'string' ? h : (h && h.texto) || '';
+      }).filter(Boolean);
+      escreverCampo('Hipóteses diagnósticas', formatadas);
+    }
     if (c.conduta) escreverCampo('Conduta', c.conduta);
     if (c.retorno) escreverCampo('Retorno', c.retorno);
     if (c.sinaisAlerta) escreverCampo('Sinais de alerta orientados', c.sinaisAlerta);

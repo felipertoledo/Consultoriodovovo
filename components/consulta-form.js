@@ -259,18 +259,84 @@ function renderConsultaForm(container, pacienteId, consultaId) {
         <div id="exame-psiquico-mount" class="mt-3"></div>
       </div>
 
-      <!-- ========== 9. Hipóteses diagnósticas ========== -->
+      <!-- ========== 9. Hipóteses diagnósticas (com CIAP-2/CID-10) ========== -->
       <div class="card mb-4">
         <h3 class="card-title">9. Hipóteses diagnósticas</h3>
         <div class="mt-3">
           <input class="input" x-model="hipoteseInput"
                  @keydown.enter.prevent="adicionarHipotese()"
-                 placeholder="Digite a hipótese e pressione Enter (pode incluir CID se quiser)">
+                 placeholder="Texto da hipótese (Enter para adicionar)">
         </div>
+
+        <!-- Vinculação de códigos clínicos -->
+        <div style="display:flex; gap:8px; margin-top:10px; align-items:center; flex-wrap:wrap;">
+          <button type="button" class="btn btn-sm"
+                  :style="hipoteseCiap ? 'background:#166534;color:#fff;border-color:#166534' : ''"
+                  @click="abrirPicker('ciap')">
+            <span x-text="hipoteseCiap ? ('CIAP ' + hipoteseCiap.codigo + ' ✓') : '+ CIAP-2'"></span>
+          </button>
+          <button type="button" class="btn btn-sm"
+                  :style="hipoteseCid ? 'background:#1d4ed8;color:#fff;border-color:#1d4ed8' : ''"
+                  @click="abrirPicker('cid')">
+            <span x-text="hipoteseCid ? ('CID ' + hipoteseCid.codigo + ' ✓') : '+ CID-10'"></span>
+          </button>
+          <button type="button" class="btn btn-sm"
+                  x-show="hipoteseCiap || hipoteseCid"
+                  @click="limparCodigosHipotese()"
+                  style="opacity:0.7">limpar códigos</button>
+          <small style="margin-left:auto; opacity:0.7">
+            <span x-show="!hipoteseCiap && !hipoteseCid">opcional · pode adicionar só texto</span>
+            <span x-show="hipoteseCiap || hipoteseCid" x-text="(hipoteseCiap ? hipoteseCiap.descricao : '') + (hipoteseCiap && hipoteseCid ? ' · ' : '') + (hipoteseCid ? hipoteseCid.descricao : '')"></span>
+          </small>
+        </div>
+
+        <!-- Picker dropdown -->
+        <div x-show="pickerAberto" x-cloak class="mt-3"
+             style="border: 2px solid #166534; border-radius: 8px; padding: 12px; background: #f0fdf4;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <strong x-text="pickerTipo === 'ciap' ? '🔎 Buscar CIAP-2' : '🔎 Buscar CID-10'"></strong>
+            <small style="opacity:0.7">↑↓ navegar · Enter selecionar · Esc cancelar</small>
+            <button type="button" class="btn btn-sm" style="margin-left:auto" @click="fecharPicker()">×</button>
+          </div>
+          <input class="input mt-2" x-ref="pickerInput" x-model="pickerBusca"
+                 @input="filtrarPicker()"
+                 @keydown.arrow-down.prevent="pickerNavegar(1)"
+                 @keydown.arrow-up.prevent="pickerNavegar(-1)"
+                 @keydown.enter.prevent="pickerSelecionarAtual()"
+                 @keydown.escape.prevent="fecharPicker()"
+                 placeholder="Digite código (ex: K86) ou descrição (ex: hipertensão)…">
+          <div x-show="pickerResultados.length > 0"
+               style="max-height: 280px; overflow-y: auto; margin-top:8px; background:#fff; border: 1px solid #d1d5db; border-radius: 6px;">
+            <template x-for="(r, i) in pickerResultados" :key="r.tipo + '-' + r.codigo">
+              <div @click="pickerSelecionar(r)"
+                   :style="(i === pickerIndice ? 'background:#dcfce7;' : '') + 'padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #e5e7eb;'">
+                <strong x-text="r.codigo"
+                        :style="'color:' + (r.tipo === 'ciap' ? '#166534' : '#1d4ed8')"></strong>
+                <span style="margin-left:8px" x-text="r.descricao"></span>
+              </div>
+            </template>
+          </div>
+          <div x-show="pickerBusca.length > 0 && pickerResultados.length === 0"
+               class="mt-2" style="opacity:0.7">
+            Nenhum código encontrado. Tente outra palavra-chave.
+          </div>
+        </div>
+
+        <!-- Lista de hipóteses adicionadas -->
         <div class="chips-container mt-3" x-show="consulta.hipoteses.length > 0">
           <template x-for="(h, i) in consulta.hipoteses" :key="i">
-            <div class="chip chip-removable">
-              <span x-text="h"></span>
+            <div class="chip chip-removable" style="flex-wrap: wrap; align-items: center;">
+              <span x-text="textoHipotese(h)"></span>
+              <template x-if="ciapDeHipotese(h)">
+                <span style="margin-left:6px; padding: 2px 8px; border-radius: 4px; background: #dcfce7; color: #166534; font-size: 0.85em; font-weight: 600;"
+                      x-text="'CIAP ' + ciapDeHipotese(h).codigo"
+                      :title="ciapDeHipotese(h).descricao"></span>
+              </template>
+              <template x-if="cidDeHipotese(h)">
+                <span style="margin-left:6px; padding: 2px 8px; border-radius: 4px; background: #dbeafe; color: #1e40af; font-size: 0.85em; font-weight: 600;"
+                      x-text="'CID ' + cidDeHipotese(h).codigo"
+                      :title="cidDeHipotese(h).descricao"></span>
+              </template>
               <button @click="removerHipotese(i)" style="margin-left: 6px; opacity: 0.6">×</button>
             </div>
           </template>
@@ -376,6 +442,15 @@ function consultaForm(pacienteId, consultaId) {
     medInput: '',
     sugestoes: [],
     hipoteseInput: '',
+
+    // Sprint B1: estado do picker CIAP-2/CID-10
+    hipoteseCiap: null,        // {codigo, descricao} ou null
+    hipoteseCid: null,         // {codigo, descricao} ou null
+    pickerAberto: false,
+    pickerTipo: 'ciap',        // 'ciap' | 'cid'
+    pickerBusca: '',
+    pickerResultados: [],
+    pickerIndice: 0,
 
     antecedentesComuns: ClinicalData.ANTECEDENTES_COMUNS,
     cirurgiasComuns: ClinicalData.CIRURGIAS_COMUNS,
@@ -495,14 +570,85 @@ function consultaForm(pacienteId, consultaId) {
     adicionarHipotese() {
       const v = this.hipoteseInput.trim();
       if (!v) return;
-      this.consulta.hipoteses.push(v);
+      // Sprint B1: hipótese agora é objeto { texto, ciap?, cid? }
+      const h = { texto: v };
+      if (this.hipoteseCiap) h.ciap = { codigo: this.hipoteseCiap.codigo, descricao: this.hipoteseCiap.descricao };
+      if (this.hipoteseCid) h.cid = { codigo: this.hipoteseCid.codigo, descricao: this.hipoteseCid.descricao };
+      this.consulta.hipoteses.push(h);
+      // Limpa campos
       this.hipoteseInput = '';
+      this.hipoteseCiap = null;
+      this.hipoteseCid = null;
       this.touch();
     },
 
     removerHipotese(i) {
       this.consulta.hipoteses.splice(i, 1);
       this.touch();
+    },
+
+    // === Picker CIAP-2/CID-10 ===
+    abrirPicker(tipo) {
+      this.pickerTipo = tipo;
+      this.pickerBusca = '';
+      this.pickerResultados = [];
+      this.pickerIndice = 0;
+      this.pickerAberto = true;
+      this.$nextTick(() => {
+        if (this.$refs.pickerInput) this.$refs.pickerInput.focus();
+      });
+    },
+
+    fecharPicker() {
+      this.pickerAberto = false;
+      this.pickerBusca = '';
+      this.pickerResultados = [];
+    },
+
+    filtrarPicker() {
+      const CC = window.CodigosClinicos;
+      if (!CC) {
+        this.pickerResultados = [];
+        return;
+      }
+      this.pickerResultados = CC.buscar(this.pickerBusca, 10, this.pickerTipo);
+      this.pickerIndice = 0;
+    },
+
+    pickerNavegar(delta) {
+      if (this.pickerResultados.length === 0) return;
+      this.pickerIndice = Math.max(0, Math.min(this.pickerResultados.length - 1, this.pickerIndice + delta));
+    },
+
+    pickerSelecionarAtual() {
+      if (this.pickerResultados.length === 0) return;
+      this.pickerSelecionar(this.pickerResultados[this.pickerIndice]);
+    },
+
+    pickerSelecionar(r) {
+      if (!r) return;
+      if (r.tipo === 'ciap') {
+        this.hipoteseCiap = { codigo: r.codigo, descricao: r.descricao };
+      } else {
+        this.hipoteseCid = { codigo: r.codigo, descricao: r.descricao };
+      }
+      this.fecharPicker();
+    },
+
+    limparCodigosHipotese() {
+      this.hipoteseCiap = null;
+      this.hipoteseCid = null;
+    },
+
+    // === Helpers para exibir hipóteses (compatíveis com schema antigo string) ===
+    textoHipotese(h) {
+      return window.CodigosClinicos ? window.CodigosClinicos.textoDe(h) : (typeof h === 'string' ? h : (h && h.texto) || '');
+    },
+    ciapDeHipotese(h) {
+      return window.CodigosClinicos ? window.CodigosClinicos.ciapDe(h) : (h && h.ciap) || null;
+    },
+    cidDeHipotese(h) {
+      return window.CodigosClinicos ? window.CodigosClinicos.cidDe(h) : (h && h.cid) || null;
     },
 
     async salvar(silencioso = false) {
