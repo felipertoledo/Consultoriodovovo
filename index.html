@@ -83,6 +83,7 @@
   <script src="./components/exame-psiquico.js"></script>
   <script src="./components/consulta-form.js"></script>
   <script src="./components/documentos.js"></script>
+  <script src="./components/prescricao-rapida.js"></script>
   <script src="./components/config.js"></script>
 
   <!-- Captura do prompt de instalação do PWA -->
@@ -205,13 +206,9 @@
                         onclick="Router.navigate('/pacientes')">
                   👥 Pacientes
                 </button>
-                <button class="nav-item" disabled style="opacity: 0.4; cursor: not-allowed"
-                        title="Em construção (Sprint 2)">
-                  📋 Histórico do dia
-                </button>
-                <button class="nav-item" disabled style="opacity: 0.4; cursor: not-allowed"
-                        title="Em construção (Sprint 2)">
-                  📝 Prontuário digital
+                <button class="nav-item ${activeRoute === '/prescricao' ? 'active' : ''}"
+                        onclick="Router.navigate('/prescricao')">
+                  💊 Nova prescrição
                 </button>
               </div>
               <div class="nav-section">
@@ -300,6 +297,12 @@
         if (!Auth.isUnlocked()) { Router.navigate('/'); return; }
         const target = renderAppShell('/config');
         renderConfig(target);
+      });
+
+      Router.register('/prescricao', () => {
+        if (!Auth.isUnlocked()) { Router.navigate('/'); return; }
+        const target = renderAppShell('/prescricao');
+        renderPrescricaoRapida(target);
       });
 
       // Listener para navegação programática a partir dos componentes

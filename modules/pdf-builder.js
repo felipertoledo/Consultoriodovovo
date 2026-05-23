@@ -363,6 +363,9 @@ const PDFBuilder = (() => {
     const blob = doc.output('blob');
     const url = URL.createObjectURL(blob);
 
+    // Detecta se é prescrição para mostrar Memed (só faz sentido pra receita)
+    const isPrescricao = /receit|prescri/i.test(tipo);
+
     // Modal
     const overlay = document.createElement('div');
     overlay.className = 'pdf-preview-overlay';
@@ -373,6 +376,10 @@ const PDFBuilder = (() => {
           <div class="flex gap-2" style="flex-wrap: wrap">
             <button class="btn btn-success text-sm" id="pdf-btn-whatsapp" title="Enviar PDF para o paciente via WhatsApp">
               <span style="color: #25D366">📱</span> WhatsApp
+            </button>
+            <button class="btn btn-secondary text-sm" id="pdf-btn-memed" title="Abrir Memed em nova aba para também gerar essa receita lá"
+                    style="${isPrescricao ? '' : 'display: none'}">
+              💊 Memed
             </button>
             <button class="btn btn-secondary text-sm" id="pdf-btn-sign" title="Assinar digitalmente com seu certificado ICP-Brasil A1">
               🔏 Assinar (ICP-Brasil)
@@ -415,6 +422,14 @@ const PDFBuilder = (() => {
     };
     overlay.querySelector('#pdf-btn-print').onclick = () => {
       imprimir(currentDoc);
+    };
+    overlay.querySelector('#pdf-btn-memed').onclick = () => {
+      // Abre Memed em nova aba — o médico repete a receita lá se quiser as
+      // funcionalidades adicionais (comparativo de preços, etc).
+      window.open('https://memed.com.br', '_blank', 'noopener,noreferrer');
+      if (typeof DB !== 'undefined' && paciente && paciente.id) {
+        DB.audit('OPEN_MEMED', 'documento', null, { tipo, pacienteId: paciente.id }).catch(() => {});
+      }
     };
     overlay.querySelector('#pdf-btn-whatsapp').onclick = async () => {
       if (typeof ShareService === 'undefined') {

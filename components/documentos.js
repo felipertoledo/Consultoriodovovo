@@ -82,6 +82,13 @@ function renderDocumentos(container, pacienteId, tipo) {
               <div class="text-xs muted mt-2">Cópia integral para o paciente (LGPD art. 18, IV)</div>
             </div>
           </button>
+          <button class="btn btn-secondary" style="padding: var(--space-4); text-align: left; height: auto;"
+                  @click="abrirTipo('consulta-impressa')">
+            <div>
+              <div style="font-weight: var(--weight-semibold); font-size: var(--text-base);">🖨️ Consulta para impressão</div>
+              <div class="text-xs muted mt-2">PDF completo de uma consulta com espaço para assinar à mão e arquivar</div>
+            </div>
+          </button>
         </div>
       </div>
 
@@ -162,10 +169,16 @@ function renderDocumentos(container, pacienteId, tipo) {
 
         <div class="flex gap-2 justify-between" style="flex-wrap: wrap">
           <button class="btn btn-ghost" @click="tipo = 'menu'">← Outro tipo</button>
-          <button class="btn btn-primary" @click="gerarReceita()"
-                  :disabled="dados.medicacoes.length === 0">
-            👁️ Pré-visualizar PDF
-          </button>
+          <div class="flex gap-2" style="flex-wrap: wrap">
+            <a class="btn btn-secondary" href="https://memed.com.br/login" target="_blank" rel="noopener"
+               title="Abrir Memed em nova aba (sem integração)">
+              🔗 Abrir Memed
+            </a>
+            <button class="btn btn-primary" @click="gerarReceita()"
+                    :disabled="dados.medicacoes.length === 0">
+              👁️ Pré-visualizar PDF
+            </button>
+          </div>
         </div>
       </div>
 
@@ -366,9 +379,15 @@ function renderDocumentos(container, pacienteId, tipo) {
 
         <div class="flex gap-2 justify-between" style="flex-wrap: wrap">
           <button class="btn btn-ghost" @click="tipo = 'menu'">← Outro tipo</button>
-          <button class="btn btn-primary" @click="gerarControle()" :disabled="dados.medicacoes.length === 0">
-            👁️ Pré-visualizar PDF
-          </button>
+          <div class="flex gap-2" style="flex-wrap: wrap">
+            <a class="btn btn-secondary" href="https://memed.com.br/login" target="_blank" rel="noopener"
+               title="Abrir Memed em nova aba (sem integração)">
+              🔗 Abrir Memed
+            </a>
+            <button class="btn btn-primary" @click="gerarControle()" :disabled="dados.medicacoes.length === 0">
+              👁️ Pré-visualizar PDF
+            </button>
+          </div>
         </div>
       </div>
 
@@ -442,9 +461,15 @@ function renderDocumentos(container, pacienteId, tipo) {
 
         <div class="flex gap-2 justify-between" style="flex-wrap: wrap">
           <button class="btn btn-ghost" @click="tipo = 'menu'">← Outro tipo</button>
-          <button class="btn btn-primary" @click="gerarAzul()" :disabled="dados.medicacoes.length === 0">
-            👁️ Pré-visualizar PDF
-          </button>
+          <div class="flex gap-2" style="flex-wrap: wrap">
+            <a class="btn btn-secondary" href="https://memed.com.br/login" target="_blank" rel="noopener"
+               title="Abrir Memed em nova aba (sem integração)">
+              🔗 Abrir Memed
+            </a>
+            <button class="btn btn-primary" @click="gerarAzul()" :disabled="dados.medicacoes.length === 0">
+              👁️ Pré-visualizar PDF
+            </button>
+          </div>
         </div>
       </div>
 
@@ -553,6 +578,39 @@ function renderDocumentos(container, pacienteId, tipo) {
           <button class="btn btn-primary" @click="gerarProntuario()">👁️ Pré-visualizar PDF</button>
         </div>
       </div>
+
+      <!-- ============== FORMULÁRIO: CONSULTA PARA IMPRESSÃO ============== -->
+      <div x-show="tipo === 'consulta-impressa'">
+        <div class="card mb-4">
+          <h3 class="card-title mb-2">Consulta para impressão e arquivo físico</h3>
+          <p class="text-sm muted mb-4">
+            Gera um PDF completo com TODOS os dados de uma consulta específica, formatado
+            para imprimir, assinar à mão e arquivar fisicamente. Útil quando o serviço exige
+            cópia em papel no prontuário físico.
+          </p>
+
+          <div class="form-group">
+            <label class="label">Selecione a consulta</label>
+            <select class="select" x-model="consultaImpressaoId">
+              <option value="">— Escolha uma consulta —</option>
+              <template x-for="c in todasConsultas" :key="c.id">
+                <option :value="c.id" x-text="formatarOpcaoConsulta(c)"></option>
+              </template>
+            </select>
+            <div class="field-help" x-show="todasConsultas.length === 0">
+              Este paciente ainda não tem consultas registradas.
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-2 justify-between" style="flex-wrap: wrap">
+          <button class="btn btn-ghost" @click="tipo = 'menu'">← Outro tipo</button>
+          <button class="btn btn-primary" @click="gerarConsultaImpressao()"
+                  :disabled="!consultaImpressaoId">
+            👁️ Pré-visualizar PDF
+          </button>
+        </div>
+      </div>
     </div>
   `;
 }
@@ -568,6 +626,7 @@ function documentosScreen(pacienteId, tipoInicial) {
     ultimaConsultaCarregada: null,
     totalConsultasPaciente: 0,
     todasConsultas: [],
+    consultaImpressaoId: '',
 
     dados: {
       // Receita / Controle / Azul
@@ -979,6 +1038,51 @@ function documentosScreen(pacienteId, tipoInicial) {
         const nomeArquivo = `Prontuario_${(this.paciente.nome || 'paciente').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}`;
         DB.audit('GENERATE_PDF', 'documento', null, { tipo: 'prontuario', codigo, pacienteId: this.pacienteId });
         PDFBuilder.previewModal(doc, nomeArquivo, 'Cópia integral do prontuário', { ...this.paciente, id: this.pacienteId });
+      } catch (e) {
+        console.error(e);
+        UI.toast('Erro ao gerar PDF: ' + e.message, 'error');
+      }
+    },
+
+    // ---- Consulta para impressão (arquivo físico) ----
+    formatarOpcaoConsulta(c) {
+      if (!c || !c.dataHora) return 'Consulta sem data';
+      const data = new Date(c.dataHora).toLocaleString('pt-BR', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+      const queixa = c.queixaPrincipal ? ` — ${c.queixaPrincipal}` : '';
+      // Limita para não estourar o select
+      const queixaCurta = queixa.length > 50 ? queixa.slice(0, 47) + '...' : queixa;
+      return data + queixaCurta;
+    },
+
+    async gerarConsultaImpressao() {
+      if (!this.consultaImpressaoId) {
+        UI.toast('Selecione uma consulta primeiro.', 'info');
+        return;
+      }
+      if (!window.jspdf && !window.jsPDF) {
+        UI.toast('Biblioteca PDF ainda não carregou.', 'error');
+        return;
+      }
+      try {
+        // Busca a consulta completa pelo ID
+        const consulta = await DB.getConsulta(parseInt(this.consultaImpressaoId, 10));
+        if (!consulta) {
+          UI.toast('Consulta não encontrada.', 'error');
+          return;
+        }
+        const { doc, codigo } = PDFDocumentsExtra.consultaImpressao(
+          { ...this.paciente, id: this.pacienteId },
+          consulta
+        );
+        const dataFmt = new Date(consulta.dataHora).toISOString().slice(0,10);
+        const nomeArquivo = `Consulta_${(this.paciente.nome || 'paciente').replace(/\s+/g, '_')}_${dataFmt}`;
+        DB.audit('GENERATE_PDF', 'documento', null, {
+          tipo: 'consulta-impressa', codigo, pacienteId: this.pacienteId, consultaId: consulta.id
+        });
+        PDFBuilder.previewModal(doc, nomeArquivo, 'Consulta para impressão', { ...this.paciente, id: this.pacienteId });
       } catch (e) {
         console.error(e);
         UI.toast('Erro ao gerar PDF: ' + e.message, 'error');

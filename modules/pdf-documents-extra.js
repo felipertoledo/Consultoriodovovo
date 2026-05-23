@@ -476,6 +476,80 @@ const PDFDocumentsExtra = (() => {
     return { doc, codigo };
   }
 
+  function consultaImpressao(paciente, consulta) {
+    const doc = PDFBuilder.novoPDF();
+    let y = PDFBuilder.cabecalho(doc, 'Registro de Consulta');
+    y = PDFBuilder.blocoPaciente(doc, paciente, y, {
+      incluirContato: true, incluirEndereco: true
+    });
+
+    // Linha de data destaque
+    const dataConsulta = consulta.dataHora ?
+      new Date(consulta.dataHora).toLocaleString('pt-BR', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      }) : '—';
+
+    doc.setFillColor(240, 253, 244);
+    doc.setDrawColor(22, 101, 52);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(PDFBuilder.MARGIN.left, y, PDFBuilder.CONTENT_WIDTH, 9, 1.5, 1.5, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(22, 101, 52);
+    doc.text(`Data e hora da consulta: ${dataConsulta}`, PDFBuilder.MARGIN.left + 4, y + 6);
+    y += 13;
+
+    doc.setTextColor(15, 23, 42);
+
+    // Renderiza os dados clínicos (reusa a mesma helper interna)
+    y = renderizarConsultaNaCopiaProntuario(doc, consulta, y);
+
+    // Espaço para assinatura física (linha de assinatura no rodapé do documento)
+    y += 10;
+    // Garante que a área de assinatura cabe; força nova página se necessário
+    if (y > PDFBuilder.PAGE_HEIGHT - PDFBuilder.MARGIN.bottom - 45) {
+      doc.addPage();
+      y = PDFBuilder.MARGIN.top + 10;
+    }
+
+    // Bloco de assinatura física manual
+    doc.setDrawColor(15, 23, 42);
+    doc.setLineWidth(0.3);
+    const linhaInicio = PDFBuilder.MARGIN.left + 30;
+    const linhaFim = PDFBuilder.MARGIN.left + PDFBuilder.CONTENT_WIDTH - 30;
+    const yLinha = y + 18;
+    doc.line(linhaInicio, yLinha, linhaFim, yLinha);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Felipe Ribeiro Toledo — Médico — CRM-SP 216.986',
+      (linhaInicio + linhaFim) / 2, yLinha + 5, { align: 'center' });
+    doc.setFontSize(8);
+    doc.setTextColor(71, 85, 105);
+    doc.text('USF Estiva Gerbi · Assinatura e carimbo',
+      (linhaInicio + linhaFim) / 2, yLinha + 10, { align: 'center' });
+
+    // Aviso de arquivo físico
+    y = yLinha + 18;
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    const aviso = 'Documento gerado para impressão, assinatura manual e arquivamento físico em prontuário. ' +
+                  'Cópia digital deste registro está armazenada em prontuário eletrônico do médico responsável.';
+    const linhasAviso = doc.splitTextToSize(aviso, PDFBuilder.CONTENT_WIDTH);
+    for (const l of linhasAviso) {
+      doc.text(l, PDFBuilder.MARGIN.left, y);
+      y += 3.5;
+    }
+
+    const codigo = PDFBuilder.gerarCodigoDocumento('CON', paciente.id);
+    PDFBuilder.rodape(doc, codigo);
+
+    return { doc, codigo };
+  }
+
   function renderizarConsultaNaCopiaProntuario(doc, c, y) {
     // Verifica espaço — uma consulta ocupa ~80mm mínimo, força nova página se não couber
     if (y > PDFBuilder.PAGE_HEIGHT - PDFBuilder.MARGIN.bottom - 80) {
@@ -575,7 +649,8 @@ const PDFDocumentsExtra = (() => {
     receituarioControleEspecial,
     receituarioAzul,
     relatorioClinico,
-    copiaProntuario
+    copiaProntuario,
+    consultaImpressao
   };
 })();
 

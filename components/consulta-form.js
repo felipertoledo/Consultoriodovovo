@@ -302,6 +302,36 @@ function renderConsultaForm(container, pacienteId, consultaId) {
       </div>
 
       <!-- Rodapé de ações -->
+      <!-- Atalhos para gerar documentos a partir desta consulta -->
+      <div class="card mb-4" x-show="!isNew" style="border-color: var(--color-primary); border-width: 1px">
+        <h3 class="card-title mb-3">📄 Gerar documentos desta consulta</h3>
+        <p class="text-sm muted mb-3">
+          Atalhos diretos para a tela de documentos do paciente. Os dados clínicos já registrados aqui
+          (medicações em uso, hipóteses, conduta) serão usados como ponto de partida.
+        </p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-2)">
+          <button class="btn btn-secondary text-sm" @click="irParaDocumento('receita')" title="Receita comum">
+            📋 Receita comum
+          </button>
+          <button class="btn btn-secondary text-sm" @click="irParaDocumento('controle')" title="Antimicrobianos, retinoides, etc">
+            📑 Controle especial
+          </button>
+          <button class="btn btn-secondary text-sm" @click="irParaDocumento('azul')" title="Psicotrópicos / Lista B">
+            📘 Azul B1/B2
+          </button>
+          <button class="btn btn-secondary text-sm" @click="irParaDocumento('atestado')">
+            📝 Atestado
+          </button>
+          <button class="btn btn-secondary text-sm" @click="irParaDocumento('exames')">
+            🧪 Exames
+          </button>
+          <button class="btn btn-secondary text-sm" @click="irParaDocumento('consulta-impressa')"
+                  title="PDF completo desta consulta com espaço para assinatura física">
+            🖨️ Imprimir consulta
+          </button>
+        </div>
+      </div>
+
       <div class="mb-6 flex justify-between items-center" style="flex-wrap: wrap; gap: var(--space-3)">
         <span class="text-xs muted">🔒 Dados criptografados localmente</span>
         <div class="flex gap-2">
@@ -542,6 +572,18 @@ function consultaForm(pacienteId, consultaId) {
 
     voltar() {
       Router.navigate('/paciente/' + this.pacienteId);
+    },
+
+    irParaDocumento(tipo) {
+      // Se há alterações não salvas, avisa
+      const temAlteracoesNaoSalvas = this.autoSaveStatus === '✏️ Não salvo';
+      if (temAlteracoesNaoSalvas) {
+        if (!confirm('Há alterações não salvas. Salve a consulta primeiro para que os dados estejam disponíveis no documento. Continuar mesmo assim?')) {
+          return;
+        }
+      }
+      // Vai para a tela de documentos do paciente, já com o tipo selecionado
+      Router.navigate('/paciente/' + this.pacienteId + '/documentos/' + tipo);
     }
   };
 }

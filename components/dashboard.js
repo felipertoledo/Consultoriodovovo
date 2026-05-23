@@ -74,9 +74,9 @@ function renderDashboard(container) {
           <button class="btn btn-secondary" @click="$dispatch('navigate', '/paciente/novo')">
             ➕ Cadastrar paciente
           </button>
-          <button class="btn btn-secondary" @click="$dispatch('navigate', '/pacientes')"
-                  title="Atalho para a lista com foco em busca">
-            🔍 Buscar paciente
+          <button class="btn btn-primary" @click="$dispatch('navigate', '/prescricao')"
+                  title="Gerar uma prescrição rápida sem criar consulta antes">
+            💊 Nova prescrição
           </button>
           <button class="btn btn-secondary" @click="$dispatch('navigate', '/config')">
             ⚙️ Configurações
