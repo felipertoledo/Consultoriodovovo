@@ -648,7 +648,7 @@ function documentosScreen(pacienteId, tipoInicial) {
           return;
         }
         // Verifica se PDF lib está carregada
-        if (!window.jspdf) {
+        if (!window.jspdf && !window.jsPDF) {
           UI.toast('Biblioteca PDF ainda carregando — aguarde alguns segundos', 'info', 5000);
         }
         // Tenta construir o alerta sugerido a partir da última consulta
@@ -767,7 +767,7 @@ function documentosScreen(pacienteId, tipoInicial) {
     },
 
     gerarReceita() {
-      if (!window.jspdf) {
+      if (!window.jspdf && !window.jsPDF) {
         UI.toast('Biblioteca PDF ainda não carregou. Aguarde e tente novamente.', 'error');
         return;
       }
@@ -797,7 +797,7 @@ function documentosScreen(pacienteId, tipoInicial) {
 
     // ---- Atestado ----
     gerarAtestado() {
-      if (!window.jspdf) {
+      if (!window.jspdf && !window.jsPDF) {
         UI.toast('Biblioteca PDF ainda não carregou.', 'error');
         return;
       }
@@ -845,7 +845,7 @@ function documentosScreen(pacienteId, tipoInicial) {
     },
 
     gerarExames() {
-      if (!window.jspdf) {
+      if (!window.jspdf && !window.jsPDF) {
         UI.toast('Biblioteca PDF ainda não carregou.', 'error');
         return;
       }
@@ -874,7 +874,7 @@ function documentosScreen(pacienteId, tipoInicial) {
 
     // ---- Controle especial ----
     gerarControle() {
-      if (!window.jspdf) {
+      if (!window.jspdf && !window.jsPDF) {
         UI.toast('Biblioteca PDF ainda não carregou.', 'error');
         return;
       }
@@ -899,7 +899,7 @@ function documentosScreen(pacienteId, tipoInicial) {
 
     // ---- Azul B1/B2 ----
     gerarAzul() {
-      if (!window.jspdf) {
+      if (!window.jspdf && !window.jsPDF) {
         UI.toast('Biblioteca PDF ainda não carregou.', 'error');
         return;
       }
@@ -928,7 +928,7 @@ function documentosScreen(pacienteId, tipoInicial) {
 
     // ---- Relatório clínico ----
     gerarRelatorio() {
-      if (!window.jspdf) {
+      if (!window.jspdf && !window.jsPDF) {
         UI.toast('Biblioteca PDF ainda não carregou.', 'error');
         return;
       }
@@ -958,7 +958,7 @@ function documentosScreen(pacienteId, tipoInicial) {
 
     // ---- Cópia do prontuário ----
     gerarProntuario() {
-      if (!window.jspdf) {
+      if (!window.jspdf && !window.jsPDF) {
         UI.toast('Biblioteca PDF ainda não carregou.', 'error');
         return;
       }

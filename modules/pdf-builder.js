@@ -20,9 +20,12 @@ const PDFBuilder = (() => {
 
   // ---- Cria um novo documento jsPDF com margens e config padrão ----
   function novoPDF() {
-    // window.jspdf é o objeto exposto pelo CDN jspdf.umd
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({
+    // jsPDF UMD se expõe como window.jspdf (lowercase); fallback para window.jsPDF
+    const jsPDFClass = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+    if (!jsPDFClass) {
+      throw new Error('jsPDF não está carregado. Verifique assets/lib/jspdf.umd.min.js');
+    }
+    const doc = new jsPDFClass({
       orientation: 'portrait',
       unit: 'mm',
       format: 'a4',

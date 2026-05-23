@@ -1,6 +1,6 @@
 {
-  "version": "0.4.0",
+  "version": "0.4.1",
   "buildDate": "2026-05-23",
-  "codename": "Documentos Plus",
-  "notes": "Sprint 3 Parte 2: 4 novos PDFs e melhoria do 'copiar sem identificadores'. Novos documentos: (1) Receituário de controle especial branco em 2 vias com linha de recorte; (2) Receituário azul B1/B2 com fundo azul claro e Notificação Lista B; (3) Relatório clínico estruturado em SOAP para outros profissionais; (4) Cópia integral do prontuário em conformidade com LGPD art. 18, II e IV. Melhoria: 'copiar sem identificadores' agora inclui profissão, escolaridade, convênio e medicações de uso contínuo (puxadas automaticamente da última consulta do paciente). 7 tipos de PDF disponíveis no total, todos com cabeçalho institucional, código único, trilha de auditoria e preview modal."
+  "codename": "Documentos Plus (hotfix)",
+  "notes": "Hotfix v0.4.1: a biblioteca jsPDF agora é distribuída junto com o aplicativo (vendored em assets/lib/jspdf.umd.min.js), eliminando a dependência de CDN externo. Resolve o problema 'Biblioteca PDF ainda não carregou' que ocorria em conexões com restrição ou cache. Bônus: o app agora pode gerar PDFs mesmo OFFLINE (importante para uso na UBS quando a internet falha). Checagem de carregamento tolerante a window.jspdf e window.jsPDF. Log de diagnóstico no console (procurar '[CV] jsPDF carregado'). Sem mudanças funcionais em relação à v0.4.0."
 }

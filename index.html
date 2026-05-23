@@ -21,8 +21,20 @@
   <!-- Alpine.js (reatividade) -->
   <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
 
-  <!-- jsPDF (geração de PDFs client-side) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+  <!-- jsPDF (geração de PDFs client-side) — vendored local para funcionar offline -->
+  <script src="./assets/lib/jspdf.umd.min.js"></script>
+  <script>
+    // Log de diagnóstico do carregamento do jsPDF
+    (function() {
+      const ready = !!(window.jspdf && window.jspdf.jsPDF) || !!window.jsPDF;
+      if (ready) {
+        console.log('[CV] jsPDF carregado:',
+          window.jspdf ? 'window.jspdf.jsPDF' : 'window.jsPDF');
+      } else {
+        console.error('[CV] jsPDF NÃO carregou! Verifique assets/lib/jspdf.umd.min.js');
+      }
+    })();
+  </script>
 </head>
 <body>
   <!-- Loader inicial -->
