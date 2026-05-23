@@ -14,7 +14,7 @@
    `updatefound`; o index.html mostra banner pro usuário.
    ============================================================ */
 
-const CACHE_VERSION = 'v0.7.0';
+const CACHE_VERSION = 'v0.8.0';
 const CACHE_NAME = `cdv-cache-${CACHE_VERSION}`;
 
 // Lista exaustiva de arquivos a pré-cachear no install
@@ -31,6 +31,9 @@ const PRECACHE_ASSETS = [
   './assets/lib/dexie.min.js',
   './assets/lib/alpine.min.js',
   './assets/lib/jspdf.umd.min.js',
+  './assets/lib/pdf-lib.min.js',
+  './assets/lib/forge.min.js',
+  './assets/lib/zgapdfsigner.min.js',
 
   // Ícones PWA
   './assets/img/icon-192.png',
@@ -46,6 +49,7 @@ const PRECACHE_ASSETS = [
   './modules/clinical-data.js',
   './modules/prosa-generator.js',
   './modules/share.js',
+  './modules/signer.js',
   './modules/pdf-builder.js',
   './modules/pdf-documents.js',
   './modules/pdf-documents-extra.js',
@@ -64,7 +68,7 @@ const PRECACHE_ASSETS = [
 ];
 
 // -----------------------------------------------------------
-// INSTALL — baixa todos os assets para o cache
+// INSTALL — baixa todos os assets para o cache + skipWaiting agressivo
 // -----------------------------------------------------------
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -78,7 +82,9 @@ self.addEventListener('install', (event) => {
         console.error('[SW] Falha no precache:', e);
         throw e;
       }
-      // NÃO chama skipWaiting automaticamente; espera mensagem do app
+      // skipWaiting automático: novo SW ativa logo, sem esperar o usuário clicar
+      // (banner ainda aparece, mas mesmo se usuário ignorar, a próxima recarga já tem update)
+      await self.skipWaiting();
     })()
   );
 });

@@ -96,6 +96,103 @@ function renderConfig(container) {
         </div>
       </div>
 
+      <!-- ============================================================ -->
+      <!-- ASSINATURA DIGITAL ICP-Brasil A1                              -->
+      <!-- ============================================================ -->
+      <div class="card mt-4" style="border-color: var(--color-primary); border-width: 2px">
+        <h3 class="card-title mb-4">🔏 Assinatura digital ICP-Brasil</h3>
+
+        <!-- Estado: SEM certificado -->
+        <div x-show="!certInfo">
+          <p class="text-sm mb-3">
+            Cadastre seu certificado digital <strong>A1 (.pfx/.p12)</strong> ICP-Brasil para assinar
+            documentos com validade jurídica plena (MP 2.200-2/2001, CFM 2.299/2021).
+          </p>
+          <p class="text-sm mb-4 muted">
+            O arquivo do certificado fica armazenado <strong>criptografado neste dispositivo</strong>,
+            protegido pela senha do cofre. A senha do certificado nunca é salva.
+          </p>
+
+          <div class="form-group">
+            <label class="label">Arquivo do certificado (.pfx ou .p12)</label>
+            <input type="file" class="input" accept=".pfx,.p12,application/x-pkcs12"
+                   @change="certFileSelected($event)">
+            <div class="field-help" x-show="certFile">
+              Arquivo selecionado: <strong x-text="certFile && certFile.name"></strong>
+              (<span x-text="certFile && (certFile.size/1024).toFixed(1) + ' KB'"></span>)
+            </div>
+          </div>
+
+          <div class="form-group" x-show="certFile">
+            <label class="label">Senha do certificado</label>
+            <input type="password" class="input" x-model="certPassword"
+                   placeholder="A senha que você usa quando assina algo digitalmente"
+                   @keydown.enter="cadastrarCertificado()">
+            <div class="field-help">A senha protege a chave privada do .pfx — informe a senha do arquivo, não a senha do cofre.</div>
+          </div>
+
+          <button class="btn btn-primary" @click="cadastrarCertificado()"
+                  :disabled="!certFile || !certPassword || certWorking">
+            <span x-show="!certWorking">📥 Validar e cadastrar certificado</span>
+            <span x-show="certWorking">Validando…</span>
+          </button>
+
+          <p class="text-xs muted mt-4">
+            Não tem certificado A1? Compre em qualquer AC ICP-Brasil (~R$ 200/ano):
+            <a href="https://www.solutinet.com.br" target="_blank" rel="noopener">Soluti</a>,
+            <a href="https://www.certisign.com.br" target="_blank" rel="noopener">Certisign</a>,
+            <a href="https://www.serasaexperian.com.br/certificado-digital" target="_blank" rel="noopener">Serasa</a>,
+            entre outras. Não funciona com A3 (token USB físico) por limitação de browser.
+          </p>
+        </div>
+
+        <!-- Estado: COM certificado cadastrado -->
+        <div x-show="certInfo">
+          <div class="alert" :class="certInfo?.expirado ? 'alert-danger' : (certInfo?.diasParaExpirar < 30 ? 'alert-warning' : 'alert-success')">
+            <div>
+              <strong x-show="certInfo?.expirado">⚠ Certificado EXPIRADO</strong>
+              <strong x-show="!certInfo?.expirado && certInfo?.diasParaExpirar < 30">⚠ Certificado expira em breve</strong>
+              <strong x-show="!certInfo?.expirado && certInfo?.diasParaExpirar >= 30">✓ Certificado válido</strong>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-3); margin-top: var(--space-4);">
+            <div style="background: var(--bg-sunken); padding: var(--space-3); border-radius: var(--radius-md);">
+              <div class="text-xs muted">Titular</div>
+              <div class="text-sm" style="font-weight: var(--weight-semibold)" x-text="certInfo?.commonName || '—'"></div>
+            </div>
+            <div style="background: var(--bg-sunken); padding: var(--space-3); border-radius: var(--radius-md);" x-show="certInfo?.cpf">
+              <div class="text-xs muted">CPF</div>
+              <div class="text-sm text-mono" x-text="certInfo?.cpf"></div>
+            </div>
+            <div style="background: var(--bg-sunken); padding: var(--space-3); border-radius: var(--radius-md);">
+              <div class="text-xs muted">Autoridade Certificadora</div>
+              <div class="text-sm" x-text="certInfo?.acEmissora || '—'"></div>
+            </div>
+            <div style="background: var(--bg-sunken); padding: var(--space-3); border-radius: var(--radius-md);">
+              <div class="text-xs muted">Validade</div>
+              <div class="text-sm">
+                até <span x-text="certInfo?.validTo ? new Date(certInfo.validTo).toLocaleDateString('pt-BR') : '—'"></span>
+                <span x-show="certInfo?.diasParaExpirar !== null && !certInfo?.expirado" class="muted">
+                  (<span x-text="certInfo?.diasParaExpirar"></span> dias)
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex gap-2 mt-4" style="flex-wrap: wrap">
+            <button class="btn btn-danger" @click="removerCertificado()">🗑 Remover certificado</button>
+            <button class="btn btn-ghost" @click="limparCacheSenha()" x-show="senhaCacheAtiva">
+              🔒 Esquecer senha em cache
+            </button>
+          </div>
+
+          <p class="text-xs muted mt-4">
+            Para trocar para um certificado novo (renovação anual), primeiro remova o atual.
+          </p>
+        </div>
+      </div>
+
       <div class="card mt-4">
         <h3 class="card-title mb-4">🔐 Trocar senha mestra</h3>
         <p class="text-sm mb-4">A nova senha re-protege a chave de criptografia.
@@ -254,6 +351,11 @@ function configScreen() {
       canInstall: false
     },
     checkingUpdate: false,
+    certInfo: null,
+    certFile: null,
+    certPassword: '',
+    certWorking: false,
+    senhaCacheAtiva: false,
 
     async load() {
       try {
@@ -277,9 +379,67 @@ function configScreen() {
       // Status do Service Worker / PWA
       await this.atualizarStatusSW();
 
+      // Estado do certificado ICP-Brasil
+      await this.carregarStatusCertificado();
+
       this.$watch('newPwd', () => {
         this.strength = Auth.passwordStrength(this.newPwd);
       });
+    },
+
+    async carregarStatusCertificado() {
+      try {
+        const entry = await Signer.getConfiguredCertificate();
+        this.certInfo = entry ? entry.info : null;
+        this.senhaCacheAtiva = !!Signer.getCachedPassword();
+      } catch (e) {
+        console.error('Erro ao carregar status do certificado:', e);
+        this.certInfo = null;
+      }
+    },
+
+    certFileSelected(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      this.certFile = file;
+      this.certPassword = '';
+    },
+
+    async cadastrarCertificado() {
+      if (!this.certFile || !this.certPassword || this.certWorking) return;
+      this.certWorking = true;
+      try {
+        const info = await Signer.loadAndStoreCertificate(this.certFile, this.certPassword);
+        UI.toast(`Certificado de ${info.commonName} cadastrado.`, 'success', 6000);
+        this.certFile = null;
+        this.certPassword = '';
+        // Limpa o input file
+        const input = document.querySelector('input[type="file"][accept*="pfx"]');
+        if (input) input.value = '';
+        await this.carregarStatusCertificado();
+      } catch (e) {
+        console.error(e);
+        UI.toast('Erro: ' + e.message, 'error', 8000);
+      } finally {
+        this.certWorking = false;
+      }
+    },
+
+    async removerCertificado() {
+      if (!UI.confirm('Remover o certificado cadastrado? Você não conseguirá mais assinar PDFs até cadastrar outro.')) return;
+      try {
+        await Signer.removeCertificate();
+        UI.toast('Certificado removido', 'success');
+        await this.carregarStatusCertificado();
+      } catch (e) {
+        UI.toast('Erro: ' + e.message, 'error');
+      }
+    },
+
+    limparCacheSenha() {
+      Signer.clearCachedPassword();
+      this.senhaCacheAtiva = false;
+      UI.toast('Senha do certificado removida da memória', 'info');
     },
 
     async atualizarStatusSW() {

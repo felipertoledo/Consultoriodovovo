@@ -374,6 +374,9 @@ const PDFBuilder = (() => {
             <button class="btn btn-success text-sm" id="pdf-btn-whatsapp" title="Enviar PDF para o paciente via WhatsApp">
               <span style="color: #25D366">📱</span> WhatsApp
             </button>
+            <button class="btn btn-secondary text-sm" id="pdf-btn-sign" title="Assinar digitalmente com seu certificado ICP-Brasil A1">
+              🔏 Assinar (ICP-Brasil)
+            </button>
             <button class="btn btn-secondary text-sm" id="pdf-btn-print">🖨️ Imprimir</button>
             <button class="btn btn-primary text-sm" id="pdf-btn-download">💾 Baixar PDF</button>
             <button class="btn btn-ghost text-sm" id="pdf-btn-close">✕ Fechar</button>
@@ -385,6 +388,10 @@ const PDFBuilder = (() => {
     `;
     document.body.appendChild(overlay);
 
+    let currentBlob = blob;
+    let currentDoc = doc;
+    let pdfWasSigned = false;
+
     const fechar = () => {
       URL.revokeObjectURL(url);
       overlay.remove();
@@ -394,10 +401,20 @@ const PDFBuilder = (() => {
       if (e.target === overlay) fechar();
     });
     overlay.querySelector('#pdf-btn-download').onclick = () => {
-      baixar(doc, nomeArquivo);
+      if (pdfWasSigned) {
+        // PDF assinado já está em currentBlob
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(currentBlob);
+        const fname = nomeArquivo.endsWith('.pdf') ? nomeArquivo.replace('.pdf', '_assinado.pdf') : nomeArquivo + '_assinado.pdf';
+        a.download = fname;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      } else {
+        baixar(currentDoc, nomeArquivo);
+      }
     };
     overlay.querySelector('#pdf-btn-print').onclick = () => {
-      imprimir(doc);
+      imprimir(currentDoc);
     };
     overlay.querySelector('#pdf-btn-whatsapp').onclick = async () => {
       if (typeof ShareService === 'undefined') {
@@ -405,11 +422,14 @@ const PDFBuilder = (() => {
         return;
       }
       try {
+        const filename = (pdfWasSigned && !nomeArquivo.includes('assinado'))
+          ? nomeArquivo.replace('.pdf', '_assinado.pdf')
+          : (nomeArquivo.endsWith('.pdf') ? nomeArquivo : nomeArquivo + '.pdf');
         const result = await ShareService.compartilharPDF(
-          blob,
-          nomeArquivo.endsWith('.pdf') ? nomeArquivo : nomeArquivo + '.pdf',
+          currentBlob,
+          filename,
           paciente || { nome: 'Paciente' },
-          tipo
+          tipo + (pdfWasSigned ? ' (assinado digitalmente)' : '')
         );
         if (result.askedToDownload || result.method === 'wa.me') {
           const instr = overlay.querySelector('#pdf-instructions');
@@ -417,7 +437,8 @@ const PDFBuilder = (() => {
           instr.innerHTML = `<strong>📥 PDF baixado.</strong> ${result.message}`;
           if (typeof DB !== 'undefined' && paciente && paciente.id) {
             DB.audit('SHARE_PDF', 'documento', null, {
-              tipo, method: result.method, hasNumber: !!result.numero, pacienteId: paciente.id
+              tipo, method: result.method, hasNumber: !!result.numero, pacienteId: paciente.id,
+              signed: pdfWasSigned
             }).catch(() => {});
           }
         }
@@ -430,6 +451,136 @@ const PDFBuilder = (() => {
         }
       }
     };
+
+    // ---- Botão Assinar ----
+    overlay.querySelector('#pdf-btn-sign').onclick = async () => {
+      if (typeof Signer === 'undefined') {
+        alert('Módulo de assinatura indisponível');
+        return;
+      }
+      if (pdfWasSigned) {
+        UI.toast('Este PDF já foi assinado nesta sessão.', 'info');
+        return;
+      }
+
+      try {
+        // Verifica se tem certificado cadastrado
+        const cfg = await Signer.getConfiguredCertificate();
+        if (!cfg) {
+          UI.toast('Cadastre seu certificado ICP-Brasil em Configurações → Assinatura digital primeiro.', 'info', 7000);
+          return;
+        }
+        if (cfg.info.expirado) {
+          UI.toast('Certificado EXPIRADO. Atualize em Configurações antes de assinar.', 'error', 7000);
+          return;
+        }
+
+        // Pega senha (cache ou pergunta)
+        let senha = Signer.getCachedPassword();
+        let lembrar = false;
+        if (!senha) {
+          const result = await promptSenhaCertificado(cfg.info);
+          if (!result) return; // cancelado
+          senha = result.senha;
+          lembrar = result.lembrar;
+        }
+
+        // Assina
+        const btn = overlay.querySelector('#pdf-btn-sign');
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Assinando…';
+
+        try {
+          const signedBlob = await Signer.signPDF(currentBlob, senha, {
+            lembrarSenha: lembrar,
+            reason: 'Documento médico - ' + tipo,
+            location: 'USF Estiva Gerbi - SP'
+          });
+          currentBlob = signedBlob;
+          pdfWasSigned = true;
+
+          // Atualiza o iframe
+          URL.revokeObjectURL(url);
+          const newUrl = URL.createObjectURL(signedBlob);
+          overlay.querySelector('iframe').src = newUrl;
+
+          // Feedback visual
+          btn.innerHTML = '✓ Assinado';
+          btn.style.background = '#DCFCE7';
+          btn.style.color = '#14532D';
+          btn.style.borderColor = '#86EFAC';
+
+          const instr = overlay.querySelector('#pdf-instructions');
+          instr.style.display = 'block';
+          instr.style.background = '#DCFCE7';
+          instr.style.color = '#14532D';
+          instr.style.borderColor = '#86EFAC';
+          instr.innerHTML = `<strong>✓ PDF assinado digitalmente com certificado ICP-Brasil A1.</strong> ` +
+            `Validade verificável em Adobe Reader ou <a href="https://verificador.iti.gov.br" target="_blank" style="color: inherit">verificador.iti.gov.br</a>. ` +
+            `Clique em "💾 Baixar PDF" para salvar a versão assinada.`;
+
+          UI.toast('PDF assinado com sucesso', 'success', 5000);
+        } catch (e) {
+          console.error(e);
+          btn.disabled = false;
+          btn.innerHTML = '🔏 Assinar (ICP-Brasil)';
+          UI.toast('Erro ao assinar: ' + e.message, 'error', 8000);
+        }
+      } catch (e) {
+        console.error(e);
+        UI.toast('Erro: ' + e.message, 'error');
+      }
+    };
+  }
+
+  // ---- Modal de senha do certificado ----
+  function promptSenhaCertificado(certInfo) {
+    return new Promise((resolve) => {
+      const overlay = document.createElement('div');
+      overlay.className = 'pdf-preview-overlay';
+      overlay.style.zIndex = '10000';
+      overlay.innerHTML = `
+        <div style="background: white; border-radius: 12px; max-width: 480px; width: 90%; padding: 24px; box-shadow: 0 24px 64px rgba(0,0,0,0.3)">
+          <h3 style="margin: 0 0 16px 0">🔏 Senha do certificado</h3>
+          <p style="font-size: 14px; color: #475569; margin-bottom: 4px">
+            Para assinar com o certificado de:
+          </p>
+          <p style="font-size: 14px; font-weight: 600; margin-top: 0; margin-bottom: 16px">
+            ${certInfo.commonName}
+          </p>
+          <input type="password" id="cert-pwd-input" placeholder="Digite a senha do .pfx"
+                 style="width: 100%; padding: 10px 12px; border: 1px solid #CBD5E1; border-radius: 8px; font-size: 14px; box-sizing: border-box" />
+          <label style="display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 13px; cursor: pointer">
+            <input type="checkbox" id="cert-pwd-cache"> Lembrar nesta sessão (30 min)
+          </label>
+          <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px">
+            <button id="cert-pwd-cancel" style="padding: 8px 16px; border-radius: 8px; border: 1px solid #CBD5E1; background: white; cursor: pointer">Cancelar</button>
+            <button id="cert-pwd-ok" style="padding: 8px 16px; border-radius: 8px; border: 1px solid #166534; background: #166534; color: white; cursor: pointer; font-weight: 600">Assinar</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      const input = overlay.querySelector('#cert-pwd-input');
+      const cache = overlay.querySelector('#cert-pwd-cache');
+      input.focus();
+
+      const close = (r) => { overlay.remove(); resolve(r); };
+      overlay.querySelector('#cert-pwd-cancel').onclick = () => close(null);
+      overlay.querySelector('#cert-pwd-ok').onclick = () => {
+        if (!input.value) return;
+        close({ senha: input.value, lembrar: cache.checked });
+      };
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          if (input.value) close({ senha: input.value, lembrar: cache.checked });
+        }
+        if (e.key === 'Escape') close(null);
+      });
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) close(null);
+      });
+    });
   }
 
   // ---- API pública ----

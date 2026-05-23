@@ -28,6 +28,12 @@
 
   <!-- jsPDF (geração de PDFs client-side) — vendored local para funcionar offline -->
   <script src="./assets/lib/jspdf.umd.min.js"></script>
+
+  <!-- Libs para assinatura digital ICP-Brasil A1 (PAdES) — carregadas sob demanda
+       NOTA: pdf-lib + forge + zgapdfsigner totalizam ~830 KB; ficam vendored. -->
+  <script src="./assets/lib/pdf-lib.min.js"></script>
+  <script src="./assets/lib/forge.min.js"></script>
+  <script src="./assets/lib/zgapdfsigner.min.js"></script>
   <script>
     // Log de diagnóstico do carregamento do jsPDF
     (function() {
@@ -62,6 +68,7 @@
   <script src="./modules/clinical-data.js"></script>
   <script src="./modules/prosa-generator.js"></script>
   <script src="./modules/share.js"></script>
+  <script src="./modules/signer.js"></script>
   <script src="./modules/pdf-builder.js"></script>
   <script src="./modules/pdf-documents.js"></script>
   <script src="./modules/pdf-documents-extra.js"></script>
