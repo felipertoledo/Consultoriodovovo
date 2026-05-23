@@ -1,6 +1,6 @@
 {
-  "version": "0.6.0",
+  "version": "0.6.1",
   "buildDate": "2026-05-23",
-  "codename": "Offline First",
-  "notes": "Sprint A Parte 2: PWA instalável, Service Worker, offline-first completo. (1) Alpine.js e Dexie.js agora vendored localmente em assets/lib/ — sistema funciona 100% offline desde o primeiro acesso, sem dependência de CDN. (2) Service Worker (service-worker.js) com cache versionado: estratégia cache-first para todos os assets do projeto, network-first com fallback para version.json. Cache antigo é purgado automaticamente quando uma nova versão ativa. (3) Manifest PWA completo com 4 ícones PNG (192, 512, maskable 512, apple-touch 180), categorias 'medical/productivity/health', display standalone. App instalável no Chrome/Edge desktop e mobile. (4) Detecção de atualização: quando há nova versão pronta, banner verde aparece no rodapé da tela com botões 'Atualizar' (recarrega imediatamente) e 'Depois'. Verificação automática a cada 30 minutos enquanto a aba está aberta. (5) Tela de Configurações ganhou painel 'Status do aplicativo (PWA)' com botão Instalar e botão Verificar atualizações. (6) Meta tags apple-mobile-web-app-* para iOS Safari."
+  "codename": "Offline First (hotfix)",
+  "notes": "Hotfix v0.6.1: corrige TypeErrors do Alpine ao acessar 'backupStatus.precisaBackup' e 'backupStatus.consultasDesdeBackup'. Causa: backupStatus era inicializado como null e Alpine avalia todas as expressões internas mesmo dentro de x-show (que apenas esconde visualmente). Solução: backupStatus agora é objeto válido desde o início com valores default seguros e flag 'loaded' que indica quando os dados reais foram carregados. PWA continua funcionando normalmente — o Felipe confirmou instalação bem-sucedida na v0.6.0. CACHE_VERSION do service worker bumpou para v0.6.1 para que o cache antigo seja purgado e o banner 'Nova versão disponível' apareça."
 }

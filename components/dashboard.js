@@ -18,19 +18,19 @@ function renderDashboard(container) {
       </div>
 
       <!-- Aviso de backup pendente -->
-      <div x-show="backupStatus && backupStatus.precisaBackup" class="alert alert-warning mb-4"
+      <div x-show="backupStatus.loaded && backupStatus.precisaBackup" class="alert alert-warning mb-4"
            style="border-left: 4px solid var(--color-warning, #d97706)">
         <div style="display: flex; gap: var(--space-3); align-items: flex-start; flex-wrap: wrap">
           <div style="flex: 1; min-width: 250px">
             <strong>⚠ Backup recomendado</strong>
             <div class="text-sm mt-1">
-              <span x-show="backupStatus && backupStatus.lastBackupAt === null">
+              <span x-show="backupStatus.lastBackupAt === null">
                 Você ainda não tem nenhum backup. Se o navegador limpar os dados,
-                você perderá <strong x-text="backupStatus && backupStatus.consultasDesdeBackup + ' consultas'"></strong>.
+                você perderá <strong x-text="backupStatus.consultasDesdeBackup + ' consultas'"></strong>.
               </span>
-              <span x-show="backupStatus && backupStatus.lastBackupAt !== null">
-                Último backup há <strong x-text="backupStatus && backupStatus.daysSinceBackup + ' dias'"></strong>.
-                <strong x-text="backupStatus && backupStatus.consultasDesdeBackup"></strong> consultas novas desde então.
+              <span x-show="backupStatus.lastBackupAt !== null">
+                Último backup há <strong x-text="backupStatus.daysSinceBackup + ' dias'"></strong>.
+                <strong x-text="backupStatus.consultasDesdeBackup"></strong> consultas novas desde então.
               </span>
             </div>
           </div>
@@ -107,7 +107,13 @@ function dashboardScreen() {
     today: '',
     version: '0.1.0',
     buildDate: '',
-    backupStatus: null,
+    backupStatus: {
+      lastBackupAt: null,
+      daysSinceBackup: null,
+      consultasDesdeBackup: 0,
+      precisaBackup: false,
+      loaded: false
+    },
     working: false,
 
     async load() {
@@ -133,7 +139,8 @@ function dashboardScreen() {
 
       // Status de backup
       try {
-        this.backupStatus = await Backup.getStatus();
+        const s = await Backup.getStatus();
+        this.backupStatus = { ...s, loaded: true };
       } catch (e) {
         console.error('Erro ao verificar status de backup:', e);
       }
@@ -146,7 +153,8 @@ function dashboardScreen() {
         const { filename, bytes } = await Backup.downloadBackup();
         const kb = (bytes / 1024).toFixed(1);
         UI.toast(`Backup baixado: ${filename} (${kb} KB)`, 'success', 6000);
-        this.backupStatus = await Backup.getStatus();
+        const s = await Backup.getStatus();
+        this.backupStatus = { ...s, loaded: true };
       } catch (e) {
         console.error(e);
         UI.toast('Erro ao gerar backup: ' + e.message, 'error');

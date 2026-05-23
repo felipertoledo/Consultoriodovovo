@@ -15,9 +15,9 @@ function renderConfig(container) {
       <div class="card mt-4" style="border-color: var(--color-primary); border-width: 2px">
         <h3 class="card-title mb-4">💾 Backup do cofre</h3>
 
-        <div x-show="!backupStatus" class="muted text-sm">Carregando status…</div>
+        <div x-show="!backupStatus.loaded" class="muted text-sm">Carregando status…</div>
 
-        <div x-show="backupStatus">
+        <div x-show="backupStatus.loaded">
           <!-- Status atual -->
           <div class="mb-4" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-3);">
             <div style="background: var(--bg-sunken); padding: var(--space-3); border-radius: var(--radius-md);">
@@ -238,7 +238,13 @@ function configScreen() {
     version: '0.1.0',
     buildDate: '',
     strength: { score: 0, label: '' },
-    backupStatus: null,
+    backupStatus: {
+      lastBackupAt: null,
+      daysSinceBackup: null,
+      consultasDesdeBackup: 0,
+      precisaBackup: false,
+      loaded: false
+    },
     arquivoInfo: null,
     envelopePendente: null,
     swStatus: {
@@ -262,7 +268,8 @@ function configScreen() {
 
       // Status de backup
       try {
-        this.backupStatus = await Backup.getStatus();
+        const s = await Backup.getStatus();
+        this.backupStatus = { ...s, loaded: true };
       } catch (e) {
         console.error('Erro ao carregar status de backup:', e);
       }
@@ -349,7 +356,8 @@ function configScreen() {
         const kb = (bytes / 1024).toFixed(1);
         UI.toast(`Backup baixado: ${filename} (${kb} KB)`, 'success', 6000);
         // Recarrega status
-        this.backupStatus = await Backup.getStatus();
+        const s = await Backup.getStatus();
+        this.backupStatus = { ...s, loaded: true };
       } catch (e) {
         console.error(e);
         UI.toast('Erro ao gerar backup: ' + e.message, 'error');
