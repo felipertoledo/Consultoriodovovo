@@ -375,29 +375,33 @@ function prescricaoRapida() {
       };
 
       try {
-        let doc, nomeArquivo, titulo;
+        let resultado, nomeArquivo, titulo;
         if (this.tipoReceita === 'simples') {
-          doc = PDFDocuments.receituarioSimples(paciente, dados);
+          resultado = PDFDocuments.receituarioSimples(paciente, dados);
           nomeArquivo = `receita_${this.slug(paciente.nome)}_${this.dataAgora()}.pdf`;
           titulo = 'Receituário';
         } else if (this.tipoReceita === 'controle') {
-          doc = PDFDocuments.receituarioControleEspecial(paciente, dados);
+          resultado = PDFDocumentsExtra.receituarioControleEspecial(paciente, dados);
           nomeArquivo = `receita_controle_${this.slug(paciente.nome)}_${this.dataAgora()}.pdf`;
           titulo = 'Receituário de controle especial';
         } else if (this.tipoReceita === 'azul') {
-          doc = PDFDocuments.receituarioAzul(paciente, dados);
+          resultado = PDFDocumentsExtra.receituarioAzul(paciente, dados);
           nomeArquivo = `receita_azul_${this.slug(paciente.nome)}_${this.dataAgora()}.pdf`;
           titulo = 'Receituário azul B1/B2';
         }
 
+        // As funções podem retornar { doc, codigo } ou só doc (compatibilidade)
+        const doc = (resultado && resultado.doc) ? resultado.doc : resultado;
+        const codigo = (resultado && resultado.codigo) ? resultado.codigo : null;
+
         // Auditoria
         if (paciente.id) {
           DB.audit('CREATE_PRESCRICAO_RAPIDA', 'documento', paciente.id, {
-            tipo: titulo, medicamentos: medsValidas.length
+            tipo: titulo, medicamentos: medsValidas.length, codigo
           }).catch(() => {});
         } else {
           DB.audit('CREATE_PRESCRICAO_RAPIDA', 'documento', null, {
-            tipo: titulo, medicamentos: medsValidas.length, avulso: true
+            tipo: titulo, medicamentos: medsValidas.length, avulso: true, codigo
           }).catch(() => {});
         }
 
