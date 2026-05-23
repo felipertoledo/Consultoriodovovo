@@ -1,6 +1,6 @@
 {
-  "version": "0.8.1",
+  "version": "0.8.2",
   "buildDate": "2026-05-23",
-  "codename": "Assinatura ICP-Brasil (hotfix)",
-  "notes": "Hotfix v0.8.1: corrige dois bugs que impediam a assinatura digital na v0.8.0. (1) BUG GRAVE: zgapdfsigner tentava construir a cadeia de certificação online via authorityInfoAccess; no Brasil as ACs (Soluti, Certisign etc) servem certificados intermediários em HTTP, causando Mixed Content block no GitHub Pages (HTTPS) e erro 'Failed to fetch'. Correção: o módulo signer agora desabilita temporariamente Zga.urlFetch antes de chamar sign(), forçando o zgapdfsigner a pular o buildChain online. A assinatura continua válida porque Adobe Reader e verificador ITI gov.br já confiam na raiz ICP-Brasil e baixam a cadeia eles mesmos na validação. (2) BUG: o parâmetro 'signdate: \"1\"' foi mal usado — quando string, o zgapdfsigner interpreta como URL de TSA (Time Stamping Authority), exigindo fetch. Para usar data atual basta omitir signdate (default = new Date()). Removido. Novo teste E2E (9 casos) valida assinatura PKCS#7 detached completa: PDF entrada 1KB → PDF assinado 5.5KB com /SubFilter /adbe.pkcs7.detached, /ByteRange, /Contents, padrão Adobe. 180/180 testes passando totais."
+  "codename": "Status atualizado",
+  "notes": "Atualização do dashboard: o card 'Em construção' (que dizia 'versão 0.1' com lista mínima de funcionalidades) foi substituído por um painel 'Status do sistema' em duas colunas — 'Funcionando' lista as 9 capacidades reais do sistema na v0.8.x (cofre AES-GCM, pacientes com busca cega, 18 domínios de exame psíquico, 7 tipos de PDF, WhatsApp, assinatura ICP-Brasil A1, backup criptografado, PWA offline, auditoria); 'Em planejamento' lista as 5 próximas (agenda/histórico do dia, Ctrl+K, templates de prescrição, 2FA TOTP, sync Supabase). O atalho 'Histórico do dia' (disabled) foi trocado por 'Buscar paciente' (atalho ativo para a lista). Versão exibida agora é dinâmica via x-text do version.json."
 }

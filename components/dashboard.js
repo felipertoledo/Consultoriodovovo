@@ -74,9 +74,9 @@ function renderDashboard(container) {
           <button class="btn btn-secondary" @click="$dispatch('navigate', '/paciente/novo')">
             ➕ Cadastrar paciente
           </button>
-          <button class="btn btn-secondary" @click="$dispatch('navigate', '/historico')" disabled
-                  title="Em construção">
-            📋 Histórico do dia
+          <button class="btn btn-secondary" @click="$dispatch('navigate', '/pacientes')"
+                  title="Atalho para a lista com foco em busca">
+            🔍 Buscar paciente
           </button>
           <button class="btn btn-secondary" @click="$dispatch('navigate', '/config')">
             ⚙️ Configurações
@@ -85,17 +85,43 @@ function renderDashboard(container) {
       </div>
 
       <div class="card mt-6">
-        <h3 class="mb-2">Em construção</h3>
-        <p class="text-sm">Esta é a versão 0.1 do Consultório do Vovô. Estão funcionando:</p>
-        <ul style="margin-top: var(--space-2); padding-left: var(--space-6); color: var(--text-secondary); line-height: var(--leading-relaxed);">
-          <li>Cadastro, listagem e edição de pacientes</li>
-          <li>Criptografia client-side AES-GCM 256 + PBKDF2 600k</li>
-          <li>Chave de recuperação Crockford Base32</li>
-          <li>Trilha de auditoria local (IndexedDB)</li>
-          <li>Idle lock automático em 15 minutos</li>
-        </ul>
-        <p class="text-sm mt-4">Próximas sprints: prontuário com 18 domínios de exame psíquico,
-        geração de PDFs, sync opcional com Supabase, prescrição digital.</p>
+        <h3 class="mb-3">📊 Status do sistema</h3>
+        <p class="text-sm muted mb-4">
+          Consultório do Vovô <strong x-text="version"></strong> ·
+          local-first, criptografia client-side, zero-knowledge.
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-5);">
+          <div>
+            <h4 style="margin-top: 0; color: var(--color-primary); font-size: var(--text-base); margin-bottom: var(--space-2)">
+              ✅ Funcionando
+            </h4>
+            <ul style="font-size: var(--text-sm); color: var(--text-secondary); padding-left: var(--space-5); line-height: var(--leading-relaxed); margin: 0">
+              <li><strong>Cofre criptografado</strong> AES-GCM 256 + PBKDF2 600k, chave de recuperação Crockford</li>
+              <li><strong>Pacientes</strong> — cadastro com busca cega por hash, edição, soft-delete</li>
+              <li><strong>Prontuário</strong> com 18 domínios de exame psíquico (Dalgalarrondo)</li>
+              <li><strong>7 tipos de PDF</strong> — receita comum, controle especial, azul B1/B2, atestado, exames, relatório, cópia integral</li>
+              <li><strong>WhatsApp</strong> — share sheet do sistema ou wa.me na conversa do paciente</li>
+              <li><strong>Assinatura ICP-Brasil A1</strong> — PAdES PKCS#7, verificável em Adobe Reader e ITI gov.br</li>
+              <li><strong>Backup criptografado</strong> .cdv-backup com checksum SHA-256 + restore</li>
+              <li><strong>PWA instalável</strong> — Service Worker, 100% offline depois do primeiro acesso</li>
+              <li><strong>Trilha de auditoria</strong> local + idle lock em 15 minutos</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 style="margin-top: 0; color: var(--text-secondary); font-size: var(--text-base); margin-bottom: var(--space-2)">
+              ⏳ Em planejamento
+            </h4>
+            <ul style="font-size: var(--text-sm); color: var(--text-secondary); padding-left: var(--space-5); line-height: var(--leading-relaxed); margin: 0">
+              <li><strong>Agenda e histórico do dia</strong> — visão por data + retornos pendentes</li>
+              <li><strong>Busca rápida Ctrl+K</strong> — paleta de comandos global</li>
+              <li><strong>Templates de prescrição</strong> — receitas frequentes salvas e re-aplicáveis</li>
+              <li><strong>2FA TOTP</strong> — segundo fator além da senha mestra</li>
+              <li><strong>Sync entre dispositivos</strong> — Supabase zero-knowledge (opcional)</li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
   `;
