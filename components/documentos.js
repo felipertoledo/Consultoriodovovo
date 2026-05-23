@@ -304,6 +304,15 @@ function renderDocumentos(container, pacienteId, tipo) {
                     placeholder="Ex: Jejum de 12h para exames de sangue. Trazer resultados na próxima consulta."></textarea>
         </div>
 
+        <div class="flex gap-2 justify-between" style="flex-wrap: wrap">
+          <button class="btn btn-ghost" @click="tipo = 'menu'">← Outro tipo</button>
+          <button class="btn btn-primary" @click="gerarExames()"
+                  :disabled="totalExames === 0">
+            👁️ Pré-visualizar PDF
+          </button>
+        </div>
+      </div>
+
       <!-- ============== FORMULÁRIO: RECEITUÁRIO CONTROLE ESPECIAL ============== -->
       <div x-show="tipo === 'controle'">
         <div class="alert alert-warning">

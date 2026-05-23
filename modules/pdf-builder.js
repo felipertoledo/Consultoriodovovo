@@ -112,14 +112,13 @@ const PDFBuilder = (() => {
     doc.text('PACIENTE', MARGIN.left + 3, y);
     y += 4;
 
-    // Linha 1: Nome + idade + sexo
+    // Linha 1: Nome + idade
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(15, 23, 42);
     const idade = paciente.dataNascimento ? UI.calculateAge(paciente.dataNascimento) : null;
     let linha1 = paciente.nome || '(sem nome registrado)';
     if (idade !== null) linha1 += `, ${idade} anos`;
-    if (paciente.sexo) linha1 += ` · ${paciente.sexo}`;
     doc.text(linha1, MARGIN.left + 3, y);
     y += 5;
 

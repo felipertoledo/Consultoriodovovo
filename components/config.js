@@ -12,7 +12,91 @@ function renderConfig(container) {
         </div>
       </div>
 
-      <div class="card">
+      <div class="card mt-4" style="border-color: var(--color-primary); border-width: 2px">
+        <h3 class="card-title mb-4">💾 Backup do cofre</h3>
+
+        <div x-show="!backupStatus" class="muted text-sm">Carregando status…</div>
+
+        <div x-show="backupStatus">
+          <!-- Status atual -->
+          <div class="mb-4" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-3);">
+            <div style="background: var(--bg-sunken); padding: var(--space-3); border-radius: var(--radius-md);">
+              <div class="text-xs muted">Último backup</div>
+              <div class="text-sm" style="font-weight: var(--weight-semibold)"
+                   x-text="backupStatus.lastBackupAt ? formatDate(backupStatus.lastBackupAt) : 'Nunca feito'"></div>
+            </div>
+            <div style="background: var(--bg-sunken); padding: var(--space-3); border-radius: var(--radius-md);">
+              <div class="text-xs muted">Tempo decorrido</div>
+              <div class="text-sm" style="font-weight: var(--weight-semibold)"
+                   x-text="backupStatus.daysSinceBackup === null ? '—' : (backupStatus.daysSinceBackup + ' dias')"></div>
+            </div>
+            <div style="background: var(--bg-sunken); padding: var(--space-3); border-radius: var(--radius-md);">
+              <div class="text-xs muted">Consultas novas desde então</div>
+              <div class="text-sm" style="font-weight: var(--weight-semibold)"
+                   :style="backupStatus.precisaBackup ? 'color: var(--color-danger)' : ''"
+                   x-text="backupStatus.consultasDesdeBackup"></div>
+            </div>
+          </div>
+
+          <!-- Alerta de necessidade -->
+          <div x-show="backupStatus.precisaBackup" class="alert alert-warning mb-4">
+            <div>
+              <strong>Recomendado fazer backup agora.</strong>
+              Você tem novas consultas registradas. Se o navegador limpar os dados,
+              você perderia este trabalho. Baixe um backup e guarde em local seguro
+              (pen-drive, Drive, e-mail).
+            </div>
+          </div>
+        </div>
+
+        <p class="text-sm mb-3">
+          O arquivo de backup contém TODOS os pacientes, consultas e auditoria deste
+          cofre, ainda criptografados. Para restaurar você precisa do mesmo cofre
+          original OU da senha/chave de recuperação que existia quando o backup foi feito.
+        </p>
+
+        <div class="flex gap-2 mb-4" style="flex-wrap: wrap">
+          <button class="btn btn-primary" @click="baixarBackup()" :disabled="working">
+            <span x-show="!working">💾 Baixar backup agora</span>
+            <span x-show="working">Preparando…</span>
+          </button>
+          <button class="btn btn-secondary" @click="$refs.fileInput.click()" :disabled="working">
+            📥 Restaurar de arquivo
+          </button>
+          <input type="file" x-ref="fileInput" style="display: none"
+                 accept=".cdv-backup,.json,application/json"
+                 @change="arquivoSelecionado($event)">
+        </div>
+
+        <!-- Painel de informação do arquivo selecionado -->
+        <div x-show="arquivoInfo" class="card" style="background: var(--bg-sunken); padding: var(--space-4)">
+          <h4 style="margin-top: 0">📁 Backup selecionado</h4>
+          <p class="text-sm mb-2"><strong>Feito em:</strong>
+            <span x-text="arquivoInfo && formatDate(arquivoInfo.exportedAt)"></span>
+            (versão <span x-text="arquivoInfo && arquivoInfo.appVersion"></span>)</p>
+          <p class="text-sm mb-2"><strong>Conteúdo:</strong>
+            <span x-text="arquivoInfo && arquivoInfo.counts.pacientes"></span> pacientes,
+            <span x-text="arquivoInfo && arquivoInfo.counts.consultas"></span> consultas,
+            <span x-text="arquivoInfo && arquivoInfo.counts.auditLog"></span> registros de auditoria
+          </p>
+          <div class="alert alert-warning mt-3">
+            <div>
+              <strong>Atenção:</strong> restaurar vai <strong>SUBSTITUIR</strong> todos
+              os dados atuais deste navegador. O cofre será bloqueado e você precisará
+              fazer login com a senha que estava em vigor quando este backup foi gerado.
+            </div>
+          </div>
+          <div class="flex gap-2 mt-3" style="flex-wrap: wrap">
+            <button class="btn btn-danger" @click="confirmarRestauracao()" :disabled="working">
+              <span x-show="!working">⚠ Substituir tudo e restaurar</span>
+              <span x-show="working">Restaurando…</span>
+            </button>
+            <button class="btn btn-ghost" @click="cancelarRestauracao()">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt-4">
         <h3 class="card-title mb-4">🔐 Trocar senha mestra</h3>
         <p class="text-sm mb-4">A nova senha re-protege a chave de criptografia.
         A chave de recuperação <strong>não muda</strong>.</p>
@@ -111,6 +195,9 @@ function configScreen() {
     version: '0.1.0',
     buildDate: '',
     strength: { score: 0, label: '' },
+    backupStatus: null,
+    arquivoInfo: null,
+    envelopePendente: null,
 
     async load() {
       try {
@@ -123,9 +210,82 @@ function configScreen() {
         this.buildDate = v.buildDate;
       } catch {}
 
+      // Status de backup
+      try {
+        this.backupStatus = await Backup.getStatus();
+      } catch (e) {
+        console.error('Erro ao carregar status de backup:', e);
+      }
+
       this.$watch('newPwd', () => {
         this.strength = Auth.passwordStrength(this.newPwd);
       });
+    },
+
+    async baixarBackup() {
+      if (this.working) return;
+      this.working = true;
+      try {
+        const { filename, bytes } = await Backup.downloadBackup();
+        const kb = (bytes / 1024).toFixed(1);
+        UI.toast(`Backup baixado: ${filename} (${kb} KB)`, 'success', 6000);
+        // Recarrega status
+        this.backupStatus = await Backup.getStatus();
+      } catch (e) {
+        console.error(e);
+        UI.toast('Erro ao gerar backup: ' + e.message, 'error');
+      } finally {
+        this.working = false;
+      }
+    },
+
+    async arquivoSelecionado(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      // Reseta o input para permitir selecionar o mesmo arquivo de novo depois
+      event.target.value = '';
+
+      try {
+        const result = await Backup.validateBackupFile(file);
+        this.arquivoInfo = result.info;
+        this.envelopePendente = result.envelope;
+        // Rola para o painel
+        setTimeout(() => {
+          const el = document.querySelector('.alert.alert-warning');
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      } catch (e) {
+        console.error(e);
+        UI.toast('Backup inválido: ' + e.message, 'error', 8000);
+        this.arquivoInfo = null;
+        this.envelopePendente = null;
+      }
+    },
+
+    cancelarRestauracao() {
+      this.arquivoInfo = null;
+      this.envelopePendente = null;
+    },
+
+    async confirmarRestauracao() {
+      if (!this.envelopePendente) return;
+      if (this.working) return;
+
+      // Dupla confirmação
+      if (!UI.confirm('Tem certeza? Todos os dados atuais serão SUBSTITUÍDOS pelo backup. Esta ação é IRREVERSÍVEL.')) return;
+      if (!UI.confirm('Confirmação final: substituir TUDO pelo backup?')) return;
+
+      this.working = true;
+      try {
+        await Backup.importFromEnvelope(this.envelopePendente);
+        UI.toast('Backup restaurado. Faça login com a senha original.', 'success', 8000);
+        // Recarrega a página para começar do zero (com o cofre travado)
+        setTimeout(() => location.reload(), 1500);
+      } catch (e) {
+        console.error(e);
+        UI.toast('Erro ao restaurar: ' + e.message, 'error', 8000);
+        this.working = false;
+      }
     },
 
     async changePassword() {

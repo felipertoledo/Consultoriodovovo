@@ -12,12 +12,59 @@ function renderSetupWizard(container) {
           <p class="tagline">Configuração inicial — Felipe Ribeiro Toledo · CRM-SP 216.986</p>
         </div>
 
-        <!-- Etapa 1: Senha -->
-        <template x-if="step === 1">
+        <!-- Etapa 0: escolha entre criar novo ou restaurar -->
+        <template x-if="step === 0">
           <div>
             <div class="alert alert-info">
               <div>
                 <strong>Bem-vindo.</strong> Este é o primeiro acesso ao seu prontuário.
+                Você pode criar um cofre novo ou restaurar um backup anterior.
+              </div>
+            </div>
+
+            <div class="form-group">
+              <button class="btn btn-primary btn-block btn-lg" @click="step = 1">
+                ➕ Criar cofre novo
+              </button>
+              <p class="text-sm muted mt-2">Para começar do zero com um cofre criptografado novo.</p>
+            </div>
+
+            <div class="form-group mt-4">
+              <button class="btn btn-secondary btn-block btn-lg" @click="$refs.fileInput.click()">
+                📥 Restaurar de backup
+              </button>
+              <input type="file" x-ref="fileInput" style="display: none"
+                     accept=".cdv-backup,.json,application/json"
+                     @change="arquivoSelecionado($event)">
+              <p class="text-sm muted mt-2">Tem um arquivo <code>.cdv-backup</code> de outro dispositivo ou cópia de segurança.</p>
+            </div>
+
+            <!-- Painel de info do backup selecionado -->
+            <div x-show="arquivoInfo" class="card mt-4" style="background: var(--bg-sunken)">
+              <h4 style="margin-top: 0">📁 Backup selecionado</h4>
+              <p class="text-sm mb-2"><strong>Feito em:</strong>
+                <span x-text="arquivoInfo && formatDateLocal(arquivoInfo.exportedAt)"></span>
+              </p>
+              <p class="text-sm mb-3"><strong>Conteúdo:</strong>
+                <span x-text="arquivoInfo && arquivoInfo.counts.pacientes"></span> pacientes,
+                <span x-text="arquivoInfo && arquivoInfo.counts.consultas"></span> consultas
+              </p>
+              <button class="btn btn-danger btn-block" @click="restaurarDoBackup()" :disabled="working">
+                <span x-show="!working">Restaurar este backup agora</span>
+                <span x-show="working">Restaurando…</span>
+              </button>
+              <p class="text-xs muted mt-2">Após restaurar, você fará login com a senha que existia quando este backup foi gerado.</p>
+            </div>
+          </div>
+        </template>
+
+        <!-- Etapa 1: Senha -->
+        <template x-if="step === 1">
+          <div>
+            <button class="btn btn-ghost btn-sm mb-3" @click="step = 0">← Voltar</button>
+            <div class="alert alert-info">
+              <div>
+                <strong>Criando cofre novo.</strong>
                 Vamos criar uma senha mestra que <strong>nunca sai deste navegador</strong> —
                 ela protege todos os dados dos seus pacientes com criptografia AES-256.
               </div>
@@ -102,18 +149,53 @@ function renderSetupWizard(container) {
 
 function setupWizard() {
   return {
-    step: 1,
+    step: 0,
     password: '',
     password2: '',
     recoveryKey: '',
     confirmed: false,
     working: false,
     strength: { score: 0, label: '' },
+    arquivoInfo: null,
+    envelopePendente: null,
 
     init() {
       this.$watch('password', () => {
         this.strength = Auth.passwordStrength(this.password);
       });
+    },
+
+    formatDateLocal(d) { return UI.formatDate(d); },
+
+    async arquivoSelecionado(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      event.target.value = '';
+      try {
+        const result = await Backup.validateBackupFile(file);
+        this.arquivoInfo = result.info;
+        this.envelopePendente = result.envelope;
+      } catch (e) {
+        console.error(e);
+        UI.toast('Backup inválido: ' + e.message, 'error', 8000);
+        this.arquivoInfo = null;
+        this.envelopePendente = null;
+      }
+    },
+
+    async restaurarDoBackup() {
+      if (!this.envelopePendente || this.working) return;
+      if (!UI.confirm('Confirma a restauração? Você fará login com a senha que existia quando este backup foi gerado.')) return;
+      this.working = true;
+      try {
+        await Backup.importFromEnvelope(this.envelopePendente);
+        UI.toast('Backup restaurado. Faça login com a senha original.', 'success', 8000);
+        setTimeout(() => location.reload(), 1500);
+      } catch (e) {
+        console.error(e);
+        UI.toast('Erro ao restaurar: ' + e.message, 'error', 8000);
+        this.working = false;
+      }
     },
 
     strengthColor() {

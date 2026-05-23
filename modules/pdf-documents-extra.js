@@ -111,7 +111,6 @@ const PDFDocumentsExtra = (() => {
     const idade = paciente.dataNascimento ? UI.calculateAge(paciente.dataNascimento) : null;
     let linha1 = paciente.nome || '(sem nome)';
     if (idade !== null) linha1 += `, ${idade} anos`;
-    if (paciente.sexo) linha1 += ` · ${paciente.sexo}`;
     doc.text(linha1, margemLeft + 2, y + 7);
 
     doc.setFont('helvetica', 'normal');
