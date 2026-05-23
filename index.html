@@ -7,19 +7,24 @@
   <meta name="theme-color" content="#166534">
   <meta name="robots" content="noindex, nofollow">
 
+  <!-- PWA / iOS Safari -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Consultório">
+  <link rel="apple-touch-icon" href="./assets/img/apple-touch-icon.png">
+
   <title>Consultório do Vovô</title>
 
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23166534'/%3E%3Ctext x='32' y='42' font-family='Arial,sans-serif' font-size='28' font-weight='700' text-anchor='middle' fill='white'%3ECV%3C/text%3E%3C/svg%3E">
+  <link rel="icon" type="image/png" sizes="192x192" href="./assets/img/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="./assets/img/icon-512.png">
 
   <link rel="stylesheet" href="./assets/css/tokens.css">
   <link rel="stylesheet" href="./assets/css/app.css">
 
-  <!-- Dexie.js (IndexedDB wrapper) -->
-  <script src="https://unpkg.com/dexie@4.0.10/dist/dexie.min.js"></script>
-
-  <!-- Alpine.js (reatividade) -->
-  <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
+  <!-- Bibliotecas vendored localmente (funcionam offline) -->
+  <script src="./assets/lib/dexie.min.js"></script>
+  <script defer src="./assets/lib/alpine.min.js"></script>
 
   <!-- jsPDF (geração de PDFs client-side) — vendored local para funcionar offline -->
   <script src="./assets/lib/jspdf.umd.min.js"></script>
@@ -71,6 +76,97 @@
   <script src="./components/consulta-form.js"></script>
   <script src="./components/documentos.js"></script>
   <script src="./components/config.js"></script>
+
+  <!-- Captura do prompt de instalação do PWA -->
+  <script>
+    window.deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Impede o prompt automático do navegador
+      e.preventDefault();
+      window.deferredInstallPrompt = e;
+      console.log('[CV] PWA disponível para instalação');
+    });
+    window.addEventListener('appinstalled', () => {
+      console.log('[CV] PWA instalado');
+      window.deferredInstallPrompt = null;
+    });
+  </script>
+
+  <!-- Banner de atualização do Service Worker (oculto por padrão) -->
+  <div id="sw-update-banner" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; background: #166534; color: white; padding: 16px 24px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); display: none; gap: 16px; align-items: center; max-width: 90vw;">
+    <div>
+      <strong>🌱 Nova versão disponível</strong>
+      <div style="font-size: 13px; opacity: 0.9; margin-top: 4px">Recarregue para atualizar</div>
+    </div>
+    <button id="sw-update-btn" style="background: white; color: #166534; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+      Atualizar
+    </button>
+    <button id="sw-dismiss-btn" style="background: transparent; color: white; border: 1px solid rgba(255,255,255,0.4); padding: 8px 12px; border-radius: 8px; cursor: pointer;" title="Adiar até a próxima vez que abrir o app">
+      Depois
+    </button>
+  </div>
+
+  <!-- Service Worker registration + atualização -->
+  <script>
+    (function registerSW() {
+      if (!('serviceWorker' in navigator)) {
+        console.log('[CV] Service Worker não suportado');
+        return;
+      }
+
+      window.addEventListener('load', async () => {
+        try {
+          const reg = await navigator.serviceWorker.register('./service-worker.js');
+          console.log('[CV] Service Worker registrado, escopo:', reg.scope);
+
+          // Detecta nova versão pronta para ativar
+          function showUpdateBanner(newWorker) {
+            const banner = document.getElementById('sw-update-banner');
+            banner.style.display = 'flex';
+
+            document.getElementById('sw-update-btn').onclick = () => {
+              newWorker.postMessage({ type: 'SKIP_WAITING' });
+            };
+            document.getElementById('sw-dismiss-btn').onclick = () => {
+              banner.style.display = 'none';
+            };
+          }
+
+          // Se já tem um SW em waiting (página recarregada com update pendente)
+          if (reg.waiting) {
+            showUpdateBanner(reg.waiting);
+          }
+
+          // Se chegar update enquanto a página está aberta
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            if (!newWorker) return;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                showUpdateBanner(newWorker);
+              }
+            });
+          });
+
+          // Quando o controller muda (skipWaiting foi chamado), recarrega
+          let reloading = false;
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (reloading) return;
+            reloading = true;
+            window.location.reload();
+          });
+
+          // Verifica updates a cada 30 minutos enquanto a aba está aberta
+          setInterval(() => {
+            reg.update().catch(() => {});
+          }, 30 * 60 * 1000);
+
+        } catch (e) {
+          console.error('[CV] Falha ao registrar Service Worker:', e);
+        }
+      });
+    })();
+  </script>
 
   <!-- Bootstrap da aplicação -->
   <script>

@@ -162,6 +162,49 @@ function renderConfig(container) {
         <button class="btn btn-secondary" @click="lock()">Bloquear agora</button>
       </div>
 
+      <div class="card mt-4">
+        <h3 class="card-title mb-4">📱 Status do aplicativo (PWA)</h3>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4);">
+          <div style="background: var(--bg-sunken); padding: var(--space-3); border-radius: var(--radius-md);">
+            <div class="text-xs muted">Funcionamento offline</div>
+            <div class="text-sm" style="font-weight: var(--weight-semibold)"
+                 x-text="swStatus.cached ? '✓ Pronto' : 'Carregando…'"></div>
+          </div>
+          <div style="background: var(--bg-sunken); padding: var(--space-3); border-radius: var(--radius-md);">
+            <div class="text-xs muted">Service Worker</div>
+            <div class="text-sm" style="font-weight: var(--weight-semibold)"
+                 x-text="swStatus.swVersion || '—'"></div>
+          </div>
+          <div style="background: var(--bg-sunken); padding: var(--space-3); border-radius: var(--radius-md);">
+            <div class="text-xs muted">Instalado como app</div>
+            <div class="text-sm" style="font-weight: var(--weight-semibold)"
+                 x-text="swStatus.installed ? '✓ Sim' : 'Não'"></div>
+          </div>
+        </div>
+
+        <p class="text-sm mb-3" x-show="!swStatus.installed && swStatus.canInstall">
+          Você pode instalar o Consultório do Vovô como aplicativo neste dispositivo —
+          ele fica no menu Iniciar/área de trabalho e abre em janela própria, sem barra do navegador.
+          Funciona <strong>sem internet</strong> depois de instalado.
+        </p>
+
+        <div class="flex gap-2" style="flex-wrap: wrap">
+          <button class="btn btn-primary" x-show="swStatus.canInstall" @click="instalar()">
+            📥 Instalar app
+          </button>
+          <button class="btn btn-secondary" @click="verificarAtualizacao()" :disabled="checkingUpdate">
+            <span x-show="!checkingUpdate">🔄 Verificar atualizações</span>
+            <span x-show="checkingUpdate">Verificando…</span>
+          </button>
+        </div>
+
+        <p class="text-xs muted mt-3" x-show="!swStatus.canInstall && !swStatus.installed">
+          O botão de instalação aparece quando o navegador detecta que o aplicativo está pronto.
+          No Chrome desktop, você também pode clicar no ícone 📲 no canto direito da barra de endereços.
+        </p>
+      </div>
+
       <div class="card mt-4" style="border-color: var(--color-danger)">
         <h3 class="card-title mb-4" style="color: var(--color-danger)">⚠️ Zona de perigo</h3>
         <p class="text-sm mb-4">Apagar todos os dados deste navegador. Operação <strong>irreversível</strong>.
@@ -198,6 +241,13 @@ function configScreen() {
     backupStatus: null,
     arquivoInfo: null,
     envelopePendente: null,
+    swStatus: {
+      cached: false,
+      swVersion: null,
+      installed: false,
+      canInstall: false
+    },
+    checkingUpdate: false,
 
     async load() {
       try {
@@ -217,9 +267,78 @@ function configScreen() {
         console.error('Erro ao carregar status de backup:', e);
       }
 
+      // Status do Service Worker / PWA
+      await this.atualizarStatusSW();
+
       this.$watch('newPwd', () => {
         this.strength = Auth.passwordStrength(this.newPwd);
       });
+    },
+
+    async atualizarStatusSW() {
+      // Cached?
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        this.swStatus.cached = true;
+        // Pergunta a versão via MessageChannel
+        try {
+          const channel = new MessageChannel();
+          const versionPromise = new Promise((resolve) => {
+            channel.port1.onmessage = (e) => resolve(e.data && e.data.version);
+            setTimeout(() => resolve(null), 2000);
+          });
+          navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' }, [channel.port2]);
+          this.swStatus.swVersion = await versionPromise || 'ativo';
+        } catch (e) {
+          this.swStatus.swVersion = 'ativo';
+        }
+      } else {
+        this.swStatus.cached = false;
+      }
+
+      // Instalado como PWA?
+      this.swStatus.installed = window.matchMedia('(display-mode: standalone)').matches ||
+                                window.navigator.standalone === true;
+
+      // Pode ser instalado?
+      this.swStatus.canInstall = !!window.deferredInstallPrompt && !this.swStatus.installed;
+    },
+
+    async instalar() {
+      if (!window.deferredInstallPrompt) {
+        UI.toast('Instalação não disponível neste momento. Tente recarregar a página.', 'info', 6000);
+        return;
+      }
+      try {
+        window.deferredInstallPrompt.prompt();
+        const choice = await window.deferredInstallPrompt.userChoice;
+        window.deferredInstallPrompt = null;
+        if (choice.outcome === 'accepted') {
+          UI.toast('App instalado com sucesso', 'success');
+          setTimeout(() => this.atualizarStatusSW(), 500);
+        }
+      } catch (e) {
+        UI.toast('Erro ao instalar: ' + e.message, 'error');
+      }
+    },
+
+    async verificarAtualizacao() {
+      if (this.checkingUpdate) return;
+      this.checkingUpdate = true;
+      try {
+        if ('serviceWorker' in navigator) {
+          const reg = await navigator.serviceWorker.getRegistration();
+          if (reg) {
+            await reg.update();
+            UI.toast('Verificação concluída. Se houver atualização, um aviso aparecerá.', 'info', 5000);
+          } else {
+            UI.toast('Service Worker ainda não registrado.', 'info');
+          }
+        }
+      } catch (e) {
+        UI.toast('Erro: ' + e.message, 'error');
+      } finally {
+        this.checkingUpdate = false;
+      }
     },
 
     async baixarBackup() {
