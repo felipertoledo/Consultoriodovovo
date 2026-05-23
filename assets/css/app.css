@@ -211,4 +211,31 @@ p  { color: var(--text-secondary); line-height: var(--leading-relaxed); }
 .chip:hover { border-color: var(--color-primary); }
 .chip-selected { background: var(--color-primary); color: var(--text-on-primary);
                   border-color: var(--color-primary); }
+.chip-removable { background: var(--color-primary-100); color: var(--color-primary-900);
+                  border-color: var(--color-primary-200); }
+.chip-removable button { background: transparent; border: none; cursor: pointer; color: inherit;
+                          font-size: var(--text-lg); line-height: 1; padding: 0; }
 .chips-container { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+/* ---- Autocomplete ---- */
+.autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
+                      background: var(--bg-surface); border: 1px solid var(--border-default);
+                      border-top: none; border-radius: 0 0 var(--radius-md) var(--radius-md);
+                      box-shadow: var(--shadow-lg); max-height: 240px; overflow-y: auto; }
+.autocomplete-item { padding: var(--space-3); cursor: pointer;
+                      border-bottom: 1px solid var(--border-subtle); }
+.autocomplete-item:hover { background: var(--color-primary-50); }
+.autocomplete-item:last-child { border-bottom: none; }
+
+/* ---- Modal de preview PDF ---- */
+.pdf-preview-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7);
+                       z-index: 1000; display: grid; place-items: center; padding: var(--space-4);
+                       animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.pdf-preview-modal { background: var(--bg-surface); border-radius: var(--radius-lg);
+                     width: min(900px, 100%); height: min(90vh, 900px); display: flex; flex-direction: column;
+                     box-shadow: var(--shadow-xl); overflow: hidden; }
+.pdf-preview-header { padding: var(--space-4); border-bottom: 1px solid var(--border-subtle);
+                      display: flex; justify-content: space-between; align-items: center;
+                      flex-wrap: wrap; gap: var(--space-3); }
+.pdf-preview-iframe { flex: 1; border: none; background: var(--bg-sunken); }

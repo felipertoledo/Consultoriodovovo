@@ -1,6 +1,6 @@
 {
-  "version": "0.2.4",
+  "version": "0.3.0",
   "buildDate": "2026-05-22",
-  "codename": "Prontuário",
-  "notes": "Hotfix prosa: cada domínio do exame psíquico agora carrega seu nome na prosa gerada. Frases como 'Normal. Preservado. Adequado.' agora viram 'Psicomotricidade normal. Insight e crítica preservado. Comportamento adequado.'"
+  "codename": "Documentos",
+  "notes": "Sprint 3 Parte 1: geração de PDFs client-side. 3 documentos disponíveis: receituário simples, atestado médico (comparecimento ou afastamento, CID opcional), solicitação de exames (4 categorias com sugestões). Cabeçalho institucional padronizado, identificação completa do paciente, caixa de alerta clínico, bloco de assinatura com data de emissão e código único do documento."
 }

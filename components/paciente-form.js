@@ -230,7 +230,10 @@ function renderPacienteForm(container, id) {
       <div class="card mt-4" x-show="!isNew">
         <div class="flex justify-between items-center mb-4" style="flex-wrap: wrap; gap: var(--space-3)">
           <h3 class="card-title">📋 Consultas (<span x-text="consultas.length"></span>)</h3>
-          <button class="btn btn-primary" @click="novaConsulta()">+ Nova consulta</button>
+          <div class="flex gap-2">
+            <button class="btn btn-secondary" @click="abrirDocumentos()">📄 Gerar documento</button>
+            <button class="btn btn-primary" @click="novaConsulta()">+ Nova consulta</button>
+          </div>
         </div>
 
         <div x-show="loadingConsultas" class="empty-state">
@@ -341,6 +344,11 @@ function pacienteForm(id) {
     novaConsulta() {
       const pid = typeof this.id === 'string' ? this.id : String(this.id);
       Router.navigate('/paciente/' + pid + '/consulta/nova');
+    },
+
+    abrirDocumentos() {
+      const pid = typeof this.id === 'string' ? this.id : String(this.id);
+      Router.navigate('/paciente/' + pid + '/documentos');
     },
 
     abrirConsulta(consultaId) {

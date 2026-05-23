@@ -20,6 +20,9 @@
 
   <!-- Alpine.js (reatividade) -->
   <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
+
+  <!-- jsPDF (geração de PDFs client-side) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 </head>
 <body>
   <!-- Loader inicial -->
@@ -41,6 +44,8 @@
   <script src="./modules/router.js"></script>
   <script src="./modules/clinical-data.js"></script>
   <script src="./modules/prosa-generator.js"></script>
+  <script src="./modules/pdf-builder.js"></script>
+  <script src="./modules/pdf-documents.js"></script>
 
   <!-- Componentes de tela -->
   <script src="./components/setup-wizard.js"></script>
@@ -50,6 +55,7 @@
   <script src="./components/paciente-form.js"></script>
   <script src="./components/exame-psiquico.js"></script>
   <script src="./components/consulta-form.js"></script>
+  <script src="./components/documentos.js"></script>
   <script src="./components/config.js"></script>
 
   <!-- Bootstrap da aplicação -->
@@ -158,6 +164,18 @@
         if (!Auth.isUnlocked()) { Router.navigate('/'); return; }
         const target = renderAppShell('/paciente');
         renderConsultaForm(target, id, consultaId);
+      });
+
+      Router.register('/paciente/:id/documentos', ({ id }) => {
+        if (!Auth.isUnlocked()) { Router.navigate('/'); return; }
+        const target = renderAppShell('/paciente');
+        renderDocumentos(target, id, 'menu');
+      });
+
+      Router.register('/paciente/:id/documentos/:tipo', ({ id, tipo }) => {
+        if (!Auth.isUnlocked()) { Router.navigate('/'); return; }
+        const target = renderAppShell('/paciente');
+        renderDocumentos(target, id, tipo);
       });
 
       Router.register('/config', () => {
