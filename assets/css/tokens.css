@@ -120,3 +120,50 @@
   --z-modal:   1000;
   --z-toast:   2000;
 }
+
+/* ============================================================
+   MODO ESCURO (Sprint C3)
+   Mantém a paleta primária verde. Ajusta backgrounds, texto, bordas.
+   Aplica via [data-theme="dark"] no <html>.
+   ============================================================ */
+[data-theme="dark"] {
+  /* Cor primária um pouco mais clara para visibilidade em fundo escuro */
+  --color-primary:     #22C55E;   /* primary-500 — mais luminoso em dark */
+  --color-primary-800: #166534;
+  --color-primary-900: #14532D;
+
+  /* Backgrounds: 3 níveis de escuridão para hierarquia visual */
+  --bg-app:     #0B1220;          /* fundo geral, slate-950 quase */
+  --bg-surface: #111827;          /* cards e superfícies elevadas */
+  --bg-sunken:  #0F172A;          /* superfícies aninhadas, mais escuras que surface */
+  --bg-overlay: rgba(0, 0, 0, 0.75);
+
+  /* Texto: contraste ajustado */
+  --text-primary:   #F1F5F9;       /* slate-100 */
+  --text-secondary: #CBD5E1;       /* slate-300 */
+  --text-muted:     #64748B;       /* slate-500 */
+  --text-inverse:   #0F172A;
+  --text-on-primary: #FFFFFF;
+
+  /* Bordas: tons de slate-700/600 para baixo contraste */
+  --border-subtle:  #1F2937;
+  --border-default: #334155;
+  --border-strong:  #475569;
+  --border-focus:   #4ADE80;       /* primary-400 — destaque mais luminoso */
+
+  /* Cores semânticas: ligeiramente mais brilhantes para contraste */
+  --color-success: #4ADE80;
+  --color-warning: #FBBF24;
+  --color-danger:  #F87171;
+  --color-info:    #60A5FA;
+
+  /* Sombras quase invisíveis em fundo escuro — substituídas por bordas sutis */
+  --shadow-sm:  0 0 0 1px rgba(255, 255, 255, 0.03);
+  --shadow-md:  0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-lg:  0 0 0 1px rgba(255, 255, 255, 0.07), 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-xl:  0 0 0 1px rgba(255, 255, 255, 0.08), 0 12px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* Indicação visual de carregamento de tema (anti-flash) */
+html { color-scheme: light; }
+html[data-theme="dark"] { color-scheme: dark; }

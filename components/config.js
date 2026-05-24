@@ -97,6 +97,40 @@ function renderConfig(container) {
       </div>
 
       <!-- ============================================================ -->
+      <!-- APARÊNCIA (Sprint C3)                                          -->
+      <!-- ============================================================ -->
+      <div class="card mt-4">
+        <h3 class="card-title mb-4">🎨 Aparência</h3>
+        <p class="text-sm mb-3">
+          Tema visual da interface. PDFs gerados sempre saem em modo claro
+          (preto sobre branco) para impressão padrão, independente do tema escolhido aqui.
+        </p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--space-3);">
+          <label class="tipo-card" :class="temaAtual === 'light' ? 'selected' : ''" @click="trocarTema('light')" style="cursor:pointer;">
+            <input type="radio" name="tema" value="light" :checked="temaAtual === 'light'" style="display:none;">
+            <div style="font-size: 1.5em; text-align:center;">☀️</div>
+            <div style="font-weight: var(--weight-semibold); text-align:center; margin-top: var(--space-1);">Claro</div>
+            <div class="text-xs muted" style="text-align:center;">sempre fundo branco</div>
+          </label>
+          <label class="tipo-card" :class="temaAtual === 'dark' ? 'selected' : ''" @click="trocarTema('dark')" style="cursor:pointer;">
+            <input type="radio" name="tema" value="dark" :checked="temaAtual === 'dark'" style="display:none;">
+            <div style="font-size: 1.5em; text-align:center;">🌙</div>
+            <div style="font-weight: var(--weight-semibold); text-align:center; margin-top: var(--space-1);">Escuro</div>
+            <div class="text-xs muted" style="text-align:center;">sempre fundo escuro</div>
+          </label>
+          <label class="tipo-card" :class="temaAtual === 'auto' ? 'selected' : ''" @click="trocarTema('auto')" style="cursor:pointer;">
+            <input type="radio" name="tema" value="auto" :checked="temaAtual === 'auto'" style="display:none;">
+            <div style="font-size: 1.5em; text-align:center;">🌗</div>
+            <div style="font-weight: var(--weight-semibold); text-align:center; margin-top: var(--space-1);">Automático</div>
+            <div class="text-xs muted" style="text-align:center;">segue o sistema operacional</div>
+          </label>
+        </div>
+        <p class="text-xs muted mt-3">
+          Atalho: também é possível alternar pelo botão "Tema" no menu lateral.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
       <!-- ASSINATURA DIGITAL ICP-Brasil A1                              -->
       <!-- ============================================================ -->
       <div class="card mt-4" style="border-color: var(--color-primary); border-width: 2px">
@@ -335,6 +369,15 @@ function configScreen() {
     version: '0.1.0',
     buildDate: '',
     strength: { score: 0, label: '' },
+    // Sprint C3: tema
+    temaAtual: (typeof window !== 'undefined' && window.Tema ? window.Tema.get() : 'auto'),
+    trocarTema(modo) {
+      if (window.Tema) {
+        window.Tema.set(modo);
+        this.temaAtual = modo;
+        UI.toast(`Tema ${modo === 'auto' ? 'automático' : modo} aplicado`, 'success');
+      }
+    },
     backupStatus: {
       lastBackupAt: null,
       daysSinceBackup: null,

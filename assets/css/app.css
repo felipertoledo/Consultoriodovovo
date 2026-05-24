@@ -241,3 +241,143 @@ p  { color: var(--text-secondary); line-height: var(--leading-relaxed); }
                       display: flex; justify-content: space-between; align-items: center;
                       flex-wrap: wrap; gap: var(--space-3); }
 .pdf-preview-iframe { flex: 1; border: none; background: var(--bg-sunken); }
+
+/* ============================================================
+   MODO ESCURO — Overrides Sprint C3
+   Ajustes em componentes que usam cores hardcoded.
+   ============================================================ */
+[data-theme="dark"] .btn-success {
+  background: rgba(74, 222, 128, 0.15);
+  color: #BBF7D0;
+  border-color: rgba(74, 222, 128, 0.3);
+}
+[data-theme="dark"] .btn-success:hover:not(:disabled) {
+  background: rgba(74, 222, 128, 0.22);
+  border-color: rgba(74, 222, 128, 0.5);
+}
+[data-theme="dark"] .btn-danger:hover:not(:disabled) {
+  background: #DC2626;
+}
+
+[data-theme="dark"] .alert-info {
+  background: rgba(96, 165, 250, 0.1);
+  color: #BFDBFE;
+  border-color: rgba(96, 165, 250, 0.3);
+}
+[data-theme="dark"] .alert-warning {
+  background: rgba(251, 191, 36, 0.1);
+  color: #FDE68A;
+  border-color: rgba(251, 191, 36, 0.3);
+}
+[data-theme="dark"] .alert-danger {
+  background: rgba(248, 113, 113, 0.1);
+  color: #FECACA;
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+[data-theme="dark"] .badge-warning {
+  background: rgba(251, 191, 36, 0.15);
+  color: #FDE68A;
+}
+[data-theme="dark"] .badge-info {
+  background: rgba(96, 165, 250, 0.15);
+  color: #BFDBFE;
+}
+
+[data-theme="dark"] .pdf-preview-overlay {
+  background: rgba(0, 0, 0, 0.85);
+}
+
+/* Inputs em dark: bg um pouco mais escuro que surface + foco visível */
+[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]),
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background-color: var(--bg-sunken);
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+}
+
+/* Placeholder mais visível */
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+/* Date inputs (calendar picker) */
+[data-theme="dark"] input[type="date"],
+[data-theme="dark"] input[type="datetime-local"],
+[data-theme="dark"] input[type="time"] {
+  color-scheme: dark;
+}
+
+/* Cards e superfícies com leve borda em vez de sombra */
+[data-theme="dark"] .card {
+  border: 1px solid var(--border-subtle);
+}
+
+/* Modais e overlays */
+[data-theme="dark"] .modal-content,
+[data-theme="dark"] .pdf-preview-modal {
+  border: 1px solid var(--border-subtle);
+}
+
+/* Imagens anexadas: borda em volta do thumb para destacar em fundo escuro */
+[data-theme="dark"] img[src^="blob:"],
+[data-theme="dark"] img[src^="data:"] {
+  /* Sem borda forçada — o card já delimita */
+}
+
+/* Toggle de tema — botão circular no canto */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  transition: all var(--transition-fast);
+}
+.theme-toggle:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* Sidebar nav-item: em dark precisa hover mais visível */
+[data-theme="dark"] .nav-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+[data-theme="dark"] .nav-item.active {
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--color-primary);
+}
+
+/* Toast notifications: em dark, fundo mais escuro */
+[data-theme="dark"] .toast {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+/* Selo "Cofre destrancado" no fim da página em dark */
+[data-theme="dark"] [class*="cofre"],
+[data-theme="dark"] [class*="lock"] {
+  filter: brightness(1.1);
+}
+
+/* Code blocks (raros, mas existem) */
+[data-theme="dark"] code,
+[data-theme="dark"] pre {
+  background: var(--bg-sunken);
+  border: 1px solid var(--border-subtle);
+}

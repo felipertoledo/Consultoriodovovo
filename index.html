@@ -22,6 +22,9 @@
   <link rel="stylesheet" href="./assets/css/tokens.css">
   <link rel="stylesheet" href="./assets/css/app.css">
 
+  <!-- Sprint C3: tema carregado antes de qualquer outro JS para evitar flash de cor errada -->
+  <script src="./modules/tema.js"></script>
+
   <!-- Bibliotecas vendored localmente (funcionam offline) -->
   <script src="./assets/lib/dexie.min.js"></script>
   <script defer src="./assets/lib/alpine.min.js"></script>
@@ -199,6 +202,30 @@
 
       const app = document.getElementById('app');
 
+      // Sprint C3: helpers do tema (claro/escuro/auto)
+      function iconeTema(modo) {
+        if (modo === 'light') return '☀️';
+        if (modo === 'dark') return '🌙';
+        return '🌗';  // auto
+      }
+      function labelTema(modo) {
+        if (modo === 'light') return 'claro';
+        if (modo === 'dark') return 'escuro';
+        return 'auto';
+      }
+      window.iconeTema = iconeTema;
+      window.labelTema = labelTema;
+
+      // Atualiza ícone/label ao trocar tema (se Tema estiver disponível)
+      if (window.Tema) {
+        Tema.onChange((efetivo, modo) => {
+          const ic = document.getElementById('temaIcone');
+          const lb = document.getElementById('temaLabel');
+          if (ic) ic.textContent = iconeTema(modo);
+          if (lb) lb.textContent = labelTema(modo);
+        });
+      }
+
       // Helpers de layout
       function renderAppShell(activeRoute) {
         app.innerHTML = `
@@ -232,6 +259,10 @@
                 <button class="nav-item ${activeRoute === '/config' ? 'active' : ''}"
                         onclick="Router.navigate('/config')">
                   ⚙️ Configurações
+                </button>
+                <button class="nav-item" onclick="window.Tema && Tema.toggle(); document.getElementById('temaLabel') && (document.getElementById('temaLabel').textContent = labelTema(Tema.get()))" id="btnTema">
+                  <span id="temaIcone">${iconeTema(window.Tema && Tema.get())}</span>
+                  <span>Tema: <strong id="temaLabel">${labelTema(window.Tema && Tema.get())}</strong></span>
                 </button>
                 <button class="nav-item" onclick="Auth.lock().then(() => Router.navigate('/'))">
                   🔒 Bloquear
