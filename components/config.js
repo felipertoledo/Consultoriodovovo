@@ -131,6 +131,101 @@ function renderConfig(container) {
       </div>
 
       <!-- ============================================================ -->
+      <!-- SINCRONIZAÇÃO ENTRE DISPOSITIVOS (Sprint D2)                  -->
+      <!-- ============================================================ -->
+      <div class="card mt-4">
+        <h3 class="card-title mb-3">☁️ Sincronização entre dispositivos</h3>
+
+        <!-- ESTADO 1: NÃO CONFIGURADO -->
+        <div x-show="!syncStatus.configurado">
+          <p class="text-sm mb-3">
+            Sincronize seu cofre entre notebook, celular e tablet. Os dados são cifrados <strong>antes</strong> de sair daqui — o servidor só vê bytes opacos. Mesmo que invadam o servidor, não conseguem ler nada sem sua senha.
+          </p>
+
+          <div class="alert alert-info mb-3">
+            <strong>Como funciona:</strong>
+            <ol style="margin: 4px 0 0 20px; padding: 0;">
+              <li>Você cria conta gratuita no <a href="https://supabase.com" target="_blank">supabase.com</a></li>
+              <li>Cria um projeto e roda o SQL que eu te dou (1 minuto)</li>
+              <li>Cola URL + chave anon aqui</li>
+              <li>Em outros dispositivos, usa <strong>o mesmo Vault ID + mesma senha mestre</strong></li>
+            </ol>
+          </div>
+
+          <div class="form-group">
+            <label class="label">URL do projeto Supabase</label>
+            <input class="input" type="url" x-model="syncForm.url" placeholder="https://abcdefgh.supabase.co">
+          </div>
+
+          <div class="form-group">
+            <label class="label">Chave pública (anon key)
+              <span class="hint">"public anon key" da página API do Supabase</span>
+            </label>
+            <input class="input" type="text" x-model="syncForm.anonKey" placeholder="eyJ...">
+          </div>
+
+          <div class="form-group">
+            <label class="label">Vault ID (deixe vazio para gerar um novo, ou cole de outro dispositivo)
+              <span class="hint">UUID que identifica seu cofre. Mantenha secreto.</span>
+            </label>
+            <input class="input" type="text" x-model="syncForm.vaultId" placeholder="opcional — para parear com outro dispositivo">
+          </div>
+
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-primary" @click="conectarSync()" :disabled="syncOcupado || !syncForm.url || !syncForm.anonKey">
+              <span x-show="!syncOcupado" x-text="syncForm.vaultId ? '🔗 Parear com cofre existente' : '✨ Criar novo cofre remoto'"></span>
+              <span x-show="syncOcupado">Conectando…</span>
+            </button>
+            <button class="btn btn-ghost" @click="copiarSqlSetup()">📋 Copiar SQL do setup</button>
+          </div>
+        </div>
+
+        <!-- ESTADO 2: CONFIGURADO -->
+        <div x-show="syncStatus.configurado">
+          <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom: var(--space-3);">
+            <span style="font-size: 1.5em">✅</span>
+            <div style="flex:1; min-width:200px;">
+              <strong>Sincronização ativa</strong>
+              <div class="text-xs muted" x-text="syncStatus.url || ''"></div>
+              <div class="text-xs muted" x-show="syncStatus.lastSyncedAt">
+                Última sync: <span x-text="formatarDataSync(syncStatus.lastSyncedAt)"></span>
+              </div>
+              <div class="text-xs muted" x-show="!syncStatus.lastSyncedAt">Nunca sincronizou</div>
+              <div class="text-xs" x-show="syncStatus.lastSyncError" style="color: var(--color-danger);">
+                ⚠ Último erro: <span x-text="syncStatus.lastSyncError"></span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom: var(--space-3);">
+            <button class="btn btn-primary" @click="sincronizarAgora()" :disabled="syncOcupado">
+              <span x-show="!syncOcupado">🔄 Sincronizar agora</span>
+              <span x-show="syncOcupado">Sincronizando…</span>
+            </button>
+            <button class="btn" @click="mostrarVaultId = !mostrarVaultId">
+              <span x-text="mostrarVaultId ? '🙈 Esconder' : '👁 Ver'"></span> Vault ID
+            </button>
+            <button class="btn btn-ghost" @click="desconectarSync()" style="color: var(--color-danger);">
+              ⛓️‍💥 Desconectar deste dispositivo
+            </button>
+          </div>
+
+          <div x-show="mostrarVaultId" x-cloak class="alert alert-warning">
+            <strong>Vault ID (para parear outros dispositivos):</strong>
+            <code style="display:block; padding: 6px; margin-top: 6px; user-select: all; word-break: break-all;" x-text="syncStatus.vaultId"></code>
+            <p class="text-xs mt-2">
+              ⚠ Copie isso para usar em outro dispositivo (notebook, celular). Quem souber este código + sua senha mestre tem acesso ao cofre.
+              <strong>Sem a senha, este código sozinho não serve para ler nada</strong> (dados cifrados).
+            </p>
+          </div>
+
+          <p class="text-xs muted">
+            Auto-sync a cada 5 minutos quando online. PDFs gerados continuam sempre locais (sem sair do dispositivo).
+          </p>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
       <!-- ASSINATURA DIGITAL ICP-Brasil A1                              -->
       <!-- ============================================================ -->
       <div class="card mt-4" style="border-color: var(--color-primary); border-width: 2px">
@@ -378,6 +473,129 @@ function configScreen() {
         UI.toast(`Tema ${modo === 'auto' ? 'automático' : modo} aplicado`, 'success');
       }
     },
+
+    // Sprint D2: sincronização
+    syncStatus: { configurado: false },
+    syncForm: { url: '', anonKey: '', vaultId: '' },
+    syncOcupado: false,
+    mostrarVaultId: false,
+
+    async carregarSyncStatus() {
+      if (typeof window.Sync === 'undefined') return;
+      this.syncStatus = await window.Sync.status();
+    },
+
+    formatarDataSync(iso) {
+      if (!iso) return '—';
+      try {
+        const d = new Date(iso);
+        const diff = (Date.now() - d.getTime()) / 1000;
+        if (diff < 60) return 'agora';
+        if (diff < 3600) return `há ${Math.round(diff/60)} min`;
+        if (diff < 86400) return `há ${Math.round(diff/3600)} h`;
+        return d.toLocaleString('pt-BR');
+      } catch (_) {
+        return iso;
+      }
+    },
+
+    async conectarSync() {
+      if (this.syncOcupado) return;
+      const url = (this.syncForm.url || '').trim();
+      const anonKey = (this.syncForm.anonKey || '').trim();
+      const vaultId = (this.syncForm.vaultId || '').trim();
+
+      if (!url || !anonKey) {
+        UI.toast('Informe URL e chave anon', 'error');
+        return;
+      }
+      if (!window.SupabaseClient.urlValida(url)) {
+        UI.toast('URL do Supabase inválida (deve ser https://*.supabase.co)', 'error');
+        return;
+      }
+
+      this.syncOcupado = true;
+      try {
+        if (vaultId) {
+          // Pareamento com cofre existente
+          const r = await window.Sync.configurarSecundario(url, anonKey, vaultId);
+          if (r && r.sucesso === false) {
+            throw new Error(r.erro);
+          }
+          UI.toast(`Pareamento concluído — ${r.downloaded || 0} registros baixados`, 'success');
+        } else {
+          // Novo cofre primário
+          await window.Sync.configurarPrimario(url, anonKey);
+          // Faz primeira sync de tudo
+          const r = await window.Sync.sincronizar();
+          if (r && r.sucesso) {
+            UI.toast(`Cofre remoto criado — ${r.uploaded} registros enviados`, 'success');
+          } else {
+            UI.toast(`Configurado (sync inicial falhou: ${r && r.erro})`, 'info');
+          }
+        }
+        // Limpa form
+        this.syncForm = { url: '', anonKey: '', vaultId: '' };
+        await this.carregarSyncStatus();
+        // Inicia auto-sync
+        if (window.Sync && window.Sync.iniciarAutoSync) {
+          window.Sync.iniciarAutoSync(() => this.carregarSyncStatus());
+        }
+      } catch (e) {
+        UI.toast('Erro: ' + e.message, 'error');
+      } finally {
+        this.syncOcupado = false;
+      }
+    },
+
+    async sincronizarAgora() {
+      if (this.syncOcupado) return;
+      this.syncOcupado = true;
+      try {
+        const r = await window.Sync.sincronizar();
+        if (r.sucesso) {
+          const partes = [];
+          if (r.uploaded > 0) partes.push(`${r.uploaded} enviado(s)`);
+          if (r.downloaded > 0) partes.push(`${r.downloaded} baixado(s)`);
+          if (r.conflitos && r.conflitos.length > 0) partes.push(`${r.conflitos.length} conflito(s)`);
+          const msg = partes.length > 0 ? partes.join(', ') : 'tudo em dia';
+          UI.toast(`Sincronizado — ${msg}`, 'success');
+        } else {
+          UI.toast(`Falha: ${r.erro || 'erro desconhecido'}`, 'error');
+        }
+        await this.carregarSyncStatus();
+      } catch (e) {
+        UI.toast('Erro: ' + e.message, 'error');
+      } finally {
+        this.syncOcupado = false;
+      }
+    },
+
+    async desconectarSync() {
+      if (!confirm('Desconectar este dispositivo? Os dados ficam aqui e no servidor — outros dispositivos pareados continuam funcionando. Para apagar do servidor use o dashboard do Supabase.')) return;
+      try {
+        await window.Sync.desconectar();
+        UI.toast('Desconectado deste dispositivo', 'success');
+        await this.carregarSyncStatus();
+      } catch (e) {
+        UI.toast('Erro: ' + e.message, 'error');
+      }
+    },
+
+    async copiarSqlSetup() {
+      try {
+        const sql = window.SupabaseClient.SQL_SETUP;
+        if (navigator.clipboard) {
+          await navigator.clipboard.writeText(sql);
+          UI.toast('SQL copiado — cole no SQL Editor do Supabase', 'success');
+        } else {
+          // Fallback: mostra em modal
+          alert('Copie o SQL abaixo e cole no SQL Editor do Supabase:\n\n' + sql);
+        }
+      } catch (e) {
+        UI.toast('Erro ao copiar: ' + e.message, 'error');
+      }
+    },
     backupStatus: {
       lastBackupAt: null,
       daysSinceBackup: null,
@@ -417,6 +635,16 @@ function configScreen() {
         this.backupStatus = { ...s, loaded: true };
       } catch (e) {
         console.error('Erro ao carregar status de backup:', e);
+      }
+
+      // Sprint D2: status de sync + auto-sync
+      try {
+        await this.carregarSyncStatus();
+        if (this.syncStatus.configurado && window.Sync && window.Sync.iniciarAutoSync) {
+          window.Sync.iniciarAutoSync(() => this.carregarSyncStatus());
+        }
+      } catch (e) {
+        console.error('Erro ao carregar status de sync:', e);
       }
 
       // Status do Service Worker / PWA

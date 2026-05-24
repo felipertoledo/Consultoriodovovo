@@ -82,6 +82,10 @@
   <script src="./modules/agenda.js"></script>
   <script src="./modules/imagem.js"></script>
   <script src="./modules/exames-lab.js"></script>
+  <script src="./modules/supabase-client.js"></script>
+  <script src="./modules/sync.js"></script>
+  <script src="./modules/supabase-client.js"></script>
+  <script src="./modules/sync.js"></script>
 
   <!-- Componentes de tela -->
   <script src="./components/setup-wizard.js"></script>
@@ -95,6 +99,7 @@
   <script src="./components/prescricao-rapida.js"></script>
   <script src="./components/agenda.js"></script>
   <script src="./components/templates-prescricao.js"></script>
+  <script src="./components/sync.js"></script>
   <script src="./components/config.js"></script>
 
   <!-- Captura do prompt de instalação do PWA -->
@@ -256,6 +261,10 @@
               </div>
               <div class="nav-section">
                 <div class="nav-section-title">Sistema</div>
+                <button class="nav-item ${activeRoute === '/sync' ? 'active' : ''}"
+                        onclick="Router.navigate('/sync')">
+                  🔄 Sincronização
+                </button>
                 <button class="nav-item ${activeRoute === '/config' ? 'active' : ''}"
                         onclick="Router.navigate('/config')">
                   ⚙️ Configurações
@@ -364,6 +373,12 @@
         renderTemplates(target);
       });
 
+      Router.register('/sync', () => {
+        if (!Auth.isUnlocked()) { Router.navigate('/'); return; }
+        const target = renderAppShell('/sync');
+        renderSync(target);
+      });
+
       // Listener para navegação programática a partir dos componentes
       document.addEventListener('navigate', (e) => {
         Router.navigate(e.detail);
@@ -379,6 +394,30 @@
       // Esconde o loader e inicia
       document.getElementById('boot-loader').style.display = 'none';
       document.getElementById('app').removeAttribute('x-cloak');
+
+      // Sprint D2: liga auto-sync se configurado e habilitado
+      if (window.Auth && window.Auth.on && window.Sync) {
+        Auth.on(async (evento) => {
+          if (evento === 'unlocked') {
+            try {
+              const cfg = await DB.db.config.get('sync_auto');
+              const auto = cfg && cfg.value === true;
+              const status = await Sync.status();
+              if (auto && status.configurado) {
+                Sync.iniciarAutoSync((r) => {
+                  if (r && r.sucesso === false) {
+                    console.warn('Auto-sync falhou:', r.erro);
+                  }
+                });
+              }
+            } catch (e) {
+              console.warn('Erro ao iniciar auto-sync:', e);
+            }
+          } else if (evento === 'locked') {
+            if (window.Sync) Sync.pararAutoSync();
+          }
+        });
+      }
 
       Router.start();
     })();
