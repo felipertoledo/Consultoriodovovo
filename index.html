@@ -84,8 +84,7 @@
   <script src="./modules/exames-lab.js"></script>
   <script src="./modules/supabase-client.js"></script>
   <script src="./modules/sync.js"></script>
-  <script src="./modules/supabase-client.js"></script>
-  <script src="./modules/sync.js"></script>
+  <script src="./modules/hiperdia.js"></script>
 
   <!-- Componentes de tela -->
   <script src="./components/setup-wizard.js"></script>
@@ -100,6 +99,7 @@
   <script src="./components/agenda.js"></script>
   <script src="./components/templates-prescricao.js"></script>
   <script src="./components/sync.js"></script>
+  <script src="./components/hiperdia.js"></script>
   <script src="./components/config.js"></script>
 
   <!-- Captura do prompt de instalação do PWA -->
@@ -254,6 +254,10 @@
                         onclick="Router.navigate('/prescricao')">
                   💊 Nova prescrição
                 </button>
+                <button class="nav-item ${activeRoute === '/hiperdia' ? 'active' : ''}"
+                        onclick="Router.navigate('/hiperdia')">
+                  🩺 Hiperdia
+                </button>
                 <button class="nav-item ${activeRoute === '/templates' ? 'active' : ''}"
                         onclick="Router.navigate('/templates')">
                   📋 Templates
@@ -371,6 +375,12 @@
         if (!Auth.isUnlocked()) { Router.navigate('/'); return; }
         const target = renderAppShell('/templates');
         renderTemplates(target);
+      });
+
+      Router.register('/hiperdia', () => {
+        if (!Auth.isUnlocked()) { Router.navigate('/'); return; }
+        const target = renderAppShell('/hiperdia');
+        renderHiperdia(target);
       });
 
       Router.register('/sync', () => {

@@ -113,6 +113,45 @@ function renderDashboard(container) {
         </div>
       </div>
 
+      <!-- Sprint B3: Widget Hiperdia -->
+      <div class="card mb-4" x-show="hiperdiaResumo.total > 0">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+          <h3 style="margin:0">🩺 Hiperdia (HAS/DM)</h3>
+          <button class="btn btn-ghost btn-sm" @click="$dispatch('navigate', '/hiperdia')" style="margin-left:auto">
+            Ver painel completo →
+          </button>
+        </div>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap:10px;">
+          <div style="padding:10px; background: var(--bg-sunken); border-radius:8px; text-align:center;
+                      cursor:pointer; border: 1px solid var(--border-subtle);"
+               @click="$dispatch('navigate', '/hiperdia')">
+            <div style="font-size:1.6em; font-weight:bold; color: var(--color-primary);" x-text="hiperdiaResumo.total"></div>
+            <div style="font-size:0.8em; color: var(--text-secondary);">Total</div>
+          </div>
+          <div style="padding:10px; background: rgba(220, 38, 38, 0.08); border-radius:8px; text-align:center;
+                      cursor:pointer; border: 1px solid rgba(220, 38, 38, 0.20);"
+               @click="$dispatch('navigate', '/hiperdia')"
+               x-show="hiperdiaResumo.vermelho > 0">
+            <div style="font-size:1.6em; font-weight:bold; color:#DC2626;" x-text="hiperdiaResumo.vermelho"></div>
+            <div style="font-size:0.8em; color:#991b1b;">🔴 Descompensados</div>
+          </div>
+          <div style="padding:10px; background: rgba(217, 119, 6, 0.08); border-radius:8px; text-align:center;
+                      cursor:pointer; border: 1px solid rgba(217, 119, 6, 0.20);"
+               @click="$dispatch('navigate', '/hiperdia')"
+               x-show="hiperdiaResumo.amarelo > 0">
+            <div style="font-size:1.6em; font-weight:bold; color:#D97706;" x-text="hiperdiaResumo.amarelo"></div>
+            <div style="font-size:0.8em; color:#92400e;">🟡 Atenção</div>
+          </div>
+          <div style="padding:10px; background: rgba(22, 163, 74, 0.08); border-radius:8px; text-align:center;
+                      cursor:pointer; border: 1px solid rgba(22, 163, 74, 0.20);"
+               @click="$dispatch('navigate', '/hiperdia')"
+               x-show="hiperdiaResumo.verde > 0">
+            <div style="font-size:1.6em; font-weight:bold; color:#16A34A;" x-text="hiperdiaResumo.verde"></div>
+            <div style="font-size:0.8em; color:#15803D;">🟢 Controlados</div>
+          </div>
+        </div>
+      </div>
+
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-8);">
         <div class="card">
           <div class="text-sm muted">Pacientes cadastrados</div>
@@ -213,6 +252,9 @@ function dashboardScreen() {
     faltosos: [],
     metricas: { consultasHoje: 0, consultasSemana: 0, consultasMes: 0 },
 
+    // Sprint B3
+    hiperdiaResumo: { total: 0, verde: 0, amarelo: 0, vermelho: 0, cinza: 0 },
+
     formatarDataDash(iso) {
       return window.Agenda ? Agenda.formatarData(iso) : iso;
     },
@@ -266,6 +308,25 @@ function dashboardScreen() {
         }
       } catch (e) {
         console.warn('Erro ao carregar operacional:', e);
+      }
+
+      // Sprint B3: resumo Hiperdia (lazy — pode demorar se houver muitos pacientes)
+      try {
+        if (window.Hiperdia && window.DB.listConsultasByPaciente) {
+          const pacientes = await DB.listPacientes();
+          const cpp = {};
+          // Carrega consultas em paralelo
+          await Promise.all(pacientes.slice(0, 500).map(async (p) => {
+            if (p.deleted) return;
+            try {
+              cpp[p.id] = await DB.listConsultasByPaciente(p.id);
+            } catch (_) { cpp[p.id] = []; }
+          }));
+          const lista = Hiperdia.listarHiperdia(pacientes, cpp);
+          this.hiperdiaResumo = Hiperdia.resumirHiperdia(lista);
+        }
+      } catch (e) {
+        console.warn('Erro ao carregar resumo Hiperdia:', e);
       }
     },
 

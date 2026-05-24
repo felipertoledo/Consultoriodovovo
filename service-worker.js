@@ -14,7 +14,7 @@
    `updatefound`; o index.html mostra banner pro usuário.
    ============================================================ */
 
-const CACHE_VERSION = 'v0.15.1';
+const CACHE_VERSION = 'v0.16.0';
 const CACHE_NAME = `cdv-cache-${CACHE_VERSION}`;
 
 // Lista exaustiva de arquivos a pré-cachear no install
@@ -62,8 +62,7 @@ const PRECACHE_ASSETS = [
   './modules/exames-lab.js',
   './modules/supabase-client.js',
   './modules/sync.js',
-  './modules/supabase-client.js',
-  './modules/sync.js',
+  './modules/hiperdia.js',
   './modules/tema.js',
 
   // Componentes de tela
@@ -79,7 +78,8 @@ const PRECACHE_ASSETS = [
   './components/prescricao-rapida.js',
   './components/agenda.js',
   './components/templates-prescricao.js',
-  './components/sync.js'
+  './components/sync.js',
+  './components/hiperdia.js'
 ];
 
 // -----------------------------------------------------------
