@@ -27,6 +27,11 @@ function componenteAgenda() {
     formAg: { pacienteId: null, pacienteBusca: '', data: '', hora: '', tipo: 'consulta', observacao: '' },
     pacientesEncontrados: [],
     pacienteSelecionado: null,
+    // Cadastro mínimo de paciente novo (primeira consulta sem cadastro prévio)
+    modoNovoPaciente: false,
+    novoPaciente: { nome: '', dataNascimento: '', sexo: '' },
+    salvandoModal: false,
+    buscou: false,  // se já houve uma busca (pra distinguir "ainda não digitou" de "digitou e não achou")
 
     async init() {
       await this.carregarAba();
@@ -155,6 +160,9 @@ function componenteAgenda() {
       };
       this.pacientesEncontrados = [];
       this.pacienteSelecionado = null;
+      this.modoNovoPaciente = false;
+      this.novoPaciente = { nome: '', dataNascimento: '', sexo: '' };
+      this.buscou = false;
       this.modalAberto = true;
     },
 
@@ -169,6 +177,9 @@ function componenteAgenda() {
         observacao: ag.observacao || ''
       };
       this.pacienteSelecionado = { id: ag.pacienteId, nome: ag.pacienteNome };
+      this.modoNovoPaciente = false;
+      this.novoPaciente = { nome: '', dataNascimento: '', sexo: '' };
+      this.buscou = false;
       this.modalAberto = true;
     },
 
@@ -178,16 +189,43 @@ function componenteAgenda() {
 
     async buscarPaciente() {
       const q = (this.formAg.pacienteBusca || '').trim();
+      // Se mudou o texto após selecionar, desfaz seleção
+      if (this.pacienteSelecionado && q !== this.pacienteSelecionado.nome) {
+        this.pacienteSelecionado = null;
+        this.formAg.pacienteId = null;
+      }
+      // Se entrou em modo novo paciente mas o nome mudou, sai do modo
+      if (this.modoNovoPaciente) {
+        this.modoNovoPaciente = false;
+      }
       if (q.length < 2) {
         this.pacientesEncontrados = [];
+        this.buscou = false;
         return;
       }
       try {
         const r = await DB.listPacientes({ search: q, limit: 8 });
         this.pacientesEncontrados = r;
+        this.buscou = true;
       } catch (e) {
         console.warn('Erro busca paciente:', e);
       }
+    },
+
+    iniciarCadastroNovo() {
+      // Pré-preenche o nome com o que foi digitado
+      this.novoPaciente = {
+        nome: (this.formAg.pacienteBusca || '').trim(),
+        dataNascimento: '',
+        sexo: ''
+      };
+      this.modoNovoPaciente = true;
+      this.pacientesEncontrados = [];
+    },
+
+    cancelarCadastroNovo() {
+      this.modoNovoPaciente = false;
+      this.novoPaciente = { nome: '', dataNascimento: '', sexo: '' };
     },
 
     selecionarPaciente(p) {
@@ -198,16 +236,57 @@ function componenteAgenda() {
     },
 
     async salvarModal() {
-      // Validações
-      if (!this.formAg.pacienteId) {
-        UI.toast('Selecione um paciente', 'error');
-        return;
-      }
-      if (!this.formAg.data) {
-        UI.toast('Informe a data', 'error');
-        return;
-      }
+      if (this.salvandoModal) return;
+      this.salvandoModal = true;
       try {
+        // === Caso: cadastro mínimo de paciente novo ===
+        if (this.modoNovoPaciente) {
+          const np = this.novoPaciente;
+          if (!np.nome || !np.nome.trim()) {
+            UI.toast('Informe o nome do paciente', 'error');
+            return;
+          }
+          if (!np.dataNascimento) {
+            UI.toast('Informe a data de nascimento (necessária para cálculo de idade)', 'error');
+            return;
+          }
+          if (!np.sexo) {
+            UI.toast('Informe o sexo', 'error');
+            return;
+          }
+          // Validar data não-absurda
+          const hoje = new Date();
+          const nasc = new Date(np.dataNascimento + 'T12:00:00');
+          if (isNaN(nasc.getTime()) || nasc > hoje) {
+            UI.toast('Data de nascimento inválida', 'error');
+            return;
+          }
+          const anosIdade = (hoje - nasc) / (1000 * 60 * 60 * 24 * 365.25);
+          if (anosIdade > 130) {
+            UI.toast('Data de nascimento muito antiga — verifique', 'error');
+            return;
+          }
+          // Cria paciente mínimo
+          const novoId = await DB.createPaciente({
+            nome: np.nome.trim(),
+            dataNascimento: np.dataNascimento,
+            sexo: np.sexo
+          });
+          this.formAg.pacienteId = novoId;
+          this.pacienteSelecionado = { id: novoId, nome: np.nome.trim() };
+          UI.toast(`Paciente ${np.nome.trim()} cadastrado (mínimo)`, 'success');
+        }
+
+        // Validações comuns
+        if (!this.formAg.pacienteId) {
+          UI.toast('Selecione um paciente ou cadastre um novo', 'error');
+          return;
+        }
+        if (!this.formAg.data) {
+          UI.toast('Informe a data', 'error');
+          return;
+        }
+
         if (this.modalEditandoId) {
           await DB.updateAgendamento(this.modalEditandoId, {
             data: this.formAg.data,
@@ -232,6 +311,8 @@ function componenteAgenda() {
         await this.carregarMetricas();
       } catch (e) {
         UI.toast('Erro ao salvar: ' + e.message, 'error');
+      } finally {
+        this.salvandoModal = false;
       }
     },
 
@@ -344,14 +425,57 @@ function renderAgendaTemplate() {
       <div class="mt-3">
         <label class="text-sm" style="font-weight:600">Paciente</label>
         <input class="input" type="text" x-model="formAg.pacienteBusca" @input="buscarPaciente()"
-               placeholder="Digite o nome do paciente…" :disabled="!!modalEditandoId">
-        <div x-show="pacientesEncontrados.length > 0" style="background:#fff; border:1px solid #d1d5db; border-radius:6px; margin-top:4px; max-height:200px; overflow-y:auto;">
+               placeholder="Digite o nome do paciente…" :disabled="!!modalEditandoId || modoNovoPaciente">
+        <div x-show="pacientesEncontrados.length > 0 && !modoNovoPaciente"
+             style="background:#fff; border:1px solid #d1d5db; border-radius:6px; margin-top:4px; max-height:200px; overflow-y:auto;">
           <template x-for="p in pacientesEncontrados" :key="p.id">
             <div @click="selecionarPaciente(p)" style="padding:8px 12px; cursor:pointer; border-bottom: 1px solid #f3f4f6;">
               <strong x-text="p.nome"></strong>
               <small x-show="p.dataNascimento" x-text="' · ' + (p.dataNascimento || '')"></small>
             </div>
           </template>
+        </div>
+
+        <!-- Não achou? Cadastrar novo paciente inline -->
+        <div x-show="buscou && pacientesEncontrados.length === 0 && !pacienteSelecionado && !modoNovoPaciente && formAg.pacienteBusca.trim().length >= 2"
+             style="margin-top: 8px; padding: 10px; background: #fef3c7; border-radius: 6px; border-left: 3px solid #d97706;">
+          <div style="font-size:0.9em; color:#92400e; margin-bottom:6px;">
+            Nenhum paciente encontrado com esse nome.
+          </div>
+          <button type="button" class="btn btn-sm btn-primary" @click="iniciarCadastroNovo()">
+            + Cadastrar <strong x-text="'&quot;' + formAg.pacienteBusca.trim() + '&quot;'"></strong> como novo paciente
+          </button>
+        </div>
+
+        <!-- Cadastro mínimo de paciente novo -->
+        <div x-show="modoNovoPaciente" x-cloak
+             style="margin-top: 10px; padding: 12px; background: #f0fdf4; border-radius: 8px; border: 2px solid #166534;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <strong style="color:#166534">📝 Cadastro mínimo de paciente novo</strong>
+            <button type="button" class="btn btn-sm" style="margin-left:auto" @click="cancelarCadastroNovo()">×</button>
+          </div>
+          <div style="font-size:0.85em; opacity:0.75; margin-bottom:10px;">
+            Só o essencial para agendar. Complete o cadastro (endereço, CNS, antecedentes) na hora da consulta.
+          </div>
+          <div class="mt-2">
+            <label class="text-sm" style="font-weight:600">Nome completo</label>
+            <input class="input" type="text" x-model="novoPaciente.nome">
+          </div>
+          <div class="mt-2" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div>
+              <label class="text-sm" style="font-weight:600">Data de nascimento</label>
+              <input class="input" type="date" x-model="novoPaciente.dataNascimento">
+            </div>
+            <div>
+              <label class="text-sm" style="font-weight:600">Sexo</label>
+              <select class="input" x-model="novoPaciente.sexo">
+                <option value="">—</option>
+                <option value="F">Feminino</option>
+                <option value="M">Masculino</option>
+                <option value="outro">Outro / não informado</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -382,8 +506,11 @@ function renderAgendaTemplate() {
       </div>
 
       <div class="mt-4" style="display:flex; gap:8px; justify-content:flex-end;">
-        <button class="btn" @click="fecharModal()">Cancelar</button>
-        <button class="btn btn-primary" @click="salvarModal()" x-text="modalEditandoId ? 'Salvar alterações' : 'Criar agendamento'"></button>
+        <button class="btn" @click="fecharModal()" :disabled="salvandoModal">Cancelar</button>
+        <button class="btn btn-primary" @click="salvarModal()" :disabled="salvandoModal">
+          <span x-show="!salvandoModal" x-text="modalEditandoId ? 'Salvar alterações' : (modoNovoPaciente ? 'Cadastrar paciente e criar agendamento' : 'Criar agendamento')"></span>
+          <span x-show="salvandoModal">Salvando…</span>
+        </button>
       </div>
     </div>
   </div>
