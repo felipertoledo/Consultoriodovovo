@@ -1030,13 +1030,13 @@ function documentosScreen(pacienteId, tipoInicial) {
     },
 
     // ---- Cópia do prontuário ----
-    gerarProntuario() {
+    async gerarProntuario() {
       if (!window.jspdf && !window.jsPDF) {
         UI.toast('Biblioteca PDF ainda não carregou.', 'error');
         return;
       }
       try {
-        const { doc, codigo } = PDFDocumentsExtra.copiaProntuario(
+        const { doc, codigo } = await PDFDocumentsExtra.copiaProntuario(
           { ...this.paciente, id: this.pacienteId },
           this.todasConsultas
         );
@@ -1078,7 +1078,7 @@ function documentosScreen(pacienteId, tipoInicial) {
           UI.toast('Consulta não encontrada.', 'error');
           return;
         }
-        const { doc, codigo } = PDFDocumentsExtra.consultaImpressao(
+        const { doc, codigo } = await PDFDocumentsExtra.consultaImpressao(
           { ...this.paciente, id: this.pacienteId },
           consulta
         );

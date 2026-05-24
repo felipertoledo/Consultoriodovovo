@@ -47,6 +47,21 @@ const DB = (() => {
     templatesPrescricao: '++id, tipo, usoCount, createdAt, deleted'
   });
 
+  // ---- Schema v4 (Sprint B2: anexos de imagem em consultas) ----
+  db.version(4).stores({
+    pacientes: '++id, nameHash, createdAt, updatedAt, deleted',
+    consultas: '++id, pacienteId, dataHora, createdAt, updatedAt, deleted',
+    auditLog: '++id, timestamp, action, entity',
+    config: 'key',
+    agendamentos: '++id, pacienteId, data, status, createdAt, deleted',
+    templatesPrescricao: '++id, tipo, usoCount, createdAt, deleted',
+    // anexos: id auto, FK consulta e paciente, ordem cronológica de anexação,
+    //   tipo (foto|ecg|laudo|outro). Bytes da imagem cifrados em `bytes`,
+    //   thumb cifrado em `thumb` (200px), metadata (título, achados, observações,
+    //   mimeType, tamanhos) cifrada em `payload`.
+    anexos: '++id, consultaId, pacienteId, ordem, tipo, createdAt, deleted'
+  });
+
   // ---- Estado interno (DEK em memória, NUNCA persistida) ----
   let currentDEK = null;
   let nameHashSalt = null;
@@ -538,6 +553,202 @@ const DB = (() => {
     });
   }
 
+  // ============================================================
+  // ANEXOS de imagem em consultas (Sprint B2)
+  // ============================================================
+  /**
+   * Cria um anexo de imagem vinculado a uma consulta.
+   *
+   * @param {Object} a - {
+   *   consultaId, pacienteId, tipo? (foto|ecg|laudo|outro),
+   *   titulo?, achados?, observacoes?,
+   *   mimeType, tamanhoOriginal, tamanhoComprimido,
+   *   bytes (Uint8Array da imagem comprimida),
+   *   thumb (Uint8Array do thumb)
+   * }
+   */
+  async function createAnexo(a) {
+    const dek = getDEK();
+    const now = new Date().toISOString();
+
+    if (!a.consultaId) throw new Error('consultaId obrigatório');
+    if (!a.bytes) throw new Error('bytes da imagem obrigatórios');
+    if (!a.thumb) throw new Error('thumb obrigatório');
+
+    // Próxima ordem para essa consulta
+    const existentes = await db.anexos.where('consultaId').equals(a.consultaId).toArray();
+    const ordem = existentes.filter(x => !x.deleted).length + 1;
+
+    // Cifra os 3 blocos
+    const cipherBytes = await CryptoModule.encryptBytes(dek, a.bytes);
+    const cipherThumb = await CryptoModule.encryptBytes(dek, a.thumb);
+    const cipherMeta = await CryptoModule.encrypt(dek, {
+      titulo: a.titulo || '',
+      achados: a.achados || '',
+      observacoes: a.observacoes || '',
+      mimeType: a.mimeType || 'image/jpeg',
+      tamanhoOriginal: a.tamanhoOriginal || 0,
+      tamanhoComprimido: a.tamanhoComprimido || 0,
+      largura: a.largura || 0,
+      altura: a.altura || 0
+    });
+
+    const id = await db.anexos.add({
+      consultaId: a.consultaId,
+      pacienteId: a.pacienteId,
+      tipo: a.tipo || 'foto',
+      ordem,
+      bytes: cipherBytes,
+      thumb: cipherThumb,
+      payload: cipherMeta,
+      createdAt: now,
+      updatedAt: now,
+      deleted: 0
+    });
+
+    await audit('CREATE_ANEXO', 'anexo', id, { consultaId: a.consultaId, tipo: a.tipo });
+    return id;
+  }
+
+  /**
+   * Carrega apenas a metadata e thumb de um anexo (sem decifrar a imagem completa).
+   * Útil para listagem na galeria.
+   * Retorna { id, consultaId, tipo, ordem, titulo, achados, observacoes,
+   *           mimeType, tamanhoOriginal, tamanhoComprimido,
+   *           thumbBytes (Uint8Array), createdAt }
+   */
+  async function getAnexoMeta(id) {
+    const dek = getDEK();
+    const a = await db.anexos.get(id);
+    if (!a || a.deleted) return null;
+    const meta = a.payload ? await CryptoModule.decrypt(dek, a.payload) : {};
+    const thumbBytes = a.thumb ? await CryptoModule.decryptBytes(dek, a.thumb) : null;
+    return {
+      id: a.id, consultaId: a.consultaId, pacienteId: a.pacienteId,
+      tipo: a.tipo, ordem: a.ordem, createdAt: a.createdAt,
+      ...meta,
+      thumbBytes
+    };
+  }
+
+  /**
+   * Carrega o anexo completo: metadata + thumb + bytes da imagem.
+   * Use para visualização ampliada e inclusão em PDF.
+   */
+  async function getAnexoCompleto(id) {
+    const dek = getDEK();
+    const a = await db.anexos.get(id);
+    if (!a || a.deleted) return null;
+    const meta = a.payload ? await CryptoModule.decrypt(dek, a.payload) : {};
+    const thumbBytes = a.thumb ? await CryptoModule.decryptBytes(dek, a.thumb) : null;
+    const bytes = a.bytes ? await CryptoModule.decryptBytes(dek, a.bytes) : null;
+    return {
+      id: a.id, consultaId: a.consultaId, pacienteId: a.pacienteId,
+      tipo: a.tipo, ordem: a.ordem, createdAt: a.createdAt,
+      ...meta,
+      thumbBytes, bytes
+    };
+  }
+
+  /**
+   * Lista todos os anexos de uma consulta com metadata + thumb (sem bytes da imagem completa).
+   * Ordem cronológica de anexação (ordem ASC).
+   */
+  async function listAnexosByConsulta(consultaId) {
+    const dek = getDEK();
+    const rows = await db.anexos.where('consultaId').equals(consultaId).toArray();
+    const ativos = rows.filter(r => !r.deleted).sort((a, b) => a.ordem - b.ordem);
+    const out = [];
+    for (const r of ativos) {
+      try {
+        const meta = r.payload ? await CryptoModule.decrypt(dek, r.payload) : {};
+        const thumbBytes = r.thumb ? await CryptoModule.decryptBytes(dek, r.thumb) : null;
+        out.push({
+          id: r.id, consultaId: r.consultaId, pacienteId: r.pacienteId,
+          tipo: r.tipo, ordem: r.ordem, createdAt: r.createdAt,
+          ...meta, thumbBytes
+        });
+      } catch (e) {
+        console.warn('Falha decifrar anexo', r.id, e);
+        out.push({
+          id: r.id, tipo: r.tipo, ordem: r.ordem,
+          titulo: '(erro ao decifrar)', achados: '', observacoes: '',
+          thumbBytes: null
+        });
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Lista anexos completos (com bytes) de uma consulta — para gerar PDF.
+   */
+  async function listAnexosCompletoByConsulta(consultaId) {
+    const dek = getDEK();
+    const rows = await db.anexos.where('consultaId').equals(consultaId).toArray();
+    const ativos = rows.filter(r => !r.deleted).sort((a, b) => a.ordem - b.ordem);
+    const out = [];
+    for (const r of ativos) {
+      try {
+        const meta = r.payload ? await CryptoModule.decrypt(dek, r.payload) : {};
+        const thumbBytes = r.thumb ? await CryptoModule.decryptBytes(dek, r.thumb) : null;
+        const bytes = r.bytes ? await CryptoModule.decryptBytes(dek, r.bytes) : null;
+        out.push({
+          id: r.id, consultaId: r.consultaId, pacienteId: r.pacienteId,
+          tipo: r.tipo, ordem: r.ordem, createdAt: r.createdAt,
+          ...meta, thumbBytes, bytes
+        });
+      } catch (e) {
+        console.warn('Falha decifrar anexo completo', r.id, e);
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Atualiza apenas a metadata (título, achados, observações, tipo) de um anexo.
+   * Bytes da imagem e thumb permanecem inalterados.
+   */
+  async function updateAnexoMeta(id, fields) {
+    const dek = getDEK();
+    const a = await db.anexos.get(id);
+    if (!a) throw new Error('Anexo não encontrado');
+
+    const oldMeta = a.payload ? await CryptoModule.decrypt(dek, a.payload) : {};
+    const merged = {
+      titulo: fields.titulo !== undefined ? fields.titulo : (oldMeta.titulo || ''),
+      achados: fields.achados !== undefined ? fields.achados : (oldMeta.achados || ''),
+      observacoes: fields.observacoes !== undefined ? fields.observacoes : (oldMeta.observacoes || ''),
+      mimeType: oldMeta.mimeType || 'image/jpeg',
+      tamanhoOriginal: oldMeta.tamanhoOriginal || 0,
+      tamanhoComprimido: oldMeta.tamanhoComprimido || 0,
+      largura: oldMeta.largura || 0,
+      altura: oldMeta.altura || 0
+    };
+    const cipher = await CryptoModule.encrypt(dek, merged);
+    const update = {
+      payload: cipher,
+      updatedAt: new Date().toISOString()
+    };
+    if (fields.tipo !== undefined) update.tipo = fields.tipo;
+    await db.anexos.update(id, update);
+    await audit('UPDATE_ANEXO', 'anexo', id);
+    return id;
+  }
+
+  async function softDeleteAnexo(id) {
+    await db.anexos.update(id, { deleted: 1, updatedAt: new Date().toISOString() });
+    await audit('DELETE_ANEXO', 'anexo', id);
+  }
+
+  /**
+   * Conta anexos ativos por consulta (para badge na lista de consultas).
+   */
+  async function contarAnexosByConsulta(consultaId) {
+    const rows = await db.anexos.where('consultaId').equals(consultaId).toArray();
+    return rows.filter(r => !r.deleted).length;
+  }
+
   async function audit(action, entity, entityId, extra = {}) {
     try {
       await db.auditLog.add({
@@ -562,6 +773,7 @@ const DB = (() => {
     await db.consultas.clear();
     await db.agendamentos.clear();
     await db.templatesPrescricao.clear();
+    await db.anexos.clear();
     await db.auditLog.clear();
     await db.config.clear();
     lock();
@@ -586,6 +798,9 @@ const DB = (() => {
     // Templates de prescrição (Sprint A2)
     createTemplate, getTemplate, updateTemplate, softDeleteTemplate,
     listTemplates, incrementarUsoTemplate,
+    // Anexos (Sprint B2)
+    createAnexo, getAnexoMeta, getAnexoCompleto, listAnexosByConsulta,
+    listAnexosCompletoByConsulta, updateAnexoMeta, softDeleteAnexo, contarAnexosByConsulta,
     // Audit
     audit, getRecentAudit,
     // Danger

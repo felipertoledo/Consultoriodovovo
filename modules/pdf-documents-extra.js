@@ -391,7 +391,7 @@ const PDFDocumentsExtra = (() => {
   // 4. CÓPIA INTEGRAL DO PRONTUÁRIO (LGPD art. 18, IV)
   // Direito do paciente de acessar seus próprios dados clínicos
   // ===========================================================
-  function copiaProntuario(paciente, consultas) {
+  async function copiaProntuario(paciente, consultas) {
     const doc = PDFBuilder.novoPDF();
     let y = PDFBuilder.cabecalho(doc, 'Cópia Integral do Prontuário');
     y = PDFBuilder.blocoPaciente(doc, paciente, y, {
@@ -468,6 +468,25 @@ const PDFDocumentsExtra = (() => {
       fontSize: 9, color: [71, 85, 105], lineHeight: 5
     });
 
+    // Sprint B2: agregar anexos de TODAS as consultas e renderizar seção final
+    try {
+      const todosAnexos = [];
+      for (const c of (consultas || [])) {
+        if (!c.id) continue;
+        const anexosConsulta = await DB.listAnexosCompletoByConsulta(c.id);
+        // adiciona contexto da data da consulta para o cabeçalho de cada imagem
+        for (const a of anexosConsulta) {
+          a._dataConsulta = c.dataHora;
+          todosAnexos.push(a);
+        }
+      }
+      if (todosAnexos.length > 0) {
+        y = PDFBuilder.secaoImagensAnexadas(doc, y, todosAnexos);
+      }
+    } catch (e) {
+      console.warn('Falha ao incluir anexos no PDF:', e);
+    }
+
     PDFBuilder.blocoAssinatura(doc, y);
 
     const codigo = PDFBuilder.gerarCodigoDocumento('CPP', paciente.id);
@@ -476,7 +495,7 @@ const PDFDocumentsExtra = (() => {
     return { doc, codigo };
   }
 
-  function consultaImpressao(paciente, consulta) {
+  async function consultaImpressao(paciente, consulta) {
     const doc = PDFBuilder.novoPDF();
     let y = PDFBuilder.cabecalho(doc, 'Registro de Consulta');
     y = PDFBuilder.blocoPaciente(doc, paciente, y, {
@@ -511,6 +530,23 @@ const PDFDocumentsExtra = (() => {
     if (y > PDFBuilder.PAGE_HEIGHT - PDFBuilder.MARGIN.bottom - 45) {
       doc.addPage();
       y = PDFBuilder.MARGIN.top + 10;
+    }
+
+    // Sprint B2: anexos desta consulta (antes da assinatura)
+    try {
+      if (consulta.id) {
+        const anexos = await DB.listAnexosCompletoByConsulta(consulta.id);
+        if (anexos.length > 0) {
+          y = PDFBuilder.secaoImagensAnexadas(doc, y, anexos);
+          // após nova página, precisa verificar espaço de novo
+          if (y > PDFBuilder.PAGE_HEIGHT - PDFBuilder.MARGIN.bottom - 45) {
+            doc.addPage();
+            y = PDFBuilder.MARGIN.top + 10;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Falha ao incluir anexos na consultaImpressao:', e);
     }
 
     // Bloco de assinatura física manual

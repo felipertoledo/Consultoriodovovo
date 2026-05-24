@@ -25,11 +25,12 @@ const Backup = (() => {
     await markBackupDone();
 
     // Coleta todos os registros de todas as tabelas
-    const [pacientes, consultas, agendamentos, templatesPrescricao, auditLog, config] = await Promise.all([
+    const [pacientes, consultas, agendamentos, templatesPrescricao, anexos, auditLog, config] = await Promise.all([
       dexie.pacientes.toArray(),
       dexie.consultas.toArray(),
       dexie.agendamentos.toArray(),
       dexie.templatesPrescricao.toArray(),
+      dexie.anexos.toArray(),
       dexie.auditLog.toArray(),
       dexie.config.toArray()
     ]);
@@ -47,6 +48,7 @@ const Backup = (() => {
         consultas: consultas.length,
         agendamentos: agendamentos.length,
         templatesPrescricao: templatesPrescricao.length,
+        anexos: anexos.length,
         auditLog: auditLog.length,
         config: config.length
       },
@@ -55,6 +57,7 @@ const Backup = (() => {
         consultas,
         agendamentos,
         templatesPrescricao,
+        anexos,
         auditLog,
         config
       }
@@ -173,12 +176,13 @@ const Backup = (() => {
     }
 
     // Limpa todas as tabelas
-    await dexie.transaction('rw', dexie.pacientes, dexie.consultas, dexie.agendamentos, dexie.templatesPrescricao, dexie.auditLog, dexie.config,
+    await dexie.transaction('rw', dexie.pacientes, dexie.consultas, dexie.agendamentos, dexie.templatesPrescricao, dexie.anexos, dexie.auditLog, dexie.config,
       async () => {
         await dexie.pacientes.clear();
         await dexie.consultas.clear();
         await dexie.agendamentos.clear();
         await dexie.templatesPrescricao.clear();
+        await dexie.anexos.clear();
         await dexie.auditLog.clear();
         await dexie.config.clear();
 
@@ -196,6 +200,10 @@ const Backup = (() => {
         // Sprint A2: backups antigos (pre-v0.11.0) não têm templates — retrocompatível
         if (envelope.data.templatesPrescricao && envelope.data.templatesPrescricao.length > 0) {
           await dexie.templatesPrescricao.bulkAdd(envelope.data.templatesPrescricao);
+        }
+        // Sprint B2: backups antigos (pre-v0.12.0) não têm anexos — retrocompatível
+        if (envelope.data.anexos && envelope.data.anexos.length > 0) {
+          await dexie.anexos.bulkAdd(envelope.data.anexos);
         }
         if (envelope.data.auditLog.length > 0) {
           await dexie.auditLog.bulkAdd(envelope.data.auditLog);

@@ -142,6 +142,30 @@ const CryptoModule = (() => {
     return dec.decode(pt);
   }
 
+  // ---- Cifrar/decifrar bytes binários (Sprint B2: imagens) ----
+  // Para dados binários (imagens, certificados PFX), evita o overhead de
+  // serialização JSON + UTF-8 que encrypt() faria. Recebe Uint8Array, devolve {iv, data} base64.
+  async function encryptBytes(dek, bytes) {
+    if (!(bytes instanceof Uint8Array) && !(bytes instanceof ArrayBuffer)) {
+      throw new Error('encryptBytes requer Uint8Array ou ArrayBuffer');
+    }
+    const u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, dek, u8);
+    return {
+      iv: bytesToBase64(iv),
+      data: bytesToBase64(new Uint8Array(ct))
+    };
+  }
+
+  // Decifra bytes binários previamente cifrados com encryptBytes. Devolve Uint8Array.
+  async function decryptBytes(dek, ciphertext) {
+    const iv = base64ToBytes(ciphertext.iv);
+    const data = base64ToBytes(ciphertext.data);
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, dek, data);
+    return new Uint8Array(pt);
+  }
+
   // ---- Setup inicial: cria DEK + envelope dupla (senha + recuperação) ----
   async function createVault(password) {
     // Gera DEK
@@ -251,6 +275,8 @@ const CryptoModule = (() => {
     encrypt,
     decrypt,
     decryptToString,
+    encryptBytes,
+    decryptBytes,
     blindHash,
     // Utils
     bytesToBase64,

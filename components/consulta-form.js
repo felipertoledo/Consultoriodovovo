@@ -367,6 +367,99 @@ function renderConsultaForm(container, pacienteId, consultaId) {
         </div>
       </div>
 
+      <!-- ========== 11. Imagens anexadas (Sprint B2) ========== -->
+      <div class="card mb-4" x-show="!isNew">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <h3 class="card-title" style="margin:0">📷 Imagens anexadas</h3>
+          <span x-show="anexos.length > 0" style="font-size:0.85em; opacity:0.7" x-text="anexos.length + (anexos.length === 1 ? ' imagem' : ' imagens')"></span>
+          <button class="btn btn-sm" @click="abrirSeletorAnexo()" :disabled="processandoAnexo" style="margin-left:auto">
+            <span x-show="!processandoAnexo">📎 Anexar imagem</span>
+            <span x-show="processandoAnexo" x-text="'Processando… ' + (progressoAnexo || '')"></span>
+          </button>
+        </div>
+        <p class="text-sm muted mt-2">
+          Lesão dermato, ECG, exame impresso, resultado de USG. Imagens entram criptografadas no cofre. No PDF "Cópia de prontuário" aparecem em seção própria com espaço para achados.
+        </p>
+
+        <input type="file" accept="image/*" capture="environment" x-ref="inputAnexo" @change="handleArquivoAnexo($event)" style="display:none">
+
+        <div x-show="anexos.length === 0 && !processandoAnexo" style="text-align:center; opacity:0.5; padding:24px; font-size:0.9em;">
+          Nenhuma imagem ainda. Clique em "Anexar imagem" para adicionar.
+        </div>
+
+        <!-- Galeria de thumbs -->
+        <div x-show="anexos.length > 0" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-top: 12px;">
+          <template x-for="(a, idx) in anexos" :key="a.id">
+            <div style="border:1px solid #e5e7eb; border-radius:8px; padding:8px; cursor:pointer;" @click="abrirEditorAnexo(a)">
+              <div style="aspect-ratio: 4/3; background:#f9fafb; border-radius:4px; overflow:hidden; display:flex; align-items:center; justify-content:center;">
+                <img :src="a._thumbUrl" :alt="a.titulo || ('Anexo ' + a.ordem)"
+                     style="width:100%; height:100%; object-fit:cover;">
+              </div>
+              <div style="margin-top:6px; font-size:0.85em;">
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <span x-text="iconePorTipoAnexo(a.tipo)"></span>
+                  <strong x-text="a.titulo || ('Imagem ' + a.ordem)" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></strong>
+                </div>
+                <div style="opacity:0.6; font-size:0.85em; margin-top:2px;" x-text="a.achados ? '✓ com achados' : '— sem achados'"></div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- Modal de edição de anexo -->
+      <div x-show="anexoEditando" x-cloak
+           style="position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px; overflow-y:auto;"
+           @click.self="fecharEditorAnexo()">
+        <div class="card" style="max-width: 800px; width:100%; max-height:95vh; overflow-y:auto;" @click.stop x-show="anexoEditando">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom: 12px;">
+            <h3 class="card-title" style="margin:0">Editar imagem anexada</h3>
+            <button class="btn btn-sm" style="margin-left:auto" @click="fecharEditorAnexo()">×</button>
+          </div>
+
+          <div x-show="anexoEditando" style="text-align:center; background:#f9fafb; border-radius:8px; padding: 8px;">
+            <img :src="anexoEditandoUrl" style="max-width:100%; max-height:60vh; object-fit:contain;">
+          </div>
+
+          <div class="mt-3" style="display:grid; grid-template-columns: 2fr 1fr; gap:10px;">
+            <div>
+              <label class="text-sm" style="font-weight:600">Título</label>
+              <input class="input" type="text" x-model="anexoEditandoMeta.titulo" placeholder="Ex: Lesão dorso, ECG basal, USG abdome">
+            </div>
+            <div>
+              <label class="text-sm" style="font-weight:600">Tipo</label>
+              <select class="input" x-model="anexoEditandoMeta.tipo">
+                <option value="foto">📷 Foto clínica</option>
+                <option value="ecg">📈 ECG</option>
+                <option value="laudo">📄 Laudo / exame</option>
+                <option value="outro">📋 Outro</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <label class="text-sm" style="font-weight:600">Achados / descrição clínica</label>
+            <textarea class="textarea auto-grow" rows="3" x-model="anexoEditandoMeta.achados"
+                      placeholder="O que essa imagem mostra clinicamente? Aparece logo abaixo da imagem no PDF de cópia de prontuário."></textarea>
+            <small style="opacity:0.6">Se ficar em branco, o PDF imprime linhas para anotação manual após impressão.</small>
+          </div>
+
+          <div class="mt-3">
+            <label class="text-sm" style="font-weight:600">Observações adicionais (opcional)</label>
+            <textarea class="textarea auto-grow" rows="2" x-model="anexoEditandoMeta.observacoes"
+                      placeholder="Notas privadas, contexto, hipóteses diferenciais"></textarea>
+          </div>
+
+          <div class="mt-4" style="display:flex; gap:8px; justify-content:space-between; flex-wrap:wrap;">
+            <button class="btn" @click="removerAnexo()" style="color:#991b1b">🗑 Remover imagem</button>
+            <div style="display:flex; gap:8px;">
+              <button class="btn" @click="fecharEditorAnexo()">Cancelar</button>
+              <button class="btn btn-primary" @click="salvarAnexoMeta()">Salvar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Rodapé de ações -->
       <!-- Atalhos para gerar documentos a partir desta consulta -->
       <div class="card mb-4" x-show="!isNew" style="border-color: var(--color-primary); border-width: 1px">
@@ -452,6 +545,15 @@ function consultaForm(pacienteId, consultaId) {
     pickerResultados: [],
     pickerIndice: 0,
 
+    // Sprint B2: anexos de imagem
+    anexos: [],                  // [{ id, tipo, ordem, titulo, achados, observacoes, _thumbUrl }]
+    processandoAnexo: false,
+    progressoAnexo: '',
+    anexoEditando: null,         // { id, ... } (a do anexo aberto no modal)
+    anexoEditandoUrl: null,      // ObjectURL temporária da imagem grande
+    anexoEditandoMeta: { titulo: '', achados: '', observacoes: '', tipo: 'foto' },
+    _anexoThumbsUrls: [],        // ObjectURLs criadas, para liberar ao destruir
+
     antecedentesComuns: ClinicalData.ANTECEDENTES_COMUNS,
     cirurgiasComuns: ClinicalData.CIRURGIAS_COMUNS,
     familiaresComuns: ClinicalData.FAMILIARES_COMUNS,
@@ -493,8 +595,180 @@ function consultaForm(pacienteId, consultaId) {
           // Auto-grow nos textareas existentes
           document.querySelectorAll('.textarea.auto-grow').forEach(el => UI.autoGrowTextarea(el));
         });
+
+        // Sprint B2: carregar anexos se consulta já existe
+        if (!this.isNew && this.consultaId) {
+          await this.recarregarAnexos();
+        }
       } catch (e) {
         UI.toast('Erro ao carregar: ' + e.message, 'error');
+      }
+    },
+
+    // === Sprint B2: anexos de imagem ===
+    iconePorTipoAnexo(tipo) {
+      if (tipo === 'ecg') return '📈';
+      if (tipo === 'laudo') return '📄';
+      if (tipo === 'outro') return '📋';
+      return '📷';
+    },
+
+    _liberarThumbsAnexos() {
+      // Libera ObjectURLs anteriormente criadas para evitar vazamento
+      (this._anexoThumbsUrls || []).forEach(url => {
+        try { URL.revokeObjectURL(url); } catch (_) {}
+      });
+      this._anexoThumbsUrls = [];
+    },
+
+    async recarregarAnexos() {
+      try {
+        const cId = typeof this.consultaId === 'string' ? parseInt(this.consultaId, 10) : this.consultaId;
+        if (!cId) { this.anexos = []; return; }
+        const lista = await DB.listAnexosByConsulta(cId);
+
+        // Libera URLs anteriores
+        this._liberarThumbsAnexos();
+
+        // Cria ObjectURL para cada thumb
+        this.anexos = lista.map(a => {
+          let thumbUrl = null;
+          if (a.thumbBytes) {
+            const blob = new Blob([a.thumbBytes], { type: a.mimeType || 'image/jpeg' });
+            thumbUrl = URL.createObjectURL(blob);
+            this._anexoThumbsUrls.push(thumbUrl);
+          }
+          return { ...a, _thumbUrl: thumbUrl };
+        });
+      } catch (e) {
+        console.warn('Erro ao carregar anexos:', e);
+        UI.toast('Erro ao carregar anexos: ' + e.message, 'error');
+      }
+    },
+
+    abrirSeletorAnexo() {
+      if (this.isNew || !this.consultaId) {
+        UI.toast('Salve a consulta antes de anexar imagens', 'error');
+        return;
+      }
+      // dispara input file
+      if (this.$refs.inputAnexo) {
+        this.$refs.inputAnexo.value = '';  // reset para permitir mesmo arquivo de novo
+        this.$refs.inputAnexo.click();
+      }
+    },
+
+    async handleArquivoAnexo(evento) {
+      const file = evento.target.files && evento.target.files[0];
+      if (!file) return;
+      if (!file.type || !file.type.startsWith('image/')) {
+        UI.toast('Selecione um arquivo de imagem', 'error');
+        return;
+      }
+      this.processandoAnexo = true;
+      this.progressoAnexo = 'lendo arquivo…';
+      try {
+        // 1. Comprimir
+        this.progressoAnexo = 'comprimindo…';
+        const processado = await ImagemUtil.processarArquivo(file);
+
+        // 2. Cifrar e salvar
+        this.progressoAnexo = 'cifrando e salvando…';
+        const cId = typeof this.consultaId === 'string' ? parseInt(this.consultaId, 10) : this.consultaId;
+        const id = await DB.createAnexo({
+          consultaId: cId,
+          pacienteId: this.pacienteId,
+          tipo: 'foto',
+          titulo: file.name.replace(/\.[^.]+$/, '').slice(0, 60),  // nome do arquivo sem extensão
+          achados: '',
+          observacoes: '',
+          mimeType: processado.mimeType,
+          tamanhoOriginal: processado.tamanhoOriginal,
+          tamanhoComprimido: processado.tamanhoComprimido,
+          largura: (processado.dimensoes && processado.dimensoes.largura) || 0,
+          altura: (processado.dimensoes && processado.dimensoes.altura) || 0,
+          bytes: processado.bytes,
+          thumb: processado.thumb
+        });
+
+        UI.toast('Imagem anexada. Clique nela para descrever os achados.', 'success');
+        await this.recarregarAnexos();
+
+        // Abre direto o editor da imagem recém-adicionada (encoraja preencher os achados)
+        const recem = this.anexos.find(a => a.id === id);
+        if (recem) await this.abrirEditorAnexo(recem);
+      } catch (e) {
+        UI.toast('Erro ao processar imagem: ' + e.message, 'error');
+      } finally {
+        this.processandoAnexo = false;
+        this.progressoAnexo = '';
+      }
+    },
+
+    async abrirEditorAnexo(anexoLista) {
+      try {
+        const completo = await DB.getAnexoCompleto(anexoLista.id);
+        if (!completo) {
+          UI.toast('Anexo não encontrado', 'error');
+          return;
+        }
+        // Libera URL anterior se houver
+        if (this.anexoEditandoUrl) {
+          try { URL.revokeObjectURL(this.anexoEditandoUrl); } catch (_) {}
+        }
+        // Cria ObjectURL para a imagem grande
+        const blob = new Blob([completo.bytes], { type: completo.mimeType || 'image/jpeg' });
+        this.anexoEditandoUrl = URL.createObjectURL(blob);
+        this.anexoEditando = { id: completo.id };
+        this.anexoEditandoMeta = {
+          titulo: completo.titulo || '',
+          achados: completo.achados || '',
+          observacoes: completo.observacoes || '',
+          tipo: completo.tipo || 'foto'
+        };
+        this.$nextTick(() => {
+          document.querySelectorAll('.textarea.auto-grow').forEach(el => UI.autoGrowTextarea(el));
+        });
+      } catch (e) {
+        UI.toast('Erro ao abrir imagem: ' + e.message, 'error');
+      }
+    },
+
+    fecharEditorAnexo() {
+      if (this.anexoEditandoUrl) {
+        try { URL.revokeObjectURL(this.anexoEditandoUrl); } catch (_) {}
+      }
+      this.anexoEditandoUrl = null;
+      this.anexoEditando = null;
+    },
+
+    async salvarAnexoMeta() {
+      if (!this.anexoEditando) return;
+      try {
+        await DB.updateAnexoMeta(this.anexoEditando.id, {
+          titulo: this.anexoEditandoMeta.titulo.trim(),
+          achados: this.anexoEditandoMeta.achados.trim(),
+          observacoes: this.anexoEditandoMeta.observacoes.trim(),
+          tipo: this.anexoEditandoMeta.tipo
+        });
+        UI.toast('Imagem atualizada', 'success');
+        this.fecharEditorAnexo();
+        await this.recarregarAnexos();
+      } catch (e) {
+        UI.toast('Erro ao salvar: ' + e.message, 'error');
+      }
+    },
+
+    async removerAnexo() {
+      if (!this.anexoEditando) return;
+      if (!confirm('Remover esta imagem? A ação preserva o registro auditável mas tira da visualização.')) return;
+      try {
+        await DB.softDeleteAnexo(this.anexoEditando.id);
+        UI.toast('Imagem removida', 'success');
+        this.fecharEditorAnexo();
+        await this.recarregarAnexos();
+      } catch (e) {
+        UI.toast('Erro ao remover: ' + e.message, 'error');
       }
     },
 

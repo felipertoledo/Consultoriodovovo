@@ -598,6 +598,203 @@ const PDFBuilder = (() => {
     });
   }
 
+  /**
+   * Converte Uint8Array em dataURL para uso em doc.addImage().
+   */
+  function _bytesParaDataURL(bytes, mimeType) {
+    const mime = mimeType || 'image/jpeg';
+    const u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    let bin = '';
+    const chunk = 0x8000;
+    for (let i = 0; i < u8.length; i += chunk) {
+      bin += String.fromCharCode.apply(null, u8.subarray(i, i + chunk));
+    }
+    return `data:${mime};base64,${btoa(bin)}`;
+  }
+
+  /**
+   * Renderiza a seção "Imagens anexadas" no fim de um PDF.
+   *
+   * @param {Object} doc - jsPDF doc
+   * @param {number} y - posição Y inicial (será ignorada — sempre começa em nova página)
+   * @param {Array} anexos - lista de anexos completos com bytes/thumb/achados/etc.
+   * @returns {number} novo Y depois da seção
+   *
+   * Layout por imagem:
+   * - Cabeçalho: "Imagem N — Título (tipo) · data"
+   * - Imagem centralizada
+   * - Logo abaixo: "Achados clínicos:" + texto OU 6 linhas em branco
+   * - "Observações:" se preenchido
+   */
+  function secaoImagensAnexadas(doc, y, anexos) {
+    if (!anexos || anexos.length === 0) return y;
+
+    // Sempre começa em nova página
+    doc.addPage();
+    y = MARGIN.top;
+
+    // Título da seção
+    doc.setFillColor(22, 101, 52);
+    doc.setDrawColor(22, 101, 52);
+    doc.rect(MARGIN.left, y, CONTENT_WIDTH, 9, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(255, 255, 255);
+    doc.text(`Imagens anexadas (${anexos.length})`, MARGIN.left + 3, y + 6);
+    y += 13;
+
+    doc.setTextColor(15, 23, 42);
+
+    for (let i = 0; i < anexos.length; i++) {
+      const a = anexos[i];
+      y = _renderImagem(doc, y, a, i + 1);
+    }
+    return y;
+  }
+
+  function _tipoLabel(tipo) {
+    const map = {
+      foto: 'Foto clínica',
+      ecg: 'ECG',
+      laudo: 'Laudo / exame',
+      outro: 'Outro'
+    };
+    return map[tipo] || (tipo || 'Imagem');
+  }
+
+  function _renderImagem(doc, y, anexo, numero) {
+    // Calcula dimensões da imagem mantendo aspect ratio
+    const maxLargura = CONTENT_WIDTH - 20;       // mm
+    const maxAltura = 100;                       // mm (limita pra caber achados + obs)
+    let larguraImg = maxLargura;
+    let alturaImg = maxAltura;
+    if (anexo.largura && anexo.altura) {
+      const ratio = anexo.largura / anexo.altura;
+      if (ratio >= maxLargura / maxAltura) {
+        larguraImg = maxLargura;
+        alturaImg = maxLargura / ratio;
+      } else {
+        alturaImg = maxAltura;
+        larguraImg = maxAltura * ratio;
+      }
+    }
+
+    // Espaço total estimado para esta imagem + achados + observações
+    const espacoEstimado = 7 + alturaImg + 6 + 24 + 18 + 8;  // header + imagem + spacer + achados + observações + margem
+    if (y + espacoEstimado > PAGE_HEIGHT - MARGIN.bottom - 5) {
+      doc.addPage();
+      y = MARGIN.top;
+    }
+
+    // Cabeçalho da imagem
+    doc.setFillColor(240, 253, 244);
+    doc.setDrawColor(22, 101, 52);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(MARGIN.left, y, CONTENT_WIDTH, 7, 1, 1, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(22, 101, 52);
+    const titulo = anexo.titulo || `Imagem ${numero}`;
+    const dataStr = anexo.createdAt
+      ? new Date(anexo.createdAt).toLocaleDateString('pt-BR')
+      : '';
+    const headerTxt = `Imagem ${numero} — ${titulo} (${_tipoLabel(anexo.tipo)})${dataStr ? '  ·  ' + dataStr : ''}`;
+    doc.text(headerTxt, MARGIN.left + 3, y + 5);
+    y += 10;
+
+    // A imagem
+    if (anexo.bytes) {
+      try {
+        const dataURL = _bytesParaDataURL(anexo.bytes, anexo.mimeType || 'image/jpeg');
+        const xCentro = MARGIN.left + (CONTENT_WIDTH - larguraImg) / 2;
+        doc.addImage(dataURL, 'JPEG', xCentro, y, larguraImg, alturaImg);
+        y += alturaImg + 5;
+      } catch (e) {
+        console.warn('Falha ao incluir imagem no PDF:', e);
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(9);
+        doc.setTextColor(127, 29, 29);
+        doc.text(`[Imagem ${numero} não pôde ser renderizada]`, MARGIN.left + 3, y + 5);
+        y += 10;
+      }
+    }
+
+    // ACHADOS CLÍNICOS
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Achados clínicos:', MARGIN.left, y);
+    y += 4;
+
+    if (anexo.achados && anexo.achados.trim()) {
+      // Texto digitado
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(15, 23, 42);
+      const linhas = doc.splitTextToSize(anexo.achados.trim(), CONTENT_WIDTH);
+      for (const l of linhas) {
+        if (y > PAGE_HEIGHT - MARGIN.bottom - 6) {
+          doc.addPage();
+          y = MARGIN.top;
+        }
+        doc.text(l, MARGIN.left, y);
+        y += 5;
+      }
+      y += 2;
+    } else {
+      // Linhas em branco para anotação manual após impressão
+      doc.setDrawColor(148, 163, 184);
+      doc.setLineWidth(0.2);
+      const numLinhas = 5;
+      for (let i = 0; i < numLinhas; i++) {
+        if (y > PAGE_HEIGHT - MARGIN.bottom - 4) {
+          doc.addPage();
+          y = MARGIN.top;
+        }
+        doc.line(MARGIN.left, y + 4, MARGIN.left + CONTENT_WIDTH, y + 4);
+        y += 6;
+      }
+      y += 2;
+    }
+
+    // OBSERVAÇÕES (se houver — não imprime linhas em branco se vazio)
+    if (anexo.observacoes && anexo.observacoes.trim()) {
+      if (y > PAGE_HEIGHT - MARGIN.bottom - 15) {
+        doc.addPage();
+        y = MARGIN.top;
+      }
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(71, 85, 105);
+      doc.text('Observações:', MARGIN.left, y);
+      y += 4;
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(9);
+      doc.setTextColor(71, 85, 105);
+      const linhas = doc.splitTextToSize(anexo.observacoes.trim(), CONTENT_WIDTH);
+      for (const l of linhas) {
+        if (y > PAGE_HEIGHT - MARGIN.bottom - 5) {
+          doc.addPage();
+          y = MARGIN.top;
+        }
+        doc.text(l, MARGIN.left, y);
+        y += 4;
+      }
+      y += 2;
+    }
+
+    // Separador entre imagens
+    if (numero < (anexo._total || 999)) {
+      y += 3;
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.3);
+      doc.line(MARGIN.left, y, MARGIN.left + CONTENT_WIDTH, y);
+      y += 5;
+    }
+
+    return y;
+  }
+
   // ---- API pública ----
   return {
     MEDICO,
@@ -617,7 +814,8 @@ const PDFBuilder = (() => {
     abrirEmNovaAba,
     baixar,
     imprimir,
-    previewModal
+    previewModal,
+    secaoImagensAnexadas
   };
 })();
 
