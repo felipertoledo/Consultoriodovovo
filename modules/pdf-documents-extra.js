@@ -447,7 +447,9 @@ const PDFDocumentsExtra = (() => {
         y, { fontSize: 10, color: [148, 163, 184] });
     } else {
       for (const c of consultas) {
-        y = renderizarConsultaNaCopiaProntuario(doc, c, y);
+        // anexa referência ao paciente em cada consulta para o cálculo de TFG
+        const cComPaciente = { ...c, _paciente: paciente };
+        y = renderizarConsultaNaCopiaProntuario(doc, cComPaciente, y);
       }
     }
 
@@ -522,7 +524,8 @@ const PDFDocumentsExtra = (() => {
     doc.setTextColor(15, 23, 42);
 
     // Renderiza os dados clínicos (reusa a mesma helper interna)
-    y = renderizarConsultaNaCopiaProntuario(doc, consulta, y);
+    const consultaComPaciente = { ...consulta, _paciente: paciente };
+    y = renderizarConsultaNaCopiaProntuario(doc, consultaComPaciente, y);
 
     // Espaço para assinatura física (linha de assinatura no rodapé do documento)
     y += 10;
@@ -684,6 +687,14 @@ const PDFDocumentsExtra = (() => {
     if (c.conduta) escreverCampo('Conduta', c.conduta);
     if (c.retorno) escreverCampo('Retorno', c.retorno);
     if (c.sinaisAlerta) escreverCampo('Sinais de alerta orientados', c.sinaisAlerta);
+
+    // Sprint LAB: bloco de exames laboratoriais desta consulta
+    if (c.exames && typeof window !== 'undefined' && window.ExamesLab && window.ExamesLab.temAlgumPreenchido(c.exames)) {
+      y = PDFBuilder.blocoExamesLab(doc, y, c.exames, {
+        titulo: 'Exames laboratoriais desta consulta',
+        paciente: c._paciente  // passado pela função externa para cálculo TFG
+      });
+    }
 
     y += 4;
     return y;

@@ -795,6 +795,205 @@ const PDFBuilder = (() => {
     return y;
   }
 
+  /**
+   * Renderiza um bloco de exames laboratoriais de uma consulta.
+   * Usa o módulo ExamesLab.listarPreenchidos() para extrair só os valores não-vazios.
+   *
+   * @param {Object} doc - jsPDF doc
+   * @param {number} y - posição Y inicial
+   * @param {Object} exames - objeto exames da consulta (estrutura de ExamesLab.estruturaVazia)
+   * @param {Object} opcoes - { titulo?, mostrarData?, paciente? (para TFG) }
+   * @returns {number} novo Y
+   */
+  function blocoExamesLab(doc, y, exames, opcoes) {
+    opcoes = opcoes || {};
+    if (typeof ExamesLab === 'undefined') return y;
+    if (!exames || !ExamesLab.temAlgumPreenchido(exames)) return y;
+
+    const lista = ExamesLab.listarPreenchidos(exames);
+    const temLivre = exames.outros_livre && exames.outros_livre.trim();
+    if (lista.length === 0 && !temLivre) return y;
+
+    // Verifica espaço — se pouco, nova página
+    if (y > PAGE_HEIGHT - MARGIN.bottom - 30) {
+      doc.addPage();
+      y = MARGIN.top;
+    } else {
+      y += 4;
+    }
+
+    // Cabeçalho da seção
+    const tituloSec = opcoes.titulo || 'Exames laboratoriais';
+    doc.setFillColor(22, 101, 52);
+    doc.setDrawColor(22, 101, 52);
+    doc.rect(MARGIN.left, y, CONTENT_WIDTH, 7, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255);
+    doc.text(`🧪 ${tituloSec}`, MARGIN.left + 3, y + 5);
+    y += 9;
+
+    // Data da coleta
+    if (exames.dataColeta) {
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(9);
+      doc.setTextColor(71, 85, 105);
+      const d = exames.dataColeta;
+      const dataFmt = d.includes('-') ? d.split('-').reverse().join('/') : d;
+      doc.text(`Data da coleta: ${dataFmt}`, MARGIN.left, y);
+      y += 5;
+    }
+
+    // Agrupa por categoria
+    const agrupado = {};
+    for (const it of lista) {
+      if (!agrupado[it.categoriaId]) {
+        agrupado[it.categoriaId] = { titulo: it.categoria, itens: [] };
+      }
+      agrupado[it.categoriaId].itens.push(it);
+    }
+
+    // TFG: calcula se houver creatinina + paciente disponível
+    let tfgLinha = null;
+    if (opcoes.paciente && exames.renal && exames.renal.creatinina) {
+      const idade = ExamesLab.idadeEmAnos(opcoes.paciente.dataNascimento);
+      const tfg = ExamesLab.calcularTFG(exames.renal.creatinina, idade, opcoes.paciente.sexo);
+      if (tfg !== null) {
+        const est = ExamesLab.classificarTFG(tfg);
+        tfgLinha = `TFG (CKD-EPI 2021): ${tfg} mL/min/1,73m² — Estágio ${est.estagio} (${est.desc})`;
+      }
+    }
+
+    // Renderiza cada categoria em formato tabular leve
+    for (const catId of Object.keys(agrupado)) {
+      const grupo = agrupado[catId];
+      // Cabeçalho da categoria
+      if (y > PAGE_HEIGHT - MARGIN.bottom - 12) {
+        doc.addPage();
+        y = MARGIN.top;
+      }
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(22, 101, 52);
+      doc.text(grupo.titulo, MARGIN.left, y);
+      y += 4;
+
+      // Itens em 2 colunas (compacto)
+      const colW = CONTENT_WIDTH / 2;
+      let coluna = 0;
+      let yBase = y;
+      let yMaxLinha = y;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(15, 23, 42);
+
+      for (const it of grupo.itens) {
+        let xCol = MARGIN.left + (coluna * colW);
+        let yLocal = (coluna === 0) ? yBase : yBase;
+        // Mas se estiver na coluna 1 e a 0 já passou pra próxima linha, ajusta
+        if (coluna === 1 && yMaxLinha > yBase) yLocal = yBase;
+
+        if (yLocal > PAGE_HEIGHT - MARGIN.bottom - 10) {
+          doc.addPage();
+          y = MARGIN.top;
+          yBase = y;
+          yMaxLinha = y;
+          xCol = MARGIN.left + (coluna * colW);
+          yLocal = yBase;
+        }
+
+        if (it.textoLivre) {
+          // Texto livre ocupa linha inteira
+          if (coluna === 1) {
+            yBase = yMaxLinha;
+            coluna = 0;
+            xCol = MARGIN.left;
+            yLocal = yBase;
+          }
+          doc.setFont('helvetica', 'italic');
+          doc.text(`${it.campo}: ${it.valor}`, xCol, yLocal);
+          const linhas = doc.splitTextToSize(`${it.campo}: ${it.valor}`, CONTENT_WIDTH - 2);
+          for (let i = 1; i < linhas.length; i++) {
+            yLocal += 4;
+            if (yLocal > PAGE_HEIGHT - MARGIN.bottom - 5) {
+              doc.addPage();
+              yLocal = MARGIN.top;
+            }
+            doc.text(linhas[i], xCol, yLocal);
+          }
+          yBase = yLocal + 4;
+          yMaxLinha = yBase;
+          coluna = 0;
+          doc.setFont('helvetica', 'normal');
+          continue;
+        }
+
+        // Item numérico padrão
+        const txt = `${it.campo}: ${it.valor}${it.unidade ? ' ' + it.unidade : ''}`;
+        doc.text(txt, xCol + 2, yLocal);
+        yMaxLinha = Math.max(yMaxLinha, yLocal + 4);
+
+        if (coluna === 0) {
+          coluna = 1;
+        } else {
+          coluna = 0;
+          yBase = yMaxLinha;
+        }
+      }
+
+      // Se terminou em coluna 1, avança para próxima linha
+      if (coluna === 1) {
+        y = yMaxLinha + 1;
+      } else {
+        y = yBase + 1;
+      }
+
+      // Se for a categoria renal e temos TFG, exibe destaque
+      if (catId === 'renal' && tfgLinha) {
+        if (y > PAGE_HEIGHT - MARGIN.bottom - 8) {
+          doc.addPage();
+          y = MARGIN.top;
+        }
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(22, 101, 52);
+        doc.text(tfgLinha, MARGIN.left, y);
+        y += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(15, 23, 42);
+      }
+      y += 2;
+    }
+
+    // Outros exames texto livre
+    if (temLivre) {
+      if (y > PAGE_HEIGHT - MARGIN.bottom - 15) {
+        doc.addPage();
+        y = MARGIN.top;
+      }
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(22, 101, 52);
+      doc.text('Outros exames laboratoriais', MARGIN.left, y);
+      y += 4;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(15, 23, 42);
+      const linhas = doc.splitTextToSize(exames.outros_livre.trim(), CONTENT_WIDTH);
+      for (const l of linhas) {
+        if (y > PAGE_HEIGHT - MARGIN.bottom - 5) {
+          doc.addPage();
+          y = MARGIN.top;
+        }
+        doc.text(l, MARGIN.left, y);
+        y += 4;
+      }
+      y += 2;
+    }
+
+    return y;
+  }
+
   // ---- API pública ----
   return {
     MEDICO,
@@ -815,7 +1014,8 @@ const PDFBuilder = (() => {
     baixar,
     imprimir,
     previewModal,
-    secaoImagensAnexadas
+    secaoImagensAnexadas,
+    blocoExamesLab
   };
 })();
 

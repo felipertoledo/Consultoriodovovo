@@ -367,7 +367,122 @@ function renderConsultaForm(container, pacienteId, consultaId) {
         </div>
       </div>
 
-      <!-- ========== 11. Imagens anexadas (Sprint B2) ========== -->
+      <!-- ========== 11. Exames laboratoriais (Sprint LAB) ========== -->
+      <div class="card mb-4" x-show="!isNew">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <h3 class="card-title" style="margin:0">🧪 Exames laboratoriais</h3>
+          <span x-show="examesPreenchidosCount() > 0" style="font-size:0.85em; opacity:0.7" x-text="examesPreenchidosCount() + ' ' + (examesPreenchidosCount() === 1 ? 'campo preenchido' : 'campos preenchidos')"></span>
+          <button class="btn btn-sm btn-ghost" @click="examesAberto = !examesAberto" style="margin-left:auto">
+            <span x-text="examesAberto ? '▲ Recolher' : '▼ Abrir / preencher'"></span>
+          </button>
+        </div>
+        <p class="text-sm muted mt-2" x-show="!examesAberto && examesPreenchidosCount() === 0">
+          Resultados laboratoriais para colar na consulta. Saem no PDF do resumo. TFG é calculada automaticamente. Templates rápidos para rotina, psiquiátrico, monitoramento de psicofármacos e pré-natal.
+        </p>
+
+        <div x-show="examesAberto" x-cloak class="mt-3">
+          <!-- Topo: data + templates -->
+          <div style="display:grid; grid-template-columns: minmax(160px, 1fr) 2fr; gap: var(--space-3); align-items: flex-start;">
+            <div>
+              <label class="label text-sm" style="font-weight:600">Data da coleta</label>
+              <input type="date" class="input" x-model="consulta.exames.dataColeta" @change="touch()">
+            </div>
+            <div>
+              <label class="label text-sm" style="font-weight:600">Templates rápidos
+                <span class="hint">marca os exames considerados; valores você preenche</span>
+              </label>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <template x-for="tpl in examesTemplates" :key="tpl.id">
+                  <button type="button" class="btn btn-sm" @click="aplicarTemplateExames(tpl.id)" :title="tpl.descricao" x-text="tpl.nome"></button>
+                </template>
+                <button type="button" class="btn btn-sm btn-ghost" @click="limparTemplateExames()" x-show="(consulta.exames._ativos || []).length > 0">× Limpar destaque</button>
+              </div>
+              <p class="text-xs muted mt-1" x-show="(consulta.exames._ativos || []).length > 0">
+                <span x-text="(consulta.exames._ativos || []).length"></span> campo(s) em destaque — preencha pelo resultado do paciente
+              </p>
+            </div>
+          </div>
+
+          <!-- Subseções por categoria -->
+          <template x-for="cat in examesCategorias" :key="cat.id">
+            <div style="margin-top: var(--space-4); padding: var(--space-3); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);">
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <strong x-text="cat.icone + ' ' + cat.titulo"></strong>
+                <button type="button" class="btn btn-sm btn-ghost" @click="toggleCategoria(cat.id)" style="margin-left:auto;"
+                        x-text="categoriaExpandida(cat) ? '▲' : '▼'"></button>
+              </div>
+
+              <p x-show="cat.descricao" class="text-xs muted mt-1" x-text="cat.descricao"></p>
+              <p x-show="cat.avisoP4" class="text-xs mt-1" style="color: #92400e; background: #fef3c7; padding: 6px 8px; border-radius: 4px;"
+                 x-text="'⚠ ' + (cat.avisoP4 || '')"></p>
+
+              <div x-show="categoriaExpandida(cat)" x-cloak class="mt-2" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-2);">
+                <template x-for="campo in cat.campos" :key="campo.id">
+                  <div :style="campoAtivo(cat.id, campo.id) ? 'background: #fef3c7; padding: 6px; border-radius: 4px;' : 'padding: 6px;'">
+                    <label class="label text-xs" style="display:flex; gap:4px; align-items:baseline; flex-wrap:wrap;">
+                      <strong x-text="campo.nome"></strong>
+                      <span x-show="campo.unidade" class="muted" x-text="'(' + campo.unidade + ')'"></span>
+                    </label>
+                    <!-- Select (para sorologias) -->
+                    <select x-show="campo.tipo === 'select'" class="input"
+                            :value="consulta.exames[cat.id][campo.id]"
+                            @change="consulta.exames[cat.id][campo.id] = $event.target.value; touch()">
+                      <template x-for="op in (campo.opcoes || [])">
+                        <option :value="op" x-text="op || '—'"></option>
+                      </template>
+                    </select>
+                    <!-- Texto (para VDRL, cilindros, proteinúria qualitativa) -->
+                    <input x-show="campo.tipo === 'texto'" type="text" class="input"
+                           x-model="consulta.exames[cat.id][campo.id]"
+                           @input="touch()"
+                           :placeholder="campo.ref || ''">
+                    <!-- Numérico (default) -->
+                    <input x-show="!campo.tipo || (campo.tipo !== 'select' && campo.tipo !== 'texto')"
+                           type="number" step="any" class="input"
+                           x-model="consulta.exames[cat.id][campo.id]"
+                           @input="touch(); if (campo.calcTfg) atualizarTFG()"
+                           :placeholder="campo.ref ? 'Ref: ' + campo.ref : ''">
+                    <!-- Exibição auxiliar: faixa de referência abaixo -->
+                    <small x-show="campo.ref && campo.tipo !== 'texto'" class="muted" style="display:block; font-size:0.7em;" x-text="'Ref: ' + campo.ref"></small>
+                    <!-- TFG ao lado da creatinina -->
+                    <div x-show="campo.calcTfg && consulta.exames[cat.id][campo.id]" class="mt-1" style="padding: 6px; background: #f0fdf4; border-radius: 4px; border-left: 3px solid #166534;">
+                      <strong class="text-xs" x-text="tfgCalculada ? 'TFG: ' + tfgCalculada + ' mL/min/1,73m²' : 'TFG: (preencha sexo/idade do paciente)'"></strong>
+                      <div x-show="tfgEstagio" class="text-xs" :style="'color: ' + (tfgEstagio ? tfgEstagio.cor : '')">
+                        <strong x-text="tfgEstagio ? 'Estágio ' + tfgEstagio.estagio : ''"></strong>
+                        <span x-text="tfgEstagio ? ' — ' + tfgEstagio.desc : ''"></span>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+              </div>
+
+              <!-- Texto livre da categoria (hemograma, urina1) -->
+              <div x-show="cat.textoLivre && categoriaExpandida(cat)" x-cloak class="mt-2">
+                <label class="label text-xs" style="font-weight:600">Observações
+                  <span class="hint">campo de texto livre</span>
+                </label>
+                <textarea class="textarea auto-grow" rows="1"
+                          x-model="consulta.exames[cat.id][cat.textoLivre ? cat.textoLivre.id : 'outros']"
+                          @input="touch(); UI.autoGrowTextarea($event.target)"
+                          :placeholder="cat.textoLivre ? cat.textoLivre.placeholder : ''"></textarea>
+              </div>
+            </div>
+          </template>
+
+          <!-- Outros exames texto livre geral -->
+          <div style="margin-top: var(--space-4);">
+            <label class="label" style="font-weight:600">📝 Outros exames laboratoriais (texto livre)
+              <span class="hint">para tudo que não couber nos campos acima</span>
+            </label>
+            <textarea class="textarea auto-grow" rows="2"
+                      x-model="consulta.exames.outros_livre"
+                      @input="touch(); UI.autoGrowTextarea($event.target)"
+                      placeholder="Cole resultados ou descreva exames complementares (sumário de urina alterado, gasometria, hormônios sexuais, etc.)"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== 12. Imagens anexadas (Sprint B2) ========== -->
       <div class="card mb-4" x-show="!isNew">
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
           <h3 class="card-title" style="margin:0">📷 Imagens anexadas</h3>
@@ -554,6 +669,14 @@ function consultaForm(pacienteId, consultaId) {
     anexoEditandoMeta: { titulo: '', achados: '', observacoes: '', tipo: 'foto' },
     _anexoThumbsUrls: [],        // ObjectURLs criadas, para liberar ao destruir
 
+    // Sprint LAB: exames laboratoriais
+    examesAberto: false,
+    examesCategorias: (typeof ExamesLab !== 'undefined' ? ExamesLab.CATEGORIAS : []),
+    examesTemplates: (typeof ExamesLab !== 'undefined' ? ExamesLab.TEMPLATES : []),
+    categoriasExpandidas: {},    // { 'hemograma': true, ... }
+    tfgCalculada: null,
+    tfgEstagio: null,
+
     antecedentesComuns: ClinicalData.ANTECEDENTES_COMUNS,
     cirurgiasComuns: ClinicalData.CIRURGIAS_COMUNS,
     familiaresComuns: ClinicalData.FAMILIARES_COMUNS,
@@ -600,6 +723,10 @@ function consultaForm(pacienteId, consultaId) {
         if (!this.isNew && this.consultaId) {
           await this.recarregarAnexos();
         }
+
+        // Sprint LAB: garantir estrutura de exames + calcular TFG inicial
+        this._garantirEstruturaExames();
+        this.atualizarTFG();
       } catch (e) {
         UI.toast('Erro ao carregar: ' + e.message, 'error');
       }
@@ -770,6 +897,99 @@ function consultaForm(pacienteId, consultaId) {
       } catch (e) {
         UI.toast('Erro ao remover: ' + e.message, 'error');
       }
+    },
+
+    // === Sprint LAB: exames laboratoriais ===
+    _garantirEstruturaExames() {
+      if (!this.consulta.exames || typeof this.consulta.exames !== 'object') {
+        this.consulta.exames = ExamesLab.estruturaVazia();
+      }
+      // Garante todos os campos esperados (consultas antigas podem ter estrutura parcial)
+      const base = ExamesLab.estruturaVazia();
+      for (const k of Object.keys(base)) {
+        if (this.consulta.exames[k] === undefined || this.consulta.exames[k] === null) {
+          this.consulta.exames[k] = base[k];
+        } else if (typeof base[k] === 'object' && !Array.isArray(base[k])) {
+          // mescla campos novos em subseções existentes
+          for (const subk of Object.keys(base[k])) {
+            if (this.consulta.exames[k][subk] === undefined) {
+              this.consulta.exames[k][subk] = base[k][subk];
+            }
+          }
+        }
+      }
+      if (!Array.isArray(this.consulta.exames._ativos)) {
+        this.consulta.exames._ativos = [];
+      }
+    },
+
+    examesPreenchidosCount() {
+      if (!this.consulta.exames || typeof ExamesLab === 'undefined') return 0;
+      const n = ExamesLab.listarPreenchidos(this.consulta.exames).length;
+      const livre = (this.consulta.exames.outros_livre || '').trim() ? 1 : 0;
+      return n + livre;
+    },
+
+    toggleCategoria(catId) {
+      this.categoriasExpandidas[catId] = !this.categoriasExpandidas[catId];
+    },
+
+    categoriaExpandida(cat) {
+      // Expandida se tem algum campo preenchido OU se foi ativada por template OU se está com toggle manual
+      if (this.categoriasExpandidas[cat.id] !== undefined) return this.categoriasExpandidas[cat.id];
+      if (!this.consulta.exames || !this.consulta.exames[cat.id]) return false;
+      const grupo = this.consulta.exames[cat.id];
+      // Se algum campo tem valor, expandir
+      for (const c of cat.campos) {
+        const v = grupo[c.id];
+        if (v !== '' && v !== null && v !== undefined) return true;
+      }
+      if (cat.textoLivre && grupo[cat.textoLivre.id]) return true;
+      // Se algum campo está no template ativo, expandir
+      const ativos = (this.consulta.exames._ativos || []);
+      if (ativos.some(a => a.startsWith(cat.id + '.'))) return true;
+      return false;
+    },
+
+    campoAtivo(catId, campoId) {
+      if (!this.consulta.exames || !this.consulta.exames._ativos) return false;
+      return this.consulta.exames._ativos.includes(catId + '.' + campoId);
+    },
+
+    aplicarTemplateExames(templateId) {
+      this._garantirEstruturaExames();
+      ExamesLab.aplicarTemplate(this.consulta.exames, templateId);
+      // Expande automaticamente as categorias com campos no template
+      const ativos = this.consulta.exames._ativos || [];
+      for (const a of ativos) {
+        const cat = a.split('.')[0];
+        this.categoriasExpandidas[cat] = true;
+      }
+      this.touch();
+      const tpl = this.examesTemplates.find(t => t.id === templateId);
+      UI.toast(`Template "${tpl ? tpl.nome : templateId}" aplicado — ${ativos.length} campos em destaque`, 'success');
+    },
+
+    limparTemplateExames() {
+      if (this.consulta.exames) {
+        this.consulta.exames._ativos = [];
+        this.touch();
+      }
+    },
+
+    atualizarTFG() {
+      if (typeof ExamesLab === 'undefined') return;
+      const cr = this.consulta.exames && this.consulta.exames.renal && this.consulta.exames.renal.creatinina;
+      if (!cr) {
+        this.tfgCalculada = null;
+        this.tfgEstagio = null;
+        return;
+      }
+      const idade = ExamesLab.idadeEmAnos(this.paciente && this.paciente.dataNascimento);
+      const sexo = this.paciente && this.paciente.sexo;
+      const tfg = ExamesLab.calcularTFG(cr, idade, sexo);
+      this.tfgCalculada = tfg;
+      this.tfgEstagio = tfg !== null ? ExamesLab.classificarTFG(tfg) : null;
     },
 
     touch() {
@@ -1075,6 +1295,8 @@ function emptyConsulta() {
     examePsiquicoObservacoes: {},
     examePsiquicoProsa: '',
     hipoteses: [],
+    // Sprint LAB: exames laboratoriais inseridos no contexto da consulta
+    exames: null,  // preenchido lazy via ExamesLab.estruturaVazia() quando o card é aberto
     conduta: '',
     retorno: '',
     sinaisAlerta: ''
