@@ -73,6 +73,28 @@
   }
 
   /**
+   * Extrai o código CIAP (string tipo "K86") de uma hipótese, que pode
+   * ser objeto novo { texto, ciap: { codigo, descricao } } ou — em testes
+   * legados — { ciap: "K86" }. Usa o helper canônico CodigosClinicos
+   * quando disponível (browser); cai no fallback standalone no Node.
+   */
+  function extrairCodigoCiap(h) {
+    if (!h) return null;
+    // Helper canônico (browser)
+    if (typeof window !== 'undefined' && window.CodigosClinicos && window.CodigosClinicos.ciapDe) {
+      const c = window.CodigosClinicos.ciapDe(h);
+      return c ? c.codigo : null;
+    }
+    // Fallback standalone
+    if (typeof h === 'string') return null;
+    if (typeof h === 'object' && h.ciap) {
+      if (typeof h.ciap === 'object' && h.ciap.codigo) return h.ciap.codigo;
+      if (typeof h.ciap === 'string') return h.ciap;
+    }
+    return null;
+  }
+
+  /**
    * Lê o conjunto de CIAPs únicos das hipóteses ATIVAS do paciente
    * (mais recente prevalece em caso de hipótese revogada — aqui união
    * simples basta como heurística clínica para "esse paciente já
@@ -83,7 +105,8 @@
     for (const c of (consultas || [])) {
       if (c.deleted) continue;
       for (const h of (c.hipoteses || [])) {
-        if (h && h.ciap) set.add(String(h.ciap).toUpperCase());
+        const cod = extrairCodigoCiap(h);
+        if (cod) set.add(String(cod).toUpperCase());
       }
     }
     return set;
@@ -342,6 +365,7 @@
     parsePA,
     extrairUltimaPA,
     extrairUltimaHbA1c,
+    extrairCodigoCiap,
     ciapsDoHistorico,
     identificarCondicoes,
     // Classificadores

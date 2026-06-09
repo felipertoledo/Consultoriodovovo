@@ -24,6 +24,10 @@ function renderConsultaForm(container, pacienteId, consultaId) {
               · <span x-text="calcAge(paciente.dataNascimento) + ' anos'"></span>
             </span>
             <span x-show="paciente.sexo"> · <span x-text="paciente.sexo"></span></span>
+            <span x-show="paciente.tipoVaga" class="vaga-badge"
+                  :class="'vaga-badge-' + paciente.tipoVaga"
+                  style="margin-left: 8px; font-size: 0.75em;"
+                  x-text="rotuloVagaConsulta(paciente.tipoVaga)"></span>
           </p>
         </div>
         <div class="page-actions">
@@ -641,7 +645,7 @@ function consultaForm(pacienteId, consultaId) {
     pacienteId: parseInt(pacienteId, 10),
     consultaId: consultaId,
     isNew: !consultaId,
-    paciente: { nome: '', dataNascimento: '', sexo: '' },
+    paciente: { nome: '', dataNascimento: '', sexo: '', tipoVaga: '' },
     consulta: emptyConsulta(),
     saving: false,
     autoSaveStatus: '',
@@ -1002,6 +1006,10 @@ function consultaForm(pacienteId, consultaId) {
 
     autoGrow(el) { UI.autoGrowTextarea(el); },
     calcAge(d) { return UI.calculateAge(d); },
+
+    rotuloVagaConsulta(v) {
+      return (window.ROTULOS_SOCIO && ROTULOS_SOCIO.tipoVaga[v]) || v;
+    },
     formatDate(d) { return UI.formatDate(d); },
 
     calcularIMC() {

@@ -19,6 +19,10 @@ function renderPacienteForm(container, id) {
             Cadastrado em <span x-text="formatDate(paciente.createdAt)"></span> ·
             atualizado em <span x-text="formatDate(paciente.updatedAt)"></span>
           </p>
+          <div class="paciente-badges" x-show="!isNew && paciente.tipoVaga">
+            <span class="vaga-badge" :class="'vaga-badge-' + paciente.tipoVaga"
+                  x-text="rotuloVaga(paciente.tipoVaga)"></span>
+          </div>
         </div>
         <div class="page-actions">
           <span class="text-xs muted" x-show="autoSaveStatus" x-text="autoSaveStatus"></span>
@@ -98,6 +102,77 @@ function renderPacienteForm(container, id) {
               <option>Superior incompleto</option>
               <option>Superior completo</option>
               <option>Pós-graduação</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== SITUAÇÃO SOCIOECONÔMICA (v0.17) ========== -->
+      <div class="card mt-4">
+        <h3 class="card-title mb-4">💰 Situação socioeconômica</h3>
+
+        <div class="form-group">
+          <label class="label">Tipo de atendimento</label>
+          <div class="vaga-radios">
+            <label class="vaga-radio" :class="paciente.tipoVaga === 'sus' ? 'vaga-radio-active vaga-sus' : ''">
+              <input type="radio" name="tipoVaga" value="sus" x-model="paciente.tipoVaga" @change="touch()">
+              <span>🏥 SUS</span>
+            </label>
+            <label class="vaga-radio" :class="paciente.tipoVaga === 'particular' ? 'vaga-radio-active vaga-particular' : ''">
+              <input type="radio" name="tipoVaga" value="particular" x-model="paciente.tipoVaga" @change="touch()">
+              <span>💳 Particular</span>
+            </label>
+            <label class="vaga-radio" :class="paciente.tipoVaga === 'convenio' ? 'vaga-radio-active vaga-convenio' : ''">
+              <input type="radio" name="tipoVaga" value="convenio" x-model="paciente.tipoVaga" @change="touch()">
+              <span>📋 Convênio</span>
+            </label>
+            <button type="button" class="vaga-radio-clear" x-show="paciente.tipoVaga"
+                    @click="paciente.tipoVaga = ''; touch()" title="Limpar seleção">×</button>
+          </div>
+          <small class="field-help" x-show="paciente.tipoVaga === 'convenio'">
+            Informe o nome do plano no campo "Convênio / particular" abaixo (seção Documentos).
+          </small>
+        </div>
+
+        <div class="form-row cols-3">
+          <div class="form-group">
+            <label class="label" for="f_fonte_renda">Fonte de renda principal</label>
+            <select id="f_fonte_renda" class="select" x-model="paciente.fonteRenda" @change="touch()">
+              <option value="">—</option>
+              <option value="formal">Trabalho formal (CLT/servidor)</option>
+              <option value="informal">Trabalho informal / autônomo</option>
+              <option value="aposentadoria">Aposentadoria</option>
+              <option value="pensao">Pensão</option>
+              <option value="bpc">BPC/LOAS</option>
+              <option value="bolsa_familia">Bolsa Família / auxílio</option>
+              <option value="desempregado">Sem fonte de renda / desempregado(a)</option>
+              <option value="outra">Outra</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="label" for="f_renda_pessoal">Renda pessoal</label>
+            <select id="f_renda_pessoal" class="select" x-model="paciente.rendaPessoal" @change="touch()">
+              <option value="">—</option>
+              <option value="sem_renda">Sem renda</option>
+              <option value="ate_1">Até 1 salário mínimo</option>
+              <option value="1_2">1 a 2 salários mínimos</option>
+              <option value="2_3">2 a 3 salários mínimos</option>
+              <option value="3_5">3 a 5 salários mínimos</option>
+              <option value="mais_5">Mais de 5 salários mínimos</option>
+              <option value="nao_informado">Prefere não informar</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="label" for="f_renda_familiar">Renda familiar</label>
+            <select id="f_renda_familiar" class="select" x-model="paciente.rendaFamiliar" @change="touch()">
+              <option value="">—</option>
+              <option value="sem_renda">Sem renda</option>
+              <option value="ate_1">Até 1 salário mínimo</option>
+              <option value="1_2">1 a 2 salários mínimos</option>
+              <option value="2_3">2 a 3 salários mínimos</option>
+              <option value="3_5">3 a 5 salários mínimos</option>
+              <option value="mais_5">Mais de 5 salários mínimos</option>
+              <option value="nao_informado">Prefere não informar</option>
             </select>
           </div>
         </div>
@@ -248,27 +323,43 @@ function renderPacienteForm(container, id) {
 
         <div class="consultas-timeline" x-show="!loadingConsultas && consultas.length > 0">
           <template x-for="c in consultas" :key="c.id">
-            <div class="consulta-item" @click="abrirConsulta(c.id)">
-              <div class="consulta-data">
+            <div class="consulta-item consulta-item-v2" @click="abrirConsulta(c.id)">
+              <div class="consulta-data consulta-data-v2">
                 <div class="consulta-data-day" x-text="formatConsultaDay(c.dataHora)"></div>
                 <div class="consulta-data-month" x-text="formatConsultaMonth(c.dataHora)"></div>
                 <div class="consulta-data-time" x-text="formatConsultaTime(c.dataHora)"></div>
               </div>
               <div class="consulta-info">
-                <div class="consulta-titulo">
+                <div class="consulta-titulo consulta-titulo-v2">
                   <span x-text="c.queixaPrincipal || 'Consulta'"></span>
                   <span x-show="c.queixaDuracao" class="text-sm muted"
                         x-text="' · ' + c.queixaDuracao"></span>
                 </div>
-                <div class="consulta-resumo">
-                  <span x-show="c.hipoteses && c.hipoteses.length > 0">
-                    Hipóteses: <span x-text="(c.hipoteses || []).slice(0, 2).join(', ')"></span>
-                    <span x-show="c.hipoteses.length > 2"
-                          x-text="' (+' + (c.hipoteses.length - 2) + ')'"></span>
+
+                <!-- Chips de hipótese -->
+                <div class="consulta-hipoteses-chips" x-show="c.hipoteses && c.hipoteses.length > 0">
+                  <template x-for="(h, hi) in (c.hipoteses || [])" :key="hi">
+                    <span class="consulta-hip-chip">
+                      <span x-text="textoHipotese(h)"></span>
+                      <span class="consulta-hip-ciap" x-show="ciapHipotese(h)" x-text="ciapHipotese(h)"></span>
+                    </span>
+                  </template>
+                </div>
+                <div class="consulta-resumo muted" x-show="!c.hipoteses || c.hipoteses.length === 0">
+                  Sem hipóteses registradas
+                </div>
+
+                <!-- Snapshot clínico: PA + ícones de conteúdo -->
+                <div class="consulta-snapshot">
+                  <span class="consulta-pill" x-show="paFormatada(c)">
+                    🩸 PA <span x-text="paFormatada(c)"></span>
                   </span>
-                  <span x-show="!c.hipoteses || c.hipoteses.length === 0" class="muted">
-                    Sem hipóteses registradas
+                  <span class="consulta-pill" x-show="c.peso" >
+                    ⚖️ <span x-text="c.peso + ' kg'"></span>
                   </span>
+                  <span class="consulta-icon" x-show="temExames(c)" title="Exames laboratoriais">🧪</span>
+                  <span class="consulta-icon" x-show="temConduta(c)" title="Conduta/prescrição registrada">💊</span>
+                  <span class="consulta-icon" x-show="c.exameFisicoDescricao" title="Exame físico">🩺</span>
                 </div>
               </div>
               <div class="consulta-acoes">
@@ -278,6 +369,55 @@ function renderPacienteForm(container, id) {
           </template>
         </div>
       </div>
+
+      <style>
+        .consulta-item-v2 { align-items: flex-start; }
+        .consulta-data-v2 {
+          min-width: 76px;
+          padding: 10px 8px;
+        }
+        .consulta-data-v2 .consulta-data-day { font-size: 1.7em; }
+        .consulta-titulo-v2 {
+          font-size: 1.1em;
+          font-weight: 600;
+          margin-bottom: 8px;
+        }
+        .consulta-hipoteses-chips {
+          display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;
+        }
+        .consulta-hip-chip {
+          font-size: 0.78em;
+          padding: 3px 10px;
+          border-radius: 12px;
+          background: var(--bg-sunken);
+          border: 1px solid var(--border-subtle);
+          display: inline-flex; align-items: center; gap: 5px;
+        }
+        .consulta-hip-ciap {
+          font-weight: 700;
+          font-size: 0.85em;
+          color: var(--color-primary);
+          background: rgba(34, 197, 94, 0.12);
+          padding: 0 5px; border-radius: 5px;
+        }
+        [data-theme="dark"] .consulta-hip-ciap {
+          color: #4ADE80; background: rgba(74, 222, 128, 0.18);
+        }
+        .consulta-snapshot {
+          display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+          font-size: 0.82em;
+        }
+        .consulta-pill {
+          padding: 2px 8px; border-radius: 8px;
+          background: rgba(220, 38, 38, 0.08);
+          color: #b91c1c;
+          font-weight: 500;
+        }
+        [data-theme="dark"] .consulta-pill {
+          background: rgba(248, 113, 113, 0.15); color: #FCA5A5;
+        }
+        .consulta-icon { font-size: 1.05em; }
+      </style>
 
       <div class="mt-6 mb-6 flex justify-between items-center" style="flex-wrap: wrap; gap: var(--space-3)">
         <span class="text-xs muted">
@@ -346,6 +486,10 @@ function pacienteForm(id) {
       Router.navigate('/paciente/' + pid + '/consulta/nova');
     },
 
+    rotuloVaga(v) {
+      return (window.ROTULOS_SOCIO && ROTULOS_SOCIO.tipoVaga[v]) || v;
+    },
+
     abrirDocumentos() {
       const pid = typeof this.id === 'string' ? this.id : String(this.id);
       Router.navigate('/paciente/' + pid + '/documentos');
@@ -370,6 +514,54 @@ function pacienteForm(id) {
     formatConsultaTime(iso) {
       if (!iso) return '';
       return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    },
+
+    // ---- Helpers da timeline v2 (Sprint v0.17) ----
+    textoHipotese(h) {
+      if (window.CodigosClinicos) return CodigosClinicos.textoDe(h);
+      if (typeof h === 'string') return h;
+      return (h && h.texto) || '';
+    },
+
+    ciapHipotese(h) {
+      const c = window.CodigosClinicos ? CodigosClinicos.ciapDe(h)
+                : (window.Hiperdia ? null : null);
+      if (c && c.codigo) return c.codigo;
+      // fallback Hiperdia
+      if (window.Hiperdia) {
+        const cod = Hiperdia.extrairCodigoCiap(h);
+        return cod || '';
+      }
+      return '';
+    },
+
+    paFormatada(c) {
+      if (!c || !c.pa) return '';
+      if (window.Hiperdia) {
+        const parsed = Hiperdia.parsePA(c.pa);
+        if (parsed) return parsed.sistolica + '×' + parsed.diastolica;
+      }
+      // fallback: mostra texto bruto se curto
+      return String(c.pa).length <= 12 ? c.pa : '';
+    },
+
+    temExames(c) {
+      if (!c || !c.exames) return false;
+      // Considera "tem exames" se qualquer subcategoria tem algum valor preenchido
+      const ex = c.exames;
+      for (const cat of Object.keys(ex)) {
+        const grupo = ex[cat];
+        if (!grupo || typeof grupo !== 'object') continue;
+        for (const campo of Object.keys(grupo)) {
+          const v = grupo[campo];
+          if (v !== null && v !== undefined && v !== '' && v !== false) return true;
+        }
+      }
+      return false;
+    },
+
+    temConduta(c) {
+      return !!(c && (c.conduta || (c.prescricao && c.prescricao.length)));
     },
 
     touch() {
@@ -452,6 +644,11 @@ function emptyPaciente() {
     estadoCivil: '',
     profissao: '',
     escolaridade: '',
+    // Situação socioeconômica (Sprint v0.17)
+    tipoVaga: '',        // sus | particular | convenio
+    rendaPessoal: '',    // faixas em salários mínimos
+    rendaFamiliar: '',   // faixas em salários mínimos
+    fonteRenda: '',      // formal | informal | aposentadoria | pensao | bpc | bolsa_familia | desempregado | outra
     cpf: '',
     rg: '',
     cns: '',
@@ -472,6 +669,35 @@ function emptyPaciente() {
     observacoes: ''
   };
 }
+
+// Rótulos legíveis para campos socioeconômicos (usados em exibição)
+const ROTULOS_SOCIO = {
+  tipoVaga: {
+    sus: '🏥 SUS',
+    particular: '💳 Particular',
+    convenio: '📋 Convênio'
+  },
+  renda: {
+    sem_renda: 'Sem renda',
+    ate_1: 'Até 1 salário mínimo',
+    '1_2': '1 a 2 salários mínimos',
+    '2_3': '2 a 3 salários mínimos',
+    '3_5': '3 a 5 salários mínimos',
+    mais_5: 'Mais de 5 salários mínimos',
+    nao_informado: 'Prefere não informar'
+  },
+  fonteRenda: {
+    formal: 'Trabalho formal (CLT/servidor)',
+    informal: 'Trabalho informal / autônomo',
+    aposentadoria: 'Aposentadoria',
+    pensao: 'Pensão',
+    bpc: 'BPC/LOAS',
+    bolsa_familia: 'Bolsa Família / auxílio',
+    desempregado: 'Sem fonte de renda / desempregado(a)',
+    outra: 'Outra'
+  }
+};
+if (typeof window !== 'undefined') window.ROTULOS_SOCIO = ROTULOS_SOCIO;
 
 window.renderPacienteForm = renderPacienteForm;
 window.pacienteForm = pacienteForm;
