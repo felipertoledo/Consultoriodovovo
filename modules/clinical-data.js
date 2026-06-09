@@ -511,3 +511,4 @@ const ClinicalData = (() => {
 })();
 
 window.ClinicalData = ClinicalData;
+if (typeof module !== 'undefined' && module.exports) module.exports = window.ClinicalData;

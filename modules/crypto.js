@@ -288,3 +288,4 @@ const CryptoModule = (() => {
 })();
 
 window.CryptoModule = CryptoModule;
+if (typeof module !== 'undefined' && module.exports) module.exports = window.CryptoModule;

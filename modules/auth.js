@@ -136,3 +136,4 @@ const Auth = (() => {
 })();
 
 window.Auth = Auth;
+if (typeof module !== 'undefined' && module.exports) module.exports = window.Auth;

@@ -313,3 +313,4 @@ const Backup = (() => {
 })();
 
 window.Backup = Backup;
+if (typeof module !== 'undefined' && module.exports) module.exports = window.Backup;

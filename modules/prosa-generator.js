@@ -236,3 +236,4 @@ const ProsaGenerator = (() => {
 })();
 
 window.ProsaGenerator = ProsaGenerator;
+if (typeof module !== 'undefined' && module.exports) module.exports = window.ProsaGenerator;

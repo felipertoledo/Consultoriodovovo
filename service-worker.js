@@ -14,7 +14,7 @@
    `updatefound`; o index.html mostra banner pro usuário.
    ============================================================ */
 
-const CACHE_VERSION = 'v0.18.0';
+const CACHE_VERSION = 'v0.19.0';
 const CACHE_NAME = `cdv-cache-${CACHE_VERSION}`;
 
 // Lista exaustiva de arquivos a pré-cachear no install

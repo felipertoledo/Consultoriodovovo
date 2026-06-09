@@ -105,3 +105,4 @@ const UI = (() => {
 })();
 
 window.UI = UI;
+if (typeof module !== 'undefined' && module.exports) module.exports = window.UI;

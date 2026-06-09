@@ -865,3 +865,4 @@ const DB = (() => {
 })();
 
 window.DB = DB;
+if (typeof module !== 'undefined' && module.exports) module.exports = window.DB;
