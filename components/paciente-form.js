@@ -34,6 +34,124 @@ function renderPacienteForm(container, id) {
         </div>
       </div>
 
+      <!-- ========== TIMELINE DE CONSULTAS ========== -->
+      <div class="card mt-4" x-show="!isNew">
+        <div class="flex justify-between items-center mb-4" style="flex-wrap: wrap; gap: var(--space-3)">
+          <h3 class="card-title">📋 Consultas (<span x-text="consultas.length"></span>)</h3>
+          <div class="flex gap-2">
+            <button class="btn btn-secondary" @click="abrirDocumentos()">📄 Gerar documento</button>
+            <button class="btn btn-primary" @click="novaConsulta()">+ Nova consulta</button>
+          </div>
+        </div>
+
+        <div x-show="loadingConsultas" class="empty-state">
+          <div class="spinner" style="margin: 0 auto"></div>
+        </div>
+
+        <div x-show="!loadingConsultas && consultas.length === 0" class="empty-state">
+          <h3>Nenhuma consulta registrada</h3>
+          <p>Comece registrando a primeira consulta deste paciente.</p>
+          <button class="btn btn-primary mt-3" @click="novaConsulta()">+ Registrar primeira consulta</button>
+        </div>
+
+        <div class="consultas-timeline" x-show="!loadingConsultas && consultas.length > 0">
+          <template x-for="c in consultas" :key="c.id">
+            <div class="consulta-item consulta-item-v2" @click="abrirConsulta(c.id)">
+              <div class="consulta-data consulta-data-v2">
+                <div class="consulta-data-day" x-text="formatConsultaDay(c.dataHora)"></div>
+                <div class="consulta-data-month" x-text="formatConsultaMonth(c.dataHora)"></div>
+                <div class="consulta-data-time" x-text="formatConsultaTime(c.dataHora)"></div>
+              </div>
+              <div class="consulta-info">
+                <div class="consulta-titulo consulta-titulo-v2">
+                  <span x-text="c.queixaPrincipal || 'Consulta'"></span>
+                  <span x-show="c.queixaDuracao" class="text-sm muted"
+                        x-text="' · ' + c.queixaDuracao"></span>
+                </div>
+
+                <!-- Chips de hipótese -->
+                <div class="consulta-hipoteses-chips" x-show="c.hipoteses && c.hipoteses.length > 0">
+                  <template x-for="(h, hi) in (c.hipoteses || [])" :key="hi">
+                    <span class="consulta-hip-chip">
+                      <span x-text="textoHipotese(h)"></span>
+                      <span class="consulta-hip-ciap" x-show="ciapHipotese(h)" x-text="ciapHipotese(h)"></span>
+                    </span>
+                  </template>
+                </div>
+                <div class="consulta-resumo muted" x-show="!c.hipoteses || c.hipoteses.length === 0">
+                  Sem hipóteses registradas
+                </div>
+
+                <!-- Snapshot clínico: PA + ícones de conteúdo -->
+                <div class="consulta-snapshot">
+                  <span class="consulta-pill" x-show="paFormatada(c)">
+                    🩸 PA <span x-text="paFormatada(c)"></span>
+                  </span>
+                  <span class="consulta-pill" x-show="c.peso" >
+                    ⚖️ <span x-text="c.peso + ' kg'"></span>
+                  </span>
+                  <span class="consulta-icon" x-show="temExames(c)" title="Exames laboratoriais">🧪</span>
+                  <span class="consulta-icon" x-show="temConduta(c)" title="Conduta/prescrição registrada">💊</span>
+                  <span class="consulta-icon" x-show="c.exameFisicoDescricao" title="Exame físico">🩺</span>
+                </div>
+              </div>
+              <div class="consulta-acoes">
+                <button class="btn btn-ghost text-sm">Abrir →</button>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <style>
+        .consulta-item-v2 { align-items: flex-start; }
+        .consulta-data-v2 {
+          min-width: 76px;
+          padding: 10px 8px;
+        }
+        .consulta-data-v2 .consulta-data-day { font-size: 1.7em; }
+        .consulta-titulo-v2 {
+          font-size: 1.1em;
+          font-weight: 600;
+          margin-bottom: 8px;
+        }
+        .consulta-hipoteses-chips {
+          display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;
+        }
+        .consulta-hip-chip {
+          font-size: 0.78em;
+          padding: 3px 10px;
+          border-radius: 12px;
+          background: var(--bg-sunken);
+          border: 1px solid var(--border-subtle);
+          display: inline-flex; align-items: center; gap: 5px;
+        }
+        .consulta-hip-ciap {
+          font-weight: 700;
+          font-size: 0.85em;
+          color: var(--color-primary);
+          background: rgba(34, 197, 94, 0.12);
+          padding: 0 5px; border-radius: 5px;
+        }
+        [data-theme="dark"] .consulta-hip-ciap {
+          color: #4ADE80; background: rgba(74, 222, 128, 0.18);
+        }
+        .consulta-snapshot {
+          display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+          font-size: 0.82em;
+        }
+        .consulta-pill {
+          padding: 2px 8px; border-radius: 8px;
+          background: rgba(220, 38, 38, 0.08);
+          color: #b91c1c;
+          font-weight: 500;
+        }
+        [data-theme="dark"] .consulta-pill {
+          background: rgba(248, 113, 113, 0.15); color: #FCA5A5;
+        }
+        .consulta-icon { font-size: 1.05em; }
+      </style>
+
       <div class="card">
         <h3 class="card-title mb-4">Dados pessoais</h3>
 
@@ -301,123 +419,6 @@ function renderPacienteForm(container, id) {
         </div>
       </div>
 
-      <!-- ========== TIMELINE DE CONSULTAS ========== -->
-      <div class="card mt-4" x-show="!isNew">
-        <div class="flex justify-between items-center mb-4" style="flex-wrap: wrap; gap: var(--space-3)">
-          <h3 class="card-title">📋 Consultas (<span x-text="consultas.length"></span>)</h3>
-          <div class="flex gap-2">
-            <button class="btn btn-secondary" @click="abrirDocumentos()">📄 Gerar documento</button>
-            <button class="btn btn-primary" @click="novaConsulta()">+ Nova consulta</button>
-          </div>
-        </div>
-
-        <div x-show="loadingConsultas" class="empty-state">
-          <div class="spinner" style="margin: 0 auto"></div>
-        </div>
-
-        <div x-show="!loadingConsultas && consultas.length === 0" class="empty-state">
-          <h3>Nenhuma consulta registrada</h3>
-          <p>Comece registrando a primeira consulta deste paciente.</p>
-          <button class="btn btn-primary mt-3" @click="novaConsulta()">+ Registrar primeira consulta</button>
-        </div>
-
-        <div class="consultas-timeline" x-show="!loadingConsultas && consultas.length > 0">
-          <template x-for="c in consultas" :key="c.id">
-            <div class="consulta-item consulta-item-v2" @click="abrirConsulta(c.id)">
-              <div class="consulta-data consulta-data-v2">
-                <div class="consulta-data-day" x-text="formatConsultaDay(c.dataHora)"></div>
-                <div class="consulta-data-month" x-text="formatConsultaMonth(c.dataHora)"></div>
-                <div class="consulta-data-time" x-text="formatConsultaTime(c.dataHora)"></div>
-              </div>
-              <div class="consulta-info">
-                <div class="consulta-titulo consulta-titulo-v2">
-                  <span x-text="c.queixaPrincipal || 'Consulta'"></span>
-                  <span x-show="c.queixaDuracao" class="text-sm muted"
-                        x-text="' · ' + c.queixaDuracao"></span>
-                </div>
-
-                <!-- Chips de hipótese -->
-                <div class="consulta-hipoteses-chips" x-show="c.hipoteses && c.hipoteses.length > 0">
-                  <template x-for="(h, hi) in (c.hipoteses || [])" :key="hi">
-                    <span class="consulta-hip-chip">
-                      <span x-text="textoHipotese(h)"></span>
-                      <span class="consulta-hip-ciap" x-show="ciapHipotese(h)" x-text="ciapHipotese(h)"></span>
-                    </span>
-                  </template>
-                </div>
-                <div class="consulta-resumo muted" x-show="!c.hipoteses || c.hipoteses.length === 0">
-                  Sem hipóteses registradas
-                </div>
-
-                <!-- Snapshot clínico: PA + ícones de conteúdo -->
-                <div class="consulta-snapshot">
-                  <span class="consulta-pill" x-show="paFormatada(c)">
-                    🩸 PA <span x-text="paFormatada(c)"></span>
-                  </span>
-                  <span class="consulta-pill" x-show="c.peso" >
-                    ⚖️ <span x-text="c.peso + ' kg'"></span>
-                  </span>
-                  <span class="consulta-icon" x-show="temExames(c)" title="Exames laboratoriais">🧪</span>
-                  <span class="consulta-icon" x-show="temConduta(c)" title="Conduta/prescrição registrada">💊</span>
-                  <span class="consulta-icon" x-show="c.exameFisicoDescricao" title="Exame físico">🩺</span>
-                </div>
-              </div>
-              <div class="consulta-acoes">
-                <button class="btn btn-ghost text-sm">Abrir →</button>
-              </div>
-            </div>
-          </template>
-        </div>
-      </div>
-
-      <style>
-        .consulta-item-v2 { align-items: flex-start; }
-        .consulta-data-v2 {
-          min-width: 76px;
-          padding: 10px 8px;
-        }
-        .consulta-data-v2 .consulta-data-day { font-size: 1.7em; }
-        .consulta-titulo-v2 {
-          font-size: 1.1em;
-          font-weight: 600;
-          margin-bottom: 8px;
-        }
-        .consulta-hipoteses-chips {
-          display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;
-        }
-        .consulta-hip-chip {
-          font-size: 0.78em;
-          padding: 3px 10px;
-          border-radius: 12px;
-          background: var(--bg-sunken);
-          border: 1px solid var(--border-subtle);
-          display: inline-flex; align-items: center; gap: 5px;
-        }
-        .consulta-hip-ciap {
-          font-weight: 700;
-          font-size: 0.85em;
-          color: var(--color-primary);
-          background: rgba(34, 197, 94, 0.12);
-          padding: 0 5px; border-radius: 5px;
-        }
-        [data-theme="dark"] .consulta-hip-ciap {
-          color: #4ADE80; background: rgba(74, 222, 128, 0.18);
-        }
-        .consulta-snapshot {
-          display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
-          font-size: 0.82em;
-        }
-        .consulta-pill {
-          padding: 2px 8px; border-radius: 8px;
-          background: rgba(220, 38, 38, 0.08);
-          color: #b91c1c;
-          font-weight: 500;
-        }
-        [data-theme="dark"] .consulta-pill {
-          background: rgba(248, 113, 113, 0.15); color: #FCA5A5;
-        }
-        .consulta-icon { font-size: 1.05em; }
-      </style>
 
       <div class="mt-6 mb-6 flex justify-between items-center" style="flex-wrap: wrap; gap: var(--space-3)">
         <span class="text-xs muted">

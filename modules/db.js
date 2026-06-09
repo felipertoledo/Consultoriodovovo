@@ -281,6 +281,61 @@ const DB = (() => {
     return items;
   }
 
+  /**
+   * Lista as consultas mais recentes de TODOS os pacientes (feed global).
+   * Decifra cada consulta e resolve o nome do paciente.
+   * @param {number} limit - máximo de consultas a retornar (default 50)
+   * @returns {Array} consultas ordenadas por dataHora desc, com pacienteNome
+   */
+  async function listConsultasRecentes(limit = 50) {
+    const dek = getDEK();
+    // Busca todas as consultas não deletadas, ordenadas por dataHora desc via índice
+    const rows = await db.consultas
+      .where('deleted').equals(0)
+      .reverse()
+      .sortBy('dataHora');
+    // sortBy já materializa; pega só o teto necessário antes de decifrar (economia)
+    const recorte = rows.slice(0, limit);
+
+    // Cache de nomes de paciente para evitar decifrar o mesmo paciente várias vezes
+    const nomeCache = {};
+    async function nomeDoPaciente(pid) {
+      if (pid in nomeCache) return nomeCache[pid];
+      try {
+        const prow = await db.pacientes.get(pid);
+        if (prow && !prow.deleted) {
+          const pdec = await CryptoModule.decrypt(dek, prow.data);
+          nomeCache[pid] = pdec.nome || '(sem nome)';
+        } else {
+          nomeCache[pid] = '(paciente removido)';
+        }
+      } catch (e) {
+        nomeCache[pid] = '(erro)';
+      }
+      return nomeCache[pid];
+    }
+
+    const items = [];
+    for (const row of recorte) {
+      try {
+        const decoded = await CryptoModule.decrypt(dek, row.data);
+        const pacienteNome = await nomeDoPaciente(row.pacienteId);
+        items.push({
+          id: row.id,
+          pacienteId: row.pacienteId,
+          pacienteNome,
+          dataHora: row.dataHora,
+          createdAt: row.createdAt,
+          updatedAt: row.updatedAt,
+          ...decoded
+        });
+      } catch (e) {
+        console.error('Erro ao decifrar consulta', row.id, e);
+      }
+    }
+    return items;
+  }
+
   // ---- AUDIT ----
   // ============================================================
   // AGENDAMENTOS (Sprint A1)
@@ -792,6 +847,7 @@ const DB = (() => {
     // Consultas
     createConsulta, getConsulta, updateConsulta, softDeleteConsulta,
     listConsultasByPaciente,
+    listConsultasRecentes,
     // Agendamentos (Sprint A1)
     createAgendamento, getAgendamento, updateAgendamento, softDeleteAgendamento,
     listAgendamentos, listAgendaHoje, listFaltosos, contarConsultasPeriodo,

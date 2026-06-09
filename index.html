@@ -100,6 +100,7 @@
   <script src="./components/templates-prescricao.js"></script>
   <script src="./components/sync.js"></script>
   <script src="./components/hiperdia.js"></script>
+  <script src="./components/consultas-recentes.js"></script>
   <script src="./components/config.js"></script>
 
   <!-- Captura do prompt de instalação do PWA -->
@@ -246,6 +247,10 @@
                         onclick="Router.navigate('/pacientes')">
                   👥 Pacientes
                 </button>
+                <button class="nav-item ${activeRoute === '/consultas' ? 'active' : ''}"
+                        onclick="Router.navigate('/consultas')">
+                  🕐 Últimas consultas
+                </button>
                 <button class="nav-item ${activeRoute === '/agenda' ? 'active' : ''}"
                         onclick="Router.navigate('/agenda')">
                   📅 Agenda
@@ -381,6 +386,12 @@
         if (!Auth.isUnlocked()) { Router.navigate('/'); return; }
         const target = renderAppShell('/hiperdia');
         renderHiperdia(target);
+      });
+
+      Router.register('/consultas', () => {
+        if (!Auth.isUnlocked()) { Router.navigate('/'); return; }
+        const target = renderAppShell('/consultas');
+        renderConsultasRecentes(target);
       });
 
       Router.register('/sync', () => {
