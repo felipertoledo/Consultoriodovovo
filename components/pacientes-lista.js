@@ -1,5 +1,8 @@
 /* ============================================================
    pacientes-lista.js — Listagem e busca de pacientes
+   Redesign "Botica Moderna": o fichário.
+   Cada paciente é uma pasta arquivada; a lombada colorida
+   é o semáforo clínico Hiperdia.
    ============================================================ */
 
 function renderPacientesLista(container) {
@@ -7,6 +10,7 @@ function renderPacientesLista(container) {
     <div x-data="pacientesLista()" x-init="load()">
       <div class="page-header">
         <div>
+          <p class="eyebrow">Fichário</p>
           <h1 class="page-title">Pacientes</h1>
           <p class="page-subtitle">
             <span x-text="filtered.length"></span> de <span x-text="all.length"></span> pacientes
@@ -14,17 +18,15 @@ function renderPacientesLista(container) {
         </div>
         <div class="page-actions">
           <button class="btn btn-primary" @click="$dispatch('navigate', '/paciente/novo')">
-            + Novo paciente
+            <svg class="icon"><use href="#i-plus"></use></svg>
+            Novo paciente
           </button>
         </div>
       </div>
 
       <div class="search-box">
-        <svg class="search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-        </svg>
-        <input type="text" class="input" placeholder="Buscar por nome…"
+        <svg class="search-icon"><use href="#i-search"></use></svg>
+        <input type="text" class="input" placeholder="Buscar por nome…  (ou Ctrl+K em qualquer tela)"
                x-model="search" @input="filter()">
       </div>
 
@@ -34,21 +36,25 @@ function renderPacientesLista(container) {
       </div>
 
       <div x-show="!loading && filtered.length === 0 && all.length === 0" class="empty-state">
+        <svg class="icon"><use href="#i-users"></use></svg>
         <h3>Nenhum paciente cadastrado ainda</h3>
         <p>Comece adicionando o primeiro paciente.</p>
         <button class="btn btn-primary mt-4" @click="$dispatch('navigate', '/paciente/novo')">
-          + Cadastrar primeiro paciente
+          <svg class="icon"><use href="#i-plus"></use></svg>
+          Cadastrar primeiro paciente
         </button>
       </div>
 
       <div x-show="!loading && filtered.length === 0 && all.length > 0" class="empty-state">
+        <svg class="icon"><use href="#i-search"></use></svg>
         <h3>Nenhum paciente encontrado</h3>
         <p>Tente outro termo de busca.</p>
       </div>
 
       <div class="patient-list" x-show="!loading && filtered.length > 0">
         <template x-for="p in filtered" :key="p.id">
-          <div class="patient-card" @click="open(p.id)">
+          <div class="patient-card" @click="open(p.id)"
+               :style="'--spine-color: ' + spineColor(enriq[p.id] && enriq[p.id].nivel)">
             <div class="patient-avatar"
                  :style="'background: ' + avatarColor(p.nome)"
                  x-text="initials(p.nome)"></div>
@@ -57,7 +63,7 @@ function renderPacientesLista(container) {
                 <span class="patient-name" x-text="p.nome"></span>
                 <span class="patient-semaforo"
                       x-show="enriq[p.id] && enriq[p.id].nivel && enriq[p.id].nivel !== 'cinza'"
-                      x-text="semaforoIcone(enriq[p.id] && enriq[p.id].nivel)"
+                      :class="'dot-' + (enriq[p.id] && enriq[p.id].nivel)"
                       :title="'Hiperdia: ' + (enriq[p.id] && enriq[p.id].nivel)"></span>
                 <span class="vaga-badge-mini" x-show="p.tipoVaga"
                       :class="'vaga-badge-' + p.tipoVaga"
@@ -92,38 +98,6 @@ function renderPacientesLista(container) {
         </template>
       </div>
     </div>
-
-    <style>
-      .patient-name-row {
-        display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-      }
-      .patient-semaforo { font-size: 0.85em; }
-      .patient-tags {
-        display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px;
-      }
-      .patient-tag {
-        font-size: 0.7em; font-weight: 600;
-        padding: 2px 8px; border-radius: 10px;
-        background: rgba(34, 197, 94, 0.12);
-        color: var(--color-primary-700, #15803d);
-      }
-      [data-theme="dark"] .patient-tag {
-        background: rgba(34, 197, 94, 0.18);
-        color: #86EFAC;
-      }
-      .patient-ultima-data { font-weight: 600; color: var(--text-secondary); }
-      .vaga-badge-mini {
-        font-size: 0.65em; font-weight: 700;
-        padding: 1px 7px; border-radius: 8px;
-        white-space: nowrap;
-      }
-      .vaga-badge-sus { background: rgba(22, 163, 74, 0.15); color: #15803d; }
-      .vaga-badge-particular { background: rgba(37, 99, 235, 0.15); color: #1d4ed8; }
-      .vaga-badge-convenio { background: rgba(217, 119, 6, 0.15); color: #b45309; }
-      [data-theme="dark"] .vaga-badge-sus { background: rgba(74, 222, 128, 0.20); color: #86EFAC; }
-      [data-theme="dark"] .vaga-badge-particular { background: rgba(96, 165, 250, 0.20); color: #93C5FD; }
-      [data-theme="dark"] .vaga-badge-convenio { background: rgba(251, 191, 36, 0.20); color: #FDE68A; }
-    </style>
   `;
 }
 
@@ -190,6 +164,14 @@ function pacientesLista() {
 
     open(id) {
       Router.navigate('/paciente/' + id);
+    },
+
+    // Cor da lombada (spine) conforme semáforo Hiperdia
+    spineColor(nivel) {
+      if (nivel === 'vermelho') return 'var(--semaforo-vermelho)';
+      if (nivel === 'amarelo') return 'var(--semaforo-amarelo)';
+      if (nivel === 'verde') return 'var(--semaforo-verde)';
+      return 'var(--border-default)';
     },
 
     semaforoIcone(nivel) {

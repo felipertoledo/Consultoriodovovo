@@ -1,5 +1,6 @@
 /* ============================================================
    login.js — Tela de login (senha ou chave de recuperação)
+   Redesign "Botica Moderna": a porta do cofre.
    ============================================================ */
 
 function renderLogin(container) {
@@ -7,7 +8,9 @@ function renderLogin(container) {
     <div class="auth-screen">
       <div class="auth-card" x-data="loginScreen()">
         <div class="auth-brand">
-          <div class="logo">CV</div>
+          <div class="logo" aria-hidden="true">
+            <svg><use href="#i-selo"></use></svg>
+          </div>
           <h1>Consultório do Vovô</h1>
           <p class="tagline">Felipe Ribeiro Toledo · CRM-SP 216.986</p>
         </div>
@@ -16,7 +19,7 @@ function renderLogin(container) {
           <div>
             <div class="form-group">
               <label class="label" for="loginPwd">Senha mestra</label>
-              <input id="loginPwd" type="password" class="input" x-model="password"
+              <input id="loginPwd" type="password" class="input input-lg" x-model="password"
                      placeholder="Digite sua senha" autocomplete="current-password"
                      @keydown.enter="login()">
               <div class="field-error" x-show="error" x-text="error"></div>
@@ -24,7 +27,8 @@ function renderLogin(container) {
 
             <button class="btn btn-primary btn-block btn-lg"
                     @click="login()" :disabled="!password || working">
-              <span x-show="!working">Entrar</span>
+              <svg class="icon" x-show="!working"><use href="#i-lock"></use></svg>
+              <span x-show="!working">Abrir o cofre</span>
               <span x-show="working">Verificando…</span>
             </button>
 
@@ -63,6 +67,12 @@ function renderLogin(container) {
             </div>
           </div>
         </template>
+
+        <div class="auth-foot">
+          <span><svg class="icon"><use href="#i-shield"></use></svg> AES-GCM 256</span>
+          <span><svg class="icon"><use href="#i-lock"></use></svg> Dados só neste aparelho</span>
+          <span><svg class="icon"><use href="#i-offline"></use></svg> Funciona offline</span>
+        </div>
       </div>
     </div>
   `;

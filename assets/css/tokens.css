@@ -1,81 +1,108 @@
 /* ============================================================
-   Consultório do Vovô — Design Tokens
-   Paleta: Verde-musgo (#166534) orgânico/freireano
+   Consultório do Vovô — Design Tokens v2 · "Botica Moderna"
+   ------------------------------------------------------------
+   Identidade: a botica de interior reencontrada em 2026.
+   · Pinho profundo  — madeira do armário, autoridade calma
+   · Papel-receita   — fundo quente de receituário
+   · Tinta           — verde-negro de caneta-tinteiro
+   · Âmbar           — vidro de farmácia, dourado fosco
+   · Romã            — alerta clínico
+   Tipos: Fraunces (display) · Instrument Sans (UI) · JetBrains Mono (dados)
    ============================================================ */
 
 :root {
-  /* ---- Cores primárias (verde-musgo) ---- */
-  --color-primary-50:  #F0FDF4;
-  --color-primary-100: #DCFCE7;
-  --color-primary-200: #BBF7D0;
-  --color-primary-300: #86EFAC;
-  --color-primary-400: #4ADE80;
-  --color-primary-500: #22C55E;
-  --color-primary-600: #16A34A;
-  --color-primary-700: #15803D;
-  --color-primary:     #166534;  /* base */
-  --color-primary-800: #166534;
-  --color-primary-900: #14532D;
-  --color-primary-950: #052E16;
+  /* ---- Pinho (primária) ---- */
+  --color-primary-50:  #EDF7F1;
+  --color-primary-100: #D6EEDF;
+  --color-primary-200: #ACDCC2;
+  --color-primary-300: #79C49E;
+  --color-primary-400: #45A878;
+  --color-primary-500: #2A8B60;
+  --color-primary-600: #1F7350;
+  --color-primary-700: #175C41;
+  --color-primary:     #0E3A2D;  /* pinho profundo — base */
+  --color-primary-800: #0E3A2D;
+  --color-primary-900: #0A2B22;
+  --color-primary-950: #061B15;
 
-  /* ---- Cores neutras (slate) ---- */
-  --color-neutral-50:  #F8FAFC;
-  --color-neutral-100: #F1F5F9;
-  --color-neutral-200: #E2E8F0;
-  --color-neutral-300: #CBD5E1;
-  --color-neutral-400: #94A3B8;
-  --color-neutral-500: #64748B;
-  --color-neutral-600: #475569;
-  --color-neutral-700: #334155;
-  --color-neutral-800: #1E293B;
-  --color-neutral-900: #0F172A;
+  /* ---- Âmbar (acento secundário — vidro de farmácia) ---- */
+  --color-accent-100: #F7ECD8;
+  --color-accent-300: #E3B96A;
+  --color-accent:     #B97718;
+  --color-accent-700: #8F5A0F;
 
-  /* ---- Cores semânticas ---- */
-  --color-success: #16A34A;
-  --color-warning: #D97706;
-  --color-danger:  #DC2626;
-  --color-info:    #0284C7;
+  /* ---- Neutros quentes (papel & grafite) ---- */
+  --color-neutral-50:  #FAF8F3;
+  --color-neutral-100: #F2EFE7;
+  --color-neutral-200: #E5E1D5;
+  --color-neutral-300: #CFCABA;
+  --color-neutral-400: #A39E8E;
+  --color-neutral-500: #7C786A;
+  --color-neutral-600: #5B584D;
+  --color-neutral-700: #444237;
+  --color-neutral-800: #2C2B23;
+  --color-neutral-900: #1A2420;
+
+  /* ---- Semânticas ---- */
+  --color-success: #1F7350;
+  --color-warning: #B97718;
+  --color-danger:  #C13E3E;
+  --color-info:    #2C6E8F;
+
+  /* ---- Semáforo clínico (Hiperdia / fichário) ---- */
+  --semaforo-verde:    #2A8B60;
+  --semaforo-amarelo:  #C99012;
+  --semaforo-vermelho: #C13E3E;
+  --semaforo-cinza:    #A39E8E;
 
   /* ---- Backgrounds ---- */
-  --bg-app:     #FAFAF9;
+  --bg-app:     #FAF8F3;                 /* papel-receita */
   --bg-surface: #FFFFFF;
-  --bg-sunken:  #F4F4F5;
-  --bg-overlay: rgba(15, 23, 42, 0.5);
+  --bg-sunken:  #F2EFE7;
+  --bg-overlay: rgba(10, 27, 21, 0.55);
+  --bg-sidebar: #0C2F25;                 /* armário de pinho */
+  --bg-sidebar-deep: #092419;
 
   /* ---- Texto ---- */
-  --text-primary:   #1E293B;
-  --text-secondary: #475569;
-  --text-muted:     #94A3B8;
-  --text-inverse:   #FFFFFF;
-  --text-on-primary: #FFFFFF;
+  --text-primary:   #1A2420;             /* tinta */
+  --text-secondary: #4A544E;
+  --text-muted:     #8B948D;
+  --text-inverse:   #F6F4ED;
+  --text-on-primary: #F6F4ED;
+  --text-on-sidebar: #D8E4DC;
+  --text-on-sidebar-dim: #84A092;
 
   /* ---- Bordas ---- */
-  --border-subtle:  #E2E8F0;
-  --border-default: #CBD5E1;
-  --border-strong:  #94A3B8;
-  --border-focus:   var(--color-primary);
+  --border-subtle:  #EAE6DA;
+  --border-default: #D8D3C4;
+  --border-strong:  #A39E8E;
+  --border-focus:   #1F7350;
+  --ring-focus:     rgba(42, 139, 96, 0.22);
 
   /* ---- Tipografia ---- */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', Monaco, Consolas, monospace;
+  --font-display: 'Fraunces', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
 
-  --text-xs:   0.75rem;   /* 12px */
-  --text-sm:   0.875rem;  /* 14px */
-  --text-base: 1rem;      /* 16px */
-  --text-lg:   1.125rem;  /* 18px */
-  --text-xl:   1.25rem;   /* 20px */
-  --text-2xl:  1.5rem;    /* 24px */
-  --text-3xl:  1.875rem;  /* 30px */
-  --text-4xl:  2.25rem;   /* 36px */
+  --text-xs:   0.75rem;
+  --text-sm:   0.875rem;
+  --text-base: 1rem;
+  --text-lg:   1.125rem;
+  --text-xl:   1.25rem;
+  --text-2xl:  1.5rem;
+  --text-3xl:  1.875rem;
+  --text-4xl:  2.375rem;
 
-  --leading-tight:  1.25;
-  --leading-normal: 1.5;
+  --leading-tight:   1.2;
+  --leading-normal:  1.5;
   --leading-relaxed: 1.625;
 
   --weight-normal:   400;
   --weight-medium:   500;
   --weight-semibold: 600;
   --weight-bold:     700;
+
+  --tracking-wide: 0.08em;
 
   /* ---- Espaçamentos (escala 4px) ---- */
   --space-1:  0.25rem;
@@ -90,80 +117,92 @@
   --space-16: 4rem;
   --space-20: 5rem;
 
-  /* ---- Bordas arredondadas ---- */
-  --radius-sm:   0.25rem;
-  --radius-md:   0.5rem;
-  --radius-lg:   0.75rem;
-  --radius-xl:   1rem;
+  /* ---- Raios ---- */
+  --radius-sm:   0.375rem;
+  --radius-md:   0.625rem;
+  --radius-lg:   0.875rem;
+  --radius-xl:   1.25rem;
   --radius-full: 9999px;
 
-  /* ---- Sombras ---- */
-  --shadow-sm:  0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-md:  0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-lg:  0 4px 12px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.04);
-  --shadow-xl:  0 12px 24px rgba(15, 23, 42, 0.10), 0 4px 8px rgba(15, 23, 42, 0.06);
+  /* ---- Sombras (tinta diluída, nunca cinza-azulado) ---- */
+  --shadow-sm:  0 1px 2px rgba(26, 36, 32, 0.05);
+  --shadow-md:  0 2px 6px rgba(26, 36, 32, 0.06), 0 1px 2px rgba(26, 36, 32, 0.05);
+  --shadow-lg:  0 10px 28px rgba(26, 36, 32, 0.10), 0 2px 6px rgba(26, 36, 32, 0.05);
+  --shadow-xl:  0 24px 56px rgba(10, 27, 21, 0.16), 0 6px 16px rgba(26, 36, 32, 0.08);
 
   /* ---- Layout ---- */
-  --sidebar-width: 280px;
-  --header-height: 64px;
-  --max-content-width: 1280px;
+  --sidebar-width: 272px;
+  --header-height: 60px;
+  --max-content-width: 1240px;
+  --bottombar-height: 62px;
 
   /* ---- Transições ---- */
-  --transition-fast: 120ms ease;
-  --transition-base: 200ms ease;
-  --transition-slow: 320ms ease;
+  --transition-fast: 130ms cubic-bezier(.4,0,.2,1);
+  --transition-base: 210ms cubic-bezier(.4,0,.2,1);
+  --transition-slow: 340ms cubic-bezier(.22,1,.36,1);
 
   /* ---- Z-index ---- */
   --z-base:    1;
   --z-sticky:  10;
   --z-overlay: 100;
   --z-modal:   1000;
+  --z-palette: 1500;
   --z-toast:   2000;
 }
 
 /* ============================================================
-   MODO ESCURO (Sprint C3)
-   Mantém a paleta primária verde. Ajusta backgrounds, texto, bordas.
-   Aplica via [data-theme="dark"] no <html>.
+   MODO ESCURO · "Plantão"
+   Verde-negro de plantão noturno, fósforo nos acentos.
+   Tintado pela marca — nunca slate genérico.
    ============================================================ */
 [data-theme="dark"] {
-  /* Cor primária um pouco mais clara para visibilidade em fundo escuro */
-  --color-primary:     #22C55E;   /* primary-500 — mais luminoso em dark */
-  --color-primary-800: #166534;
-  --color-primary-900: #14532D;
+  --color-primary:     #2EB880;
+  --color-primary-700: #27996B;
+  --color-primary-800: #0E3A2D;
+  --color-primary-900: #0A2B22;
 
-  /* Backgrounds: 3 níveis de escuridão para hierarquia visual */
-  --bg-app:     #0B1220;          /* fundo geral, slate-950 quase */
-  --bg-surface: #111827;          /* cards e superfícies elevadas */
-  --bg-sunken:  #0F172A;          /* superfícies aninhadas, mais escuras que surface */
-  --bg-overlay: rgba(0, 0, 0, 0.75);
+  --color-accent-100: #2E2410;
+  --color-accent-300: #8F5A0F;
+  --color-accent:     #E3B96A;
+  --color-accent-700: #F0CE8E;
 
-  /* Texto: contraste ajustado */
-  --text-primary:   #F1F5F9;       /* slate-100 */
-  --text-secondary: #CBD5E1;       /* slate-300 */
-  --text-muted:     #64748B;       /* slate-500 */
-  --text-inverse:   #0F172A;
-  --text-on-primary: #FFFFFF;
+  --bg-app:     #0B1310;
+  --bg-surface: #11201A;
+  --bg-sunken:  #0D1813;
+  --bg-overlay: rgba(2, 8, 6, 0.78);
+  --bg-sidebar: #081511;
+  --bg-sidebar-deep: #050D0A;
 
-  /* Bordas: tons de slate-700/600 para baixo contraste */
-  --border-subtle:  #1F2937;
-  --border-default: #334155;
-  --border-strong:  #475569;
-  --border-focus:   #4ADE80;       /* primary-400 — destaque mais luminoso */
+  --text-primary:   #E9EFEA;
+  --text-secondary: #B4C2B9;
+  --text-muted:     #6E8076;
+  --text-inverse:   #0B1310;
+  --text-on-primary: #06130D;
+  --text-on-sidebar: #CDDCD2;
+  --text-on-sidebar-dim: #6E8678;
 
-  /* Cores semânticas: ligeiramente mais brilhantes para contraste */
-  --color-success: #4ADE80;
-  --color-warning: #FBBF24;
-  --color-danger:  #F87171;
-  --color-info:    #60A5FA;
+  --border-subtle:  #1C2C24;
+  --border-default: #2A3D33;
+  --border-strong:  #44584C;
+  --border-focus:   #3EDF97;
+  --ring-focus:     rgba(62, 223, 151, 0.20);
 
-  /* Sombras quase invisíveis em fundo escuro — substituídas por bordas sutis */
-  --shadow-sm:  0 0 0 1px rgba(255, 255, 255, 0.03);
-  --shadow-md:  0 0 0 1px rgba(255, 255, 255, 0.05);
-  --shadow-lg:  0 0 0 1px rgba(255, 255, 255, 0.07), 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-xl:  0 0 0 1px rgba(255, 255, 255, 0.08), 0 12px 24px rgba(0, 0, 0, 0.5);
+  --color-success: #3EDF97;
+  --color-warning: #E8B45A;
+  --color-danger:  #F07A7A;
+  --color-info:    #6FB6D8;
+
+  --semaforo-verde:    #3EDF97;
+  --semaforo-amarelo:  #E8B45A;
+  --semaforo-vermelho: #F07A7A;
+  --semaforo-cinza:    #6E8076;
+
+  --shadow-sm:  0 0 0 1px rgba(233, 239, 234, 0.04);
+  --shadow-md:  0 0 0 1px rgba(233, 239, 234, 0.05), 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-lg:  0 0 0 1px rgba(233, 239, 234, 0.06), 0 10px 28px rgba(0, 0, 0, 0.45);
+  --shadow-xl:  0 0 0 1px rgba(233, 239, 234, 0.07), 0 24px 56px rgba(0, 0, 0, 0.55);
 }
 
-/* Indicação visual de carregamento de tema (anti-flash) */
+/* Anti-flash de tema */
 html { color-scheme: light; }
 html[data-theme="dark"] { color-scheme: dark; }

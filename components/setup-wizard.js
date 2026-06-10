@@ -1,5 +1,6 @@
 /* ============================================================
    setup-wizard.js — Primeiro acesso
+   Redesign "Botica Moderna": forjando o cofre.
    ============================================================ */
 
 function renderSetupWizard(container) {
@@ -7,7 +8,9 @@ function renderSetupWizard(container) {
     <div class="auth-screen">
       <div class="auth-card wide" x-data="setupWizard()">
         <div class="auth-brand">
-          <div class="logo">CV</div>
+          <div class="logo" aria-hidden="true">
+            <svg><use href="#i-selo"></use></svg>
+          </div>
           <h1>Consultório do Vovô</h1>
           <p class="tagline">Configuração inicial — Felipe Ribeiro Toledo · CRM-SP 216.986</p>
         </div>
@@ -15,6 +18,7 @@ function renderSetupWizard(container) {
         <!-- Etapa 0: escolha entre criar novo ou restaurar -->
         <template x-if="step === 0">
           <div>
+            <p class="eyebrow">Primeiro acesso</p>
             <div class="alert alert-info">
               <div>
                 <strong>Bem-vindo.</strong> Este é o primeiro acesso ao seu prontuário.
@@ -24,14 +28,18 @@ function renderSetupWizard(container) {
 
             <div class="form-group">
               <button class="btn btn-primary btn-block btn-lg" @click="step = 1">
-                ➕ Criar cofre novo
+                <svg class="icon"><use href="#i-plus"></use></svg>
+                Criar cofre novo
               </button>
               <p class="text-sm muted mt-2">Para começar do zero com um cofre criptografado novo.</p>
             </div>
 
-            <div class="form-group mt-4">
+            <div class="auth-seal-divider">ou</div>
+
+            <div class="form-group">
               <button class="btn btn-secondary btn-block btn-lg" @click="$refs.fileInput.click()">
-                📥 Restaurar de backup
+                <svg class="icon"><use href="#i-file"></use></svg>
+                Restaurar de backup
               </button>
               <input type="file" x-ref="fileInput" style="display: none"
                      accept=".cdv-backup,.json,application/json"
@@ -41,7 +49,7 @@ function renderSetupWizard(container) {
 
             <!-- Painel de info do backup selecionado -->
             <div x-show="arquivoInfo" class="card mt-4" style="background: var(--bg-sunken)">
-              <h4 style="margin-top: 0">📁 Backup selecionado</h4>
+              <h4 style="margin-top: 0">Backup selecionado</h4>
               <p class="text-sm mb-2"><strong>Feito em:</strong>
                 <span x-text="arquivoInfo && formatDateLocal(arquivoInfo.exportedAt)"></span>
               </p>
@@ -55,6 +63,12 @@ function renderSetupWizard(container) {
               </button>
               <p class="text-xs muted mt-2">Após restaurar, você fará login com a senha que existia quando este backup foi gerado.</p>
             </div>
+
+            <div class="auth-foot">
+              <span><svg class="icon"><use href="#i-shield"></use></svg> AES-GCM 256</span>
+              <span><svg class="icon"><use href="#i-lock"></use></svg> Dados só neste aparelho</span>
+              <span><svg class="icon"><use href="#i-offline"></use></svg> Funciona offline</span>
+            </div>
           </div>
         </template>
 
@@ -62,6 +76,7 @@ function renderSetupWizard(container) {
         <template x-if="step === 1">
           <div>
             <button class="btn btn-ghost btn-sm mb-3" @click="step = 0">← Voltar</button>
+            <p class="eyebrow">Passo 1 de 2 — Senha mestra</p>
             <div class="alert alert-info">
               <div>
                 <strong>Criando cofre novo.</strong>
@@ -74,7 +89,7 @@ function renderSetupWizard(container) {
               <label class="label" for="setupPwd">Senha mestra <span class="required">*</span>
                 <span class="hint">(mínimo 12 caracteres)</span>
               </label>
-              <input id="setupPwd" type="password" class="input" x-model="password"
+              <input id="setupPwd" type="password" class="input input-lg" x-model="password"
                      placeholder="Pelo menos 12 caracteres" autocomplete="new-password">
               <div class="field-help" x-show="password">
                 Força: <strong x-text="strength.label" :style="'color: ' + strengthColor()"></strong>
@@ -83,7 +98,7 @@ function renderSetupWizard(container) {
 
             <div class="form-group">
               <label class="label" for="setupPwd2">Repita a senha <span class="required">*</span></label>
-              <input id="setupPwd2" type="password" class="input" x-model="password2"
+              <input id="setupPwd2" type="password" class="input input-lg" x-model="password2"
                      placeholder="Repita exatamente a senha acima" autocomplete="new-password">
               <div class="field-error" x-show="password2 && password !== password2">
                 As senhas não coincidem
@@ -109,6 +124,7 @@ function renderSetupWizard(container) {
         <!-- Etapa 2: Chave de recuperação -->
         <template x-if="step === 2">
           <div>
+            <p class="eyebrow">Passo 2 de 2 — Lacre de segurança</p>
             <h2 class="mb-2">Sua chave de recuperação</h2>
             <p class="mb-4">Anote esta chave em <strong>local físico seguro</strong> (papel, gerenciador de senhas).
             Ela permite recuperar o acesso caso você esqueça a senha mestra.</p>
@@ -118,9 +134,9 @@ function renderSetupWizard(container) {
             </div>
 
             <div class="flex gap-2 mb-4">
-              <button class="btn btn-secondary" @click="copyRecovery()">📋 Copiar</button>
-              <button class="btn btn-secondary" @click="printRecovery()">🖨️ Imprimir</button>
-              <button class="btn btn-secondary" @click="downloadRecovery()">💾 Baixar .txt</button>
+              <button class="btn btn-secondary" @click="copyRecovery()">Copiar</button>
+              <button class="btn btn-secondary" @click="printRecovery()">Imprimir</button>
+              <button class="btn btn-secondary" @click="downloadRecovery()">Baixar .txt</button>
             </div>
 
             <div class="alert alert-danger">
@@ -138,6 +154,7 @@ function renderSetupWizard(container) {
             </div>
 
             <button class="btn btn-primary btn-block btn-lg" :disabled="!confirmed" @click="finish()">
+              <svg class="icon"><use href="#i-arrow-right"></use></svg>
               Entrar no Consultório do Vovô
             </button>
           </div>
@@ -199,8 +216,8 @@ function setupWizard() {
     },
 
     strengthColor() {
-      const colors = ['#DC2626', '#DC2626', '#D97706', '#D97706', '#16A34A', '#16A34A', '#16A34A'];
-      return colors[this.strength.score] || '#94A3B8';
+      const colors = ['#C13E3E', '#C13E3E', '#B97718', '#B97718', '#2A8B60', '#2A8B60', '#2A8B60'];
+      return colors[this.strength.score] || '#8A938E';
     },
 
     canAdvance() {
@@ -233,8 +250,8 @@ function setupWizard() {
       const w = window.open('', '_blank');
       w.document.write(`
         <html><head><title>Chave de Recuperação — Consultório do Vovô</title>
-        <style>body{font-family:monospace;padding:40px;max-width:600px;margin:auto}
-        .key{font-size:24px;padding:20px;border:2px dashed #166534;background:#F0FDF4;
+        <style>body{font-family:monospace;padding:40px;max-width:600px;margin:auto;color:#1A2420}
+        .key{font-size:24px;padding:20px;border:2px dashed #0E3A2D;background:#FAF8F3;
              text-align:center;letter-spacing:.05em;word-break:break-all}</style>
         </head><body>
         <h1>Chave de Recuperação</h1>

@@ -2,9 +2,9 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="Consultório do Vovô — Prontuário eletrônico do Dr. Felipe Ribeiro Toledo (CRM-SP 216.986). Dados criptografados localmente.">
-  <meta name="theme-color" content="#166534">
+  <meta name="theme-color" content="#0C2F25">
   <meta name="robots" content="noindex, nofollow">
 
   <!-- PWA / iOS Safari -->
@@ -19,10 +19,12 @@
   <link rel="icon" type="image/png" sizes="192x192" href="./assets/img/icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="./assets/img/icon-512.png">
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="./assets/css/tokens.css">
   <link rel="stylesheet" href="./assets/css/app.css">
 
-  <!-- Sprint C3: tema carregado antes de qualquer outro JS para evitar flash de cor errada -->
+  <!-- Tema carregado antes de qualquer outro JS para evitar flash de cor errada -->
   <script src="./modules/tema.js"></script>
 
   <!-- Bibliotecas vendored localmente (funcionam offline) -->
@@ -51,16 +53,236 @@
   </script>
 </head>
 <body>
+  <!-- ============================================================
+       SPRITE DE ÍCONES — traço 2px, cantos redondos
+       Uso: <svg class="icon"><use href="#i-nome"/></svg>
+       ============================================================ -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+    <defs>
+      <!-- Selo da botica: carimbo circular com folha-prontuário -->
+      <symbol id="i-selo" viewBox="0 0 48 48" fill="none" stroke="currentColor">
+        <circle cx="24" cy="24" r="21" stroke-width="2.4"/>
+        <circle cx="24" cy="24" r="16.5" stroke-width="1" stroke-dasharray="2.5 3.5" opacity="0.65"/>
+        <path d="M24 13.5v21" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M24 19c-2.8-1.2-4.6-3.4-5.2-6.2 2.9.2 5 1.6 6.2 4M24 19c2.8-1.2 4.6-3.4 5.2-6.2-2.9.2-5 1.6-6.2 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+        <path d="M24 26.5c-3.2-1.3-5.3-3.8-6-7 3.3.3 5.8 1.9 7 4.7M24 26.5c3.2-1.3 5.3-3.8 6-7-3.3.3-5.8 1.9-7 4.7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+        <path d="M19.5 34.5h9" stroke-width="2.4" stroke-linecap="round"/>
+      </symbol>
+      <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>
+      </symbol>
+      <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.2 3.4-5 6.5-5s5.7 1.8 6.5 5"/><circle cx="17.5" cy="9.5" r="2.5"/><path d="M16.5 14.6c2.4.3 4.3 1.8 5 4.4"/>
+      </symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/>
+      </symbol>
+      <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10.5h17"/>
+      </symbol>
+      <symbol id="i-rx" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 3.5h5a4 4 0 0 1 0 8H6zM6 3.5V20"/><path d="M11 11.5 19 20M19 13l-6.5 7"/>
+      </symbol>
+      <symbol id="i-heart-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 20.5S3 14.7 3 8.9C3 6 5.2 4 7.8 4c1.8 0 3.3.9 4.2 2.4C12.9 4.9 14.4 4 16.2 4 18.8 4 21 6 21 8.9c0 5.8-9 11.6-9 11.6Z"/><path d="M5.5 12h3.2l1.5-2.8 2.4 5 1.6-3.2h3.6"/>
+      </symbol>
+      <symbol id="i-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="5" y="4.5" width="14" height="17" rx="2.5"/><path d="M9 4.5a3 3 0 0 1 6 0"/><path d="M9 11h6M9 15h6"/>
+      </symbol>
+      <symbol id="i-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 11a8 8 0 0 0-14.4-3.6M4 13a8 8 0 0 0 14.4 3.6"/><path d="M20 4v4h-4M4 20v-4h4"/>
+      </symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2 5.5 5.5"/>
+      </symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/><circle cx="12" cy="15.5" r="1.4" fill="currentColor" stroke="none"/>
+      </symbol>
+      <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"/><path d="m20.5 20.5-4.6-4.6"/>
+      </symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+        <path d="M12 5v14M5 12h14"/>
+      </symbol>
+      <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13.5 3H7a2.5 2.5 0 0 0-2.5 2.5v13A2.5 2.5 0 0 0 7 21h10a2.5 2.5 0 0 0 2.5-2.5V9z"/><path d="M13.5 3V9h6"/>
+      </symbol>
+      <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4.5 12h15M13 5.5l6.5 6.5L13 18.5"/>
+      </symbol>
+      <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+        <path d="m6 6 12 12M18 6 6 18"/>
+      </symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2.8 4.5 6v5.4c0 4.8 3.2 8.2 7.5 9.8 4.3-1.6 7.5-5 7.5-9.8V6z"/><path d="m9 11.8 2.2 2.2 4-4.2"/>
+      </symbol>
+      <symbol id="i-offline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12.5a8.5 8.5 0 0 1 14 0"/><path d="M8.2 15.7a4.5 4.5 0 0 1 7.6 0"/><circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none"/>
+      </symbol>
+    </defs>
+  </svg>
+
   <!-- Loader inicial -->
   <div id="boot-loader" class="full-page-loader">
     <div style="text-align: center;">
       <div class="spinner" style="margin: 0 auto"></div>
-      <p class="mt-4 muted">Carregando Consultório do Vovô…</p>
+      <p class="mt-4 muted">Abrindo o consultório…</p>
     </div>
   </div>
 
   <!-- App root (preenchido pelo router) -->
   <div id="app" x-cloak></div>
+
+  <!-- ============================================================
+       PALETA DE COMANDOS (⌘K / Ctrl+K)
+       Busca pacientes pelo nome e navega para qualquer tela.
+       ============================================================ -->
+  <div id="cmdk-root" style="display: none"></div>
+  <script>
+    window.CmdK = (() => {
+      const ACTIONS = [
+        { tipo: 'acao', icone: 'i-plus',        rotulo: 'Novo paciente',        rota: '/paciente/novo' },
+        { tipo: 'acao', icone: 'i-rx',          rotulo: 'Nova prescrição',      rota: '/prescricao' },
+        { tipo: 'nav',  icone: 'i-home',        rotulo: 'Início',               rota: '/' },
+        { tipo: 'nav',  icone: 'i-users',       rotulo: 'Pacientes',            rota: '/pacientes' },
+        { tipo: 'nav',  icone: 'i-clock',       rotulo: 'Últimas consultas',    rota: '/consultas' },
+        { tipo: 'nav',  icone: 'i-calendar',    rotulo: 'Agenda',               rota: '/agenda' },
+        { tipo: 'nav',  icone: 'i-heart-pulse', rotulo: 'Painel Hiperdia',      rota: '/hiperdia' },
+        { tipo: 'nav',  icone: 'i-clipboard',   rotulo: 'Templates de prescrição', rota: '/templates' },
+        { tipo: 'nav',  icone: 'i-sync',        rotulo: 'Sincronização',        rota: '/sync' },
+        { tipo: 'nav',  icone: 'i-settings',    rotulo: 'Configurações',        rota: '/config' }
+      ];
+
+      let aberto = false;
+      let pacientes = [];
+      let resultados = [];
+      let ativo = 0;
+      let root, inputEl;
+
+      const norm = (s) => (s || '').toString()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+      function montar() {
+        root = document.getElementById('cmdk-root');
+        root.innerHTML = `
+          <div class="cmdk-overlay" id="cmdk-overlay">
+            <div class="cmdk" role="dialog" aria-modal="true" aria-label="Busca rápida">
+              <div class="cmdk-input-row">
+                <svg class="icon"><use href="#i-search"/></svg>
+                <input class="cmdk-input" id="cmdk-input" type="text"
+                       placeholder="Buscar paciente ou ir para…"
+                       autocomplete="off" spellcheck="false">
+                <kbd>esc</kbd>
+              </div>
+              <div class="cmdk-results" id="cmdk-results"></div>
+              <div class="cmdk-foot">
+                <span><kbd>↑↓</kbd> navegar</span>
+                <span><kbd>↵</kbd> abrir</span>
+                <span><kbd>esc</kbd> fechar</span>
+              </div>
+            </div>
+          </div>
+        `;
+        root.querySelector('#cmdk-overlay').addEventListener('mousedown', (e) => {
+          if (e.target.id === 'cmdk-overlay') fechar();
+        });
+        inputEl = root.querySelector('#cmdk-input');
+        inputEl.addEventListener('input', () => { ativo = 0; filtrar(); });
+        inputEl.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowDown') { e.preventDefault(); ativo = Math.min(ativo + 1, resultados.length - 1); pintar(); }
+          else if (e.key === 'ArrowUp') { e.preventDefault(); ativo = Math.max(ativo - 1, 0); pintar(); }
+          else if (e.key === 'Enter') { e.preventDefault(); escolher(ativo); }
+          else if (e.key === 'Escape') { e.preventDefault(); fechar(); }
+        });
+      }
+
+      function filtrar() {
+        const q = norm(inputEl.value.trim());
+        const acoes = ACTIONS.filter(a => !q || norm(a.rotulo).includes(q));
+        let pacs = [];
+        if (q) {
+          pacs = pacientes
+            .filter(p => norm(p.nome).includes(q))
+            .slice(0, 8)
+            .map(p => ({
+              tipo: 'paciente', icone: 'i-file', rotulo: p.nome,
+              meta: p.dataNascimento ? (UI.calculateAge(p.dataNascimento) + ' anos') : '',
+              rota: '/paciente/' + p.id
+            }));
+        }
+        resultados = [...pacs, ...(q ? acoes : ACTIONS)];
+        pintar();
+      }
+
+      function pintar() {
+        const box = root.querySelector('#cmdk-results');
+        if (resultados.length === 0) {
+          box.innerHTML = `<div class="cmdk-empty">Nada encontrado. Tente outro nome.</div>`;
+          return;
+        }
+        let html = '';
+        let grupoAtual = '';
+        resultados.forEach((r, i) => {
+          const grupo = r.tipo === 'paciente' ? 'Pacientes' : (r.tipo === 'acao' ? 'Ações' : 'Ir para');
+          if (grupo !== grupoAtual) {
+            grupoAtual = grupo;
+            html += `<div class="cmdk-group-label">${grupo}</div>`;
+          }
+          html += `
+            <button class="cmdk-item ${i === ativo ? 'active' : ''}" data-i="${i}">
+              <svg class="icon"><use href="#${r.icone}"/></svg>
+              <span>${r.rotulo}</span>
+              ${r.meta ? `<span class="cmdk-item-meta">${r.meta}</span>` : ''}
+            </button>`;
+        });
+        box.innerHTML = html;
+        box.querySelectorAll('.cmdk-item').forEach(el => {
+          el.addEventListener('click', () => escolher(parseInt(el.dataset.i, 10)));
+          el.addEventListener('mousemove', () => {
+            const i = parseInt(el.dataset.i, 10);
+            if (i !== ativo) { ativo = i; pintar(); }
+          });
+        });
+        const ativoEl = box.querySelector('.cmdk-item.active');
+        if (ativoEl) ativoEl.scrollIntoView({ block: 'nearest' });
+      }
+
+      function escolher(i) {
+        const r = resultados[i];
+        if (!r) return;
+        fechar();
+        Router.navigate(r.rota);
+      }
+
+      async function abrir() {
+        if (aberto) return;
+        if (!window.Auth || !Auth.isUnlocked()) return;
+        aberto = true;
+        if (!root || !root.innerHTML) montar();
+        document.getElementById('cmdk-root').style.display = '';
+        try { pacientes = await DB.listPacientes(); } catch (_) { pacientes = []; }
+        inputEl.value = '';
+        ativo = 0;
+        filtrar();
+        requestAnimationFrame(() => inputEl.focus());
+      }
+
+      function fechar() {
+        if (!aberto) return;
+        aberto = false;
+        document.getElementById('cmdk-root').style.display = 'none';
+      }
+
+      document.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+          e.preventDefault();
+          aberto ? fechar() : abrir();
+        }
+      });
+
+      return { abrir, fechar };
+    })();
+  </script>
 
   <!-- Módulos core (ordem importa) -->
   <script src="./modules/crypto.js"></script>
@@ -119,15 +341,15 @@
   </script>
 
   <!-- Banner de atualização do Service Worker (oculto por padrão) -->
-  <div id="sw-update-banner" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; background: #166534; color: white; padding: 16px 24px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); display: none; gap: 16px; align-items: center; max-width: 90vw;">
+  <div id="sw-update-banner" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; background: var(--color-primary-950, #061B15); color: #F6F4ED; padding: 14px 20px; border-radius: 12px; border: 1px solid rgba(246,244,237,0.14); box-shadow: 0 24px 56px rgba(10,27,21,0.35); gap: 16px; align-items: center; max-width: 90vw;">
     <div>
-      <strong>🌱 Nova versão disponível</strong>
-      <div style="font-size: 13px; opacity: 0.9; margin-top: 4px">Recarregue para atualizar</div>
+      <strong>Nova versão disponível</strong>
+      <div style="font-size: 13px; opacity: 0.85; margin-top: 2px">Recarregue para atualizar o consultório</div>
     </div>
-    <button id="sw-update-btn" style="background: white; color: #166534; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+    <button id="sw-update-btn" style="background: #F6F4ED; color: #0E3A2D; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer;">
       Atualizar
     </button>
-    <button id="sw-dismiss-btn" style="background: transparent; color: white; border: 1px solid rgba(255,255,255,0.4); padding: 8px 12px; border-radius: 8px; cursor: pointer;" title="Adiar até a próxima vez que abrir o app">
+    <button id="sw-dismiss-btn" style="background: transparent; color: #F6F4ED; border: 1px solid rgba(246,244,237,0.4); padding: 8px 12px; border-radius: 8px; cursor: pointer;" title="Adiar até a próxima vez que abrir o app">
       Depois
     </button>
   </div>
@@ -208,7 +430,7 @@
 
       const app = document.getElementById('app');
 
-      // Sprint C3: helpers do tema (claro/escuro/auto)
+      // Helpers do tema (claro/escuro/auto)
       function iconeTema(modo) {
         if (modo === 'light') return '☀️';
         if (modo === 'dark') return '🌙';
@@ -232,79 +454,96 @@
         });
       }
 
+      // Relógio do cabeçalho (atualiza a cada 30s)
+      function ligarRelogio() {
+        const el = document.getElementById('headerClock');
+        if (!el) return;
+        const tick = () => {
+          const agora = new Date();
+          const data = agora.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' });
+          const hora = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          el.textContent = `${data} · ${hora}`;
+        };
+        tick();
+        if (window.__cvClock) clearInterval(window.__cvClock);
+        window.__cvClock = setInterval(tick, 30000);
+      }
+
+      // Item de navegação (sidebar)
+      function navItem(rota, icone, rotulo, ativo, extra) {
+        return `
+          <button class="nav-item ${ativo ? 'active' : ''}" onclick="Router.navigate('${rota}')">
+            <svg class="icon"><use href="#${icone}"/></svg>
+            <span>${rotulo}</span>${extra || ''}
+          </button>`;
+      }
+
       // Helpers de layout
       function renderAppShell(activeRoute) {
+        const r = activeRoute;
         app.innerHTML = `
           <div class="app-shell">
             <aside class="app-sidebar">
-              <div class="nav-section">
-                <div class="nav-section-title">Consultório</div>
-                <button class="nav-item ${activeRoute === '/' ? 'active' : ''}"
-                        onclick="Router.navigate('/')">
-                  🏠 Início
-                </button>
-                <button class="nav-item ${activeRoute.startsWith('/paciente') ? 'active' : ''}"
-                        onclick="Router.navigate('/pacientes')">
-                  👥 Pacientes
-                </button>
-                <button class="nav-item ${activeRoute === '/consultas' ? 'active' : ''}"
-                        onclick="Router.navigate('/consultas')">
-                  🕐 Últimas consultas
-                </button>
-                <button class="nav-item ${activeRoute === '/agenda' ? 'active' : ''}"
-                        onclick="Router.navigate('/agenda')">
-                  📅 Agenda
-                </button>
-                <button class="nav-item ${activeRoute === '/prescricao' ? 'active' : ''}"
-                        onclick="Router.navigate('/prescricao')">
-                  💊 Nova prescrição
-                </button>
-                <button class="nav-item ${activeRoute === '/hiperdia' ? 'active' : ''}"
-                        onclick="Router.navigate('/hiperdia')">
-                  🩺 Hiperdia
-                </button>
-                <button class="nav-item ${activeRoute === '/templates' ? 'active' : ''}"
-                        onclick="Router.navigate('/templates')">
-                  📋 Templates
-                </button>
+              <div class="brand">
+                <div class="brand-logo"><svg><use href="#i-selo"/></svg></div>
+                <div>
+                  <div class="brand-name">Consultório<br>do Vovô</div>
+                  <div class="brand-tagline">CRM-SP 216.986</div>
+                </div>
               </div>
+
+              <div class="nav-section">
+                <div class="nav-section-title">Clínica</div>
+                ${navItem('/', 'i-home', 'Início', r === '/')}
+                ${navItem('/pacientes', 'i-users', 'Pacientes', r.startsWith('/paciente'))}
+                ${navItem('/consultas', 'i-clock', 'Últimas consultas', r === '/consultas')}
+                ${navItem('/agenda', 'i-calendar', 'Agenda', r === '/agenda')}
+                ${navItem('/hiperdia', 'i-heart-pulse', 'Hiperdia', r === '/hiperdia')}
+              </div>
+
+              <div class="nav-section">
+                <div class="nav-section-title">Receituário</div>
+                ${navItem('/prescricao', 'i-rx', 'Nova prescrição', r === '/prescricao')}
+                ${navItem('/templates', 'i-clipboard', 'Templates', r === '/templates')}
+              </div>
+
               <div class="nav-section">
                 <div class="nav-section-title">Sistema</div>
-                <button class="nav-item ${activeRoute === '/sync' ? 'active' : ''}"
-                        onclick="Router.navigate('/sync')">
-                  🔄 Sincronização
-                </button>
-                <button class="nav-item ${activeRoute === '/config' ? 'active' : ''}"
-                        onclick="Router.navigate('/config')">
-                  ⚙️ Configurações
-                </button>
-                <button class="nav-item" onclick="window.Tema && Tema.toggle(); document.getElementById('temaLabel') && (document.getElementById('temaLabel').textContent = labelTema(Tema.get()))" id="btnTema">
-                  <span id="temaIcone">${iconeTema(window.Tema && Tema.get())}</span>
+                ${navItem('/sync', 'i-sync', 'Sincronização', r === '/sync')}
+                ${navItem('/config', 'i-settings', 'Configurações', r === '/config')}
+                <button class="nav-item" id="btnTema"
+                        onclick="window.Tema && Tema.toggle(); document.getElementById('temaLabel') && (document.getElementById('temaLabel').textContent = labelTema(Tema.get()))">
+                  <span id="temaIcone" style="width:18px; text-align:center">${iconeTema(window.Tema && Tema.get())}</span>
                   <span>Tema: <strong id="temaLabel">${labelTema(window.Tema && Tema.get())}</strong></span>
                 </button>
                 <button class="nav-item" onclick="Auth.lock().then(() => Router.navigate('/'))">
-                  🔒 Bloquear
+                  <svg class="icon"><use href="#i-lock"/></svg>
+                  <span>Bloquear cofre</span>
+                  <span class="nav-kbd">15 min</span>
                 </button>
               </div>
-              <div style="margin-top: auto; padding: var(--space-3); font-size: var(--text-xs); color: var(--text-muted);">
-                <div>🔐 Cofre destrancado</div>
-                <div class="mt-2">Trava em 15 min sem uso</div>
+
+              <div class="vault-status">
+                <div class="vault-status-row">
+                  <span class="vault-dot"></span>
+                  <span>Cofre destrancado</span>
+                </div>
+                <div>AES-256 local · trava sozinho em 15 min sem uso</div>
               </div>
             </aside>
 
             <header class="app-header">
-              <div class="brand">
-                <div class="brand-logo">CV</div>
-                <div>
-                  <div class="brand-name">Consultório do Vovô</div>
-                  <div class="brand-tagline">Felipe Ribeiro Toledo · CRM-SP 216.986</div>
-                </div>
-              </div>
+              <button class="search-trigger" onclick="CmdK.abrir()" title="Busca rápida (Ctrl+K)">
+                <svg class="icon"><use href="#i-search"/></svg>
+                <span>Buscar paciente ou ação…</span>
+                <kbd>Ctrl K</kbd>
+              </button>
               <div class="header-spacer"></div>
+              <span class="header-clock" id="headerClock"></span>
               <div class="header-actions">
                 <button class="btn btn-ghost btn-icon" onclick="Auth.lock().then(() => Router.navigate('/'))"
                         title="Bloquear cofre">
-                  🔒
+                  <svg class="icon"><use href="#i-lock"/></svg>
                 </button>
               </div>
             </header>
@@ -312,8 +551,27 @@
             <main class="app-main">
               <div id="route-content"></div>
             </main>
+
+            <nav class="bottombar">
+              <button class="bottombar-item ${r === '/' ? 'active' : ''}" onclick="Router.navigate('/')">
+                <svg class="icon"><use href="#i-home"/></svg><span>Início</span>
+              </button>
+              <button class="bottombar-item ${r.startsWith('/paciente') ? 'active' : ''}" onclick="Router.navigate('/pacientes')">
+                <svg class="icon"><use href="#i-users"/></svg><span>Pacientes</span>
+              </button>
+              <button class="bottombar-item ${r === '/agenda' ? 'active' : ''}" onclick="Router.navigate('/agenda')">
+                <svg class="icon"><use href="#i-calendar"/></svg><span>Agenda</span>
+              </button>
+              <button class="bottombar-item ${r === '/prescricao' ? 'active' : ''}" onclick="Router.navigate('/prescricao')">
+                <svg class="icon"><use href="#i-rx"/></svg><span>Receita</span>
+              </button>
+              <button class="bottombar-item" onclick="CmdK.abrir()">
+                <svg class="icon"><use href="#i-search"/></svg><span>Buscar</span>
+              </button>
+            </nav>
           </div>
         `;
+        ligarRelogio();
         return document.getElementById('route-content');
       }
 
@@ -408,6 +666,7 @@
       // Listener para mudanças de estado de auth: força re-render
       Auth.on((event) => {
         if (event === 'locked') {
+          if (window.CmdK) CmdK.fechar();
           Router.navigate('/');
         }
       });
@@ -416,7 +675,7 @@
       document.getElementById('boot-loader').style.display = 'none';
       document.getElementById('app').removeAttribute('x-cloak');
 
-      // Sprint D2: liga auto-sync se configurado e habilitado
+      // Liga auto-sync se configurado e habilitado
       if (window.Auth && window.Auth.on && window.Sync) {
         Auth.on(async (evento) => {
           if (evento === 'unlocked') {

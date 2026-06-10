@@ -1,5 +1,8 @@
 /* ============================================================
    dashboard.js — Tela inicial após login
+   Redesign "Botica Moderna": a mesa do dia.
+   Prioriza triagem (quem chega, quem faltou, semáforo Hiperdia)
+   antes de estatísticas.
    ============================================================ */
 
 function renderDashboard(container) {
@@ -7,22 +10,29 @@ function renderDashboard(container) {
     <div x-data="dashboardScreen()" x-init="load()">
       <div class="page-header">
         <div>
-          <h1 class="page-title">Bom dia, Felipe</h1>
+          <p class="eyebrow">Mesa do dia</p>
+          <h1 class="page-title"><span x-text="saudacao">Bom dia</span>, Felipe</h1>
           <p class="page-subtitle" x-text="today"></p>
         </div>
         <div class="page-actions">
+          <button class="btn btn-secondary" @click="$dispatch('navigate', '/prescricao')"
+                  title="Gerar uma prescrição rápida sem criar consulta antes">
+            <svg class="icon"><use href="#i-rx"></use></svg>
+            Prescrição
+          </button>
           <button class="btn btn-primary" @click="$dispatch('navigate', '/paciente/novo')">
-            + Novo paciente
+            <svg class="icon"><use href="#i-plus"></use></svg>
+            Novo paciente
           </button>
         </div>
       </div>
 
       <!-- Aviso de backup pendente -->
       <div x-show="backupStatus?.loaded && backupStatus?.precisaBackup" class="alert alert-warning mb-4"
-           style="border-left: 4px solid var(--color-warning, #d97706)">
+           style="border-left: 4px solid var(--color-warning)">
         <div style="display: flex; gap: var(--space-3); align-items: flex-start; flex-wrap: wrap">
           <div style="flex: 1; min-width: 250px">
-            <strong>⚠ Backup recomendado</strong>
+            <strong>Backup recomendado</strong>
             <div class="text-sm mt-1">
               <span x-show="backupStatus?.lastBackupAt === null">
                 Você ainda não tem nenhum backup. Se o navegador limpar os dados,
@@ -36,7 +46,7 @@ function renderDashboard(container) {
           </div>
           <div class="flex gap-2">
             <button class="btn btn-primary text-sm" @click="baixarBackup()" :disabled="working">
-              <span x-show="!working">💾 Baixar backup</span>
+              <span x-show="!working">Baixar backup</span>
               <span x-show="working">Preparando…</span>
             </button>
             <button class="btn btn-ghost text-sm" @click="$dispatch('navigate', '/config')">
@@ -46,66 +56,77 @@ function renderDashboard(container) {
         </div>
       </div>
 
-      <!-- Sprint A1: Bloco operacional — hoje, faltosos, métricas -->
-      <div class="card mb-4" x-show="agendaHoje.length > 0 || faltosos.length > 0 || metricas.consultasHoje > 0">
-        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-          <h3 style="margin:0">📅 Operacional do dia</h3>
-          <button class="btn btn-ghost btn-sm" @click="$dispatch('navigate', '/agenda')" style="margin-left:auto">
-            Ver agenda completa →
+      <!-- Operacional do dia: métricas + fila + faltosos -->
+      <div class="card card-spine mb-4" style="--spine-color: var(--color-primary-500)"
+           x-show="agendaHoje.length > 0 || faltosos.length > 0 || metricas.consultasHoje > 0">
+        <div class="card-header" style="border-bottom: none; padding-bottom: 0; margin-bottom: var(--space-4)">
+          <h3 class="card-title" style="margin: 0">Operacional do dia</h3>
+          <button class="btn btn-ghost btn-sm" @click="$dispatch('navigate', '/agenda')">
+            Ver agenda completa
+            <svg class="icon"><use href="#i-arrow-right"></use></svg>
           </button>
         </div>
 
         <!-- Métricas em grid -->
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 12px;">
-          <div style="padding:10px; background:#dcfce7; border-radius:8px; text-align:center;">
-            <div style="font-size:1.8em; font-weight:bold; color:#166534" x-text="metricas.consultasHoje"></div>
-            <div style="font-size:0.85em; color:#166534">consultas hoje</div>
+        <div class="stat-grid">
+          <div class="stat-tile tone-verde">
+            <div class="stat-tile-num" x-text="metricas.consultasHoje"></div>
+            <div class="stat-tile-label">consultas hoje</div>
           </div>
-          <div style="padding:10px; background:#fef3c7; border-radius:8px; text-align:center;">
-            <div style="font-size:1.8em; font-weight:bold; color:#92400e" x-text="metricas.consultasSemana"></div>
-            <div style="font-size:0.85em; color:#92400e">consultas esta semana</div>
+          <div class="stat-tile tone-amarelo">
+            <div class="stat-tile-num" x-text="metricas.consultasSemana"></div>
+            <div class="stat-tile-label">consultas na semana</div>
           </div>
-          <div style="padding:10px; background:#dbeafe; border-radius:8px; text-align:center;">
-            <div style="font-size:1.8em; font-weight:bold; color:#1e40af" x-text="metricas.consultasMes"></div>
-            <div style="font-size:0.85em; color:#1e40af">consultas este mês</div>
+          <div class="stat-tile tone-pinho">
+            <div class="stat-tile-num" x-text="metricas.consultasMes"></div>
+            <div class="stat-tile-label">consultas no mês</div>
           </div>
-          <div style="padding:10px; background:#fee2e2; border-radius:8px; text-align:center; cursor:pointer"
-               @click="$dispatch('navigate', '/agenda')">
-            <div style="font-size:1.8em; font-weight:bold; color:#991b1b" x-text="faltosos.length"></div>
-            <div style="font-size:0.85em; color:#991b1b">faltosos (busca ativa)</div>
+          <div class="stat-tile tone-vermelho clickable" @click="$dispatch('navigate', '/agenda')">
+            <div class="stat-tile-num" x-text="faltosos.length"></div>
+            <div class="stat-tile-label">faltosos (busca ativa)</div>
           </div>
         </div>
 
         <!-- Hoje na agenda -->
-        <div x-show="agendaHoje.length > 0" style="margin-top: 16px;">
-          <div style="font-weight:600; margin-bottom:8px;">📋 Chegam hoje (<span x-text="agendaHoje.length"></span>)</div>
-          <template x-for="ag in agendaHoje" :key="ag.id">
-            <div style="padding: 8px 12px; background: #f0fdf4; border-radius: 6px; margin-bottom: 4px; display:flex; align-items:center; gap:12px;">
-              <div style="font-weight:600; color:#166534; min-width:60px;" x-text="ag.hora || '—'"></div>
-              <div style="flex:1; cursor:pointer;" @click="$dispatch('navigate', '/paciente/' + ag.pacienteId)">
-                <span x-text="ag.pacienteNome || '(sem nome)'" style="font-weight:500"></span>
-                <span x-show="ag.observacao" x-text="' · ' + ag.observacao" style="opacity:0.7"></span>
+        <div x-show="agendaHoje.length > 0" class="mt-4">
+          <div class="text-sm" style="font-weight: var(--weight-semibold); margin-bottom: var(--space-2)">
+            Chegam hoje (<span x-text="agendaHoje.length"></span>)
+          </div>
+          <div class="queue-list">
+            <template x-for="ag in agendaHoje" :key="ag.id">
+              <div class="queue-item">
+                <div class="queue-time" x-text="ag.hora || '—'"></div>
+                <div class="queue-who" @click="$dispatch('navigate', '/paciente/' + ag.pacienteId)">
+                  <span class="queue-name" x-text="ag.pacienteNome || '(sem nome)'"></span>
+                  <span class="queue-note" x-show="ag.observacao" x-text="ag.observacao"></span>
+                </div>
+                <button class="btn btn-sm btn-primary"
+                        @click="$dispatch('navigate', '/paciente/' + ag.pacienteId + '/consulta/nova?agendamento=' + ag.id)">
+                  Atender
+                  <svg class="icon"><use href="#i-arrow-right"></use></svg>
+                </button>
               </div>
-              <button class="btn btn-sm btn-primary" @click="$dispatch('navigate', '/paciente/' + ag.pacienteId + '/consulta/nova?agendamento=' + ag.id)">
-                ▶ Atender
-              </button>
-            </div>
-          </template>
+            </template>
+          </div>
         </div>
 
         <!-- Faltosos -->
-        <div x-show="faltosos.length > 0" style="margin-top: 16px;">
-          <div style="font-weight:600; margin-bottom:8px; color: #991b1b;">⚠️ Para busca ativa (<span x-text="faltosos.length"></span>)</div>
-          <template x-for="ag in faltosos.slice(0, 5)" :key="ag.id">
-            <div style="padding: 8px 12px; background: #fef2f2; border-radius: 6px; margin-bottom: 4px; display:flex; align-items:center; gap:12px;">
-              <div style="font-weight:600; color:#991b1b; min-width:90px; font-size:0.9em;" x-text="formatarDataDash(ag.data)"></div>
-              <div style="flex:1; cursor:pointer;" @click="$dispatch('navigate', '/paciente/' + ag.pacienteId)">
-                <span x-text="ag.pacienteNome || '(sem nome)'" style="font-weight:500"></span>
-                <span x-show="ag.observacao" x-text="' · ' + ag.observacao" style="opacity:0.7"></span>
+        <div x-show="faltosos.length > 0" class="mt-4">
+          <div class="text-sm" style="font-weight: var(--weight-semibold); margin-bottom: var(--space-2); color: var(--semaforo-vermelho)">
+            Para busca ativa (<span x-text="faltosos.length"></span>)
+          </div>
+          <div class="queue-list">
+            <template x-for="ag in faltosos.slice(0, 5)" :key="ag.id">
+              <div class="queue-item is-falta">
+                <div class="queue-time" x-text="formatarDataDash(ag.data)"></div>
+                <div class="queue-who" @click="$dispatch('navigate', '/paciente/' + ag.pacienteId)">
+                  <span class="queue-name" x-text="ag.pacienteNome || '(sem nome)'"></span>
+                  <span class="queue-note" x-show="ag.observacao" x-text="ag.observacao"></span>
+                </div>
               </div>
-            </div>
-          </template>
-          <div x-show="faltosos.length > 5" style="text-align:center; margin-top:8px;">
+            </template>
+          </div>
+          <div x-show="faltosos.length > 5" class="text-center mt-2">
             <button class="btn btn-ghost btn-sm" @click="$dispatch('navigate', '/agenda')">
               + <span x-text="faltosos.length - 5"></span> mais — ver todos
             </button>
@@ -113,85 +134,84 @@ function renderDashboard(container) {
         </div>
       </div>
 
-      <!-- Sprint B3: Widget Hiperdia -->
+      <!-- Widget Hiperdia -->
       <div class="card mb-4" x-show="hiperdiaResumo.total > 0">
-        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
-          <h3 style="margin:0">🩺 Hiperdia (HAS/DM)</h3>
-          <button class="btn btn-ghost btn-sm" @click="$dispatch('navigate', '/hiperdia')" style="margin-left:auto">
-            Ver painel completo →
+        <div class="card-header" style="border-bottom: none; padding-bottom: 0; margin-bottom: var(--space-4)">
+          <h3 class="card-title" style="margin: 0">Hiperdia — HAS/DM</h3>
+          <button class="btn btn-ghost btn-sm" @click="$dispatch('navigate', '/hiperdia')">
+            Ver painel completo
+            <svg class="icon"><use href="#i-arrow-right"></use></svg>
           </button>
         </div>
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap:10px;">
-          <div style="padding:10px; background: var(--bg-sunken); border-radius:8px; text-align:center;
-                      cursor:pointer; border: 1px solid var(--border-subtle);"
-               @click="$dispatch('navigate', '/hiperdia')">
-            <div style="font-size:1.6em; font-weight:bold; color: var(--color-primary);" x-text="hiperdiaResumo.total"></div>
-            <div style="font-size:0.8em; color: var(--text-secondary);">Total</div>
-          </div>
-          <div style="padding:10px; background: rgba(220, 38, 38, 0.08); border-radius:8px; text-align:center;
-                      cursor:pointer; border: 1px solid rgba(220, 38, 38, 0.20);"
-               @click="$dispatch('navigate', '/hiperdia')"
-               x-show="hiperdiaResumo.vermelho > 0">
-            <div style="font-size:1.6em; font-weight:bold; color:#DC2626;" x-text="hiperdiaResumo.vermelho"></div>
-            <div style="font-size:0.8em; color:#991b1b;">🔴 Descompensados</div>
-          </div>
-          <div style="padding:10px; background: rgba(217, 119, 6, 0.08); border-radius:8px; text-align:center;
-                      cursor:pointer; border: 1px solid rgba(217, 119, 6, 0.20);"
-               @click="$dispatch('navigate', '/hiperdia')"
-               x-show="hiperdiaResumo.amarelo > 0">
-            <div style="font-size:1.6em; font-weight:bold; color:#D97706;" x-text="hiperdiaResumo.amarelo"></div>
-            <div style="font-size:0.8em; color:#92400e;">🟡 Atenção</div>
-          </div>
-          <div style="padding:10px; background: rgba(22, 163, 74, 0.08); border-radius:8px; text-align:center;
-                      cursor:pointer; border: 1px solid rgba(22, 163, 74, 0.20);"
-               @click="$dispatch('navigate', '/hiperdia')"
-               x-show="hiperdiaResumo.verde > 0">
-            <div style="font-size:1.6em; font-weight:bold; color:#16A34A;" x-text="hiperdiaResumo.verde"></div>
-            <div style="font-size:0.8em; color:#15803D;">🟢 Controlados</div>
-          </div>
+        <div class="semaforo-strip">
+          <button class="semaforo-pill" @click="$dispatch('navigate', '/hiperdia')">
+            <svg class="icon" style="width:14px;height:14px"><use href="#i-heart-pulse"></use></svg>
+            <strong x-text="hiperdiaResumo.total"></strong> em acompanhamento
+          </button>
+          <button class="semaforo-pill" @click="$dispatch('navigate', '/hiperdia')"
+                  x-show="hiperdiaResumo.vermelho > 0">
+            <span class="dot dot-vermelho"></span>
+            <strong x-text="hiperdiaResumo.vermelho"></strong> descompensados
+          </button>
+          <button class="semaforo-pill" @click="$dispatch('navigate', '/hiperdia')"
+                  x-show="hiperdiaResumo.amarelo > 0">
+            <span class="dot dot-amarelo"></span>
+            <strong x-text="hiperdiaResumo.amarelo"></strong> em atenção
+          </button>
+          <button class="semaforo-pill" @click="$dispatch('navigate', '/hiperdia')"
+                  x-show="hiperdiaResumo.verde > 0">
+            <span class="dot dot-verde"></span>
+            <strong x-text="hiperdiaResumo.verde"></strong> controlados
+          </button>
         </div>
       </div>
 
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-8);">
-        <div class="card">
-          <div class="text-sm muted">Pacientes cadastrados</div>
-          <div style="font-size: var(--text-3xl); font-weight: var(--weight-bold); color: var(--color-primary); margin-top: var(--space-2);"
-               x-text="stats.pacientes"></div>
+      <!-- Acervo + versão -->
+      <div class="stat-grid" style="margin-bottom: var(--space-6)">
+        <div class="stat-tile tone-pinho clickable" @click="$dispatch('navigate', '/pacientes')">
+          <div class="stat-tile-num" x-text="stats.pacientes"></div>
+          <div class="stat-tile-label">pacientes cadastrados</div>
         </div>
-        <div class="card">
-          <div class="text-sm muted">Consultas registradas</div>
-          <div style="font-size: var(--text-3xl); font-weight: var(--weight-bold); color: var(--color-primary); margin-top: var(--space-2);"
-               x-text="stats.consultas"></div>
+        <div class="stat-tile tone-pinho clickable" @click="$dispatch('navigate', '/consultas')">
+          <div class="stat-tile-num" x-text="stats.consultas"></div>
+          <div class="stat-tile-label">consultas registradas</div>
         </div>
-        <div class="card">
-          <div class="text-sm muted">Versão do sistema</div>
-          <div style="font-size: var(--text-lg); font-weight: var(--weight-semibold); margin-top: var(--space-2);"
-               x-text="version"></div>
-          <div class="text-xs muted" x-text="'Build: ' + buildDate"></div>
+        <div class="stat-tile">
+          <div class="stat-tile-num text-mono" style="font-size: var(--text-lg)" x-text="version"></div>
+          <div class="stat-tile-label" x-text="'build ' + buildDate"></div>
         </div>
       </div>
 
+      <!-- Atalhos -->
       <div class="card">
         <h3 class="mb-4">Atalhos</h3>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-3);">
           <button class="btn btn-secondary" @click="$dispatch('navigate', '/pacientes')">
-            👥 Lista de pacientes
+            <svg class="icon"><use href="#i-users"></use></svg>
+            Lista de pacientes
           </button>
           <button class="btn btn-secondary" @click="$dispatch('navigate', '/paciente/novo')">
-            ➕ Cadastrar paciente
+            <svg class="icon"><use href="#i-plus"></use></svg>
+            Cadastrar paciente
           </button>
           <button class="btn btn-primary" @click="$dispatch('navigate', '/prescricao')"
                   title="Gerar uma prescrição rápida sem criar consulta antes">
-            💊 Nova prescrição
+            <svg class="icon"><use href="#i-rx"></use></svg>
+            Nova prescrição
           </button>
           <button class="btn btn-secondary" @click="$dispatch('navigate', '/config')">
-            ⚙️ Configurações
+            <svg class="icon"><use href="#i-settings"></use></svg>
+            Configurações
           </button>
         </div>
+        <p class="text-xs muted mt-4">
+          Dica: pressione <kbd>Ctrl</kbd> + <kbd>K</kbd> em qualquer tela para buscar pacientes e ações.
+        </p>
       </div>
 
+      <!-- Status do sistema -->
       <div class="card mt-6">
-        <h3 class="mb-3">📊 Status do sistema</h3>
+        <h3 class="mb-3">Status do sistema</h3>
         <p class="text-sm muted mb-4">
           Consultório do Vovô <strong x-text="version"></strong> ·
           local-first, criptografia client-side, zero-knowledge.
@@ -199,8 +219,8 @@ function renderDashboard(container) {
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-5);">
           <div>
-            <h4 style="margin-top: 0; color: var(--color-primary); font-size: var(--text-base); margin-bottom: var(--space-2)">
-              ✅ Funcionando
+            <h4 style="margin-top: 0; color: var(--color-primary-700); font-size: var(--text-base); margin-bottom: var(--space-2)">
+              Funcionando
             </h4>
             <ul style="font-size: var(--text-sm); color: var(--text-secondary); padding-left: var(--space-5); line-height: var(--leading-relaxed); margin: 0">
               <li><strong>Cofre criptografado</strong> AES-GCM 256 + PBKDF2 600k, chave de recuperação Crockford</li>
@@ -212,19 +232,20 @@ function renderDashboard(container) {
               <li><strong>Backup criptografado</strong> .cdv-backup com checksum SHA-256 + restore</li>
               <li><strong>PWA instalável</strong> — Service Worker, 100% offline depois do primeiro acesso</li>
               <li><strong>Trilha de auditoria</strong> local + idle lock em 15 minutos</li>
+              <li><strong>Agenda e busca ativa</strong> — retornos em PT-BR ("30 dias", "3 meses"), faltosos</li>
+              <li><strong>Painel Hiperdia</strong> — semáforo de risco HAS/DM por última PA/glicemia</li>
+              <li><strong>Templates de prescrição</strong> — receitas frequentes salvas e re-aplicáveis</li>
+              <li><strong>Busca rápida Ctrl+K</strong> — paleta de comandos global, pacientes e ações</li>
+              <li><strong>Sync entre dispositivos</strong> — Supabase zero-knowledge (opcional)</li>
             </ul>
           </div>
 
           <div>
             <h4 style="margin-top: 0; color: var(--text-secondary); font-size: var(--text-base); margin-bottom: var(--space-2)">
-              ⏳ Em planejamento
+              Em planejamento
             </h4>
             <ul style="font-size: var(--text-sm); color: var(--text-secondary); padding-left: var(--space-5); line-height: var(--leading-relaxed); margin: 0">
-              <li><strong>Agenda e histórico do dia</strong> — visão por data + retornos pendentes</li>
-              <li><strong>Busca rápida Ctrl+K</strong> — paleta de comandos global</li>
-              <li><strong>Templates de prescrição</strong> — receitas frequentes salvas e re-aplicáveis</li>
               <li><strong>2FA TOTP</strong> — segundo fator além da senha mestra</li>
-              <li><strong>Sync entre dispositivos</strong> — Supabase zero-knowledge (opcional)</li>
             </ul>
           </div>
         </div>
@@ -237,6 +258,7 @@ function dashboardScreen() {
   return {
     stats: { pacientes: 0, consultas: 0 },
     today: '',
+    saudacao: 'Olá',
     version: '0.1.0',
     buildDate: '',
     backupStatus: {
@@ -260,6 +282,9 @@ function dashboardScreen() {
     },
 
     async load() {
+      const hora = new Date().getHours();
+      this.saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
+
       this.today = new Date().toLocaleDateString('pt-BR', {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
       });
