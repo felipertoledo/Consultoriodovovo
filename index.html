@@ -16,6 +16,7 @@
   <title>Consultório do Vovô</title>
 
   <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="./assets/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="192x192" href="./assets/img/icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="./assets/img/icon-512.png">
 
@@ -119,6 +120,18 @@
       <symbol id="i-offline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M5 12.5a8.5 8.5 0 0 1 14 0"/><path d="M8.2 15.7a4.5 4.5 0 0 1 7.6 0"/><circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none"/>
       </symbol>
+      <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m4.5 12.5 5 5 10-11"/>
+      </symbol>
+      <symbol id="i-keyboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M6.5 13.5h.01M17 13.5h.01M9.5 13.5h5"/>
+      </symbol>
+      <symbol id="i-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9.5"/><path d="M9.4 9.2a2.7 2.7 0 0 1 5.2 1c0 1.8-2.6 2.2-2.6 3.8"/><circle cx="12" cy="17.2" r="0.4" fill="currentColor"/>
+      </symbol>
+      <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m9 5.5 6.5 6.5L9 18.5"/>
+      </symbol>
     </defs>
   </svg>
 
@@ -138,23 +151,26 @@
        Busca pacientes pelo nome e navega para qualquer tela.
        ============================================================ -->
   <div id="cmdk-root" style="display: none"></div>
+  <div id="kbdhelp-root" style="display: none"></div>
   <script>
     window.CmdK = (() => {
       const ACTIONS = [
-        { tipo: 'acao', icone: 'i-plus',        rotulo: 'Novo paciente',        rota: '/paciente/novo' },
-        { tipo: 'acao', icone: 'i-rx',          rotulo: 'Nova prescrição',      rota: '/prescricao' },
-        { tipo: 'nav',  icone: 'i-home',        rotulo: 'Início',               rota: '/' },
-        { tipo: 'nav',  icone: 'i-users',       rotulo: 'Pacientes',            rota: '/pacientes' },
-        { tipo: 'nav',  icone: 'i-clock',       rotulo: 'Últimas consultas',    rota: '/consultas' },
-        { tipo: 'nav',  icone: 'i-calendar',    rotulo: 'Agenda',               rota: '/agenda' },
-        { tipo: 'nav',  icone: 'i-heart-pulse', rotulo: 'Painel Hiperdia',      rota: '/hiperdia' },
-        { tipo: 'nav',  icone: 'i-clipboard',   rotulo: 'Templates de prescrição', rota: '/templates' },
-        { tipo: 'nav',  icone: 'i-sync',        rotulo: 'Sincronização',        rota: '/sync' },
-        { tipo: 'nav',  icone: 'i-settings',    rotulo: 'Configurações',        rota: '/config' }
+        { tipo: 'acao', icone: 'i-plus',        rotulo: 'Novo paciente',           rota: '/paciente/novo', kbd: 'N P' },
+        { tipo: 'acao', icone: 'i-rx',          rotulo: 'Nova prescrição',         rota: '/prescricao',    kbd: 'N R' },
+        { tipo: 'acao', icone: 'i-keyboard',    rotulo: 'Atalhos do teclado',      fn: () => window.KbdHelp && KbdHelp.abrir(), kbd: '?' },
+        { tipo: 'nav',  icone: 'i-home',        rotulo: 'Início',                  rota: '/',          kbd: 'G D' },
+        { tipo: 'nav',  icone: 'i-users',       rotulo: 'Pacientes',               rota: '/pacientes', kbd: 'G P' },
+        { tipo: 'nav',  icone: 'i-calendar',    rotulo: 'Agenda',                  rota: '/agenda',    kbd: 'G A' },
+        { tipo: 'nav',  icone: 'i-heart-pulse', rotulo: 'Painel Hiperdia',         rota: '/hiperdia',  kbd: 'G H' },
+        { tipo: 'nav',  icone: 'i-clock',       rotulo: 'Últimas consultas',       rota: '/consultas', kbd: 'G U' },
+        { tipo: 'nav',  icone: 'i-clipboard',   rotulo: 'Templates de prescrição', rota: '/templates', kbd: 'G T' },
+        { tipo: 'nav',  icone: 'i-sync',        rotulo: 'Sincronização',           rota: '/sync',      kbd: 'G S' },
+        { tipo: 'nav',  icone: 'i-settings',    rotulo: 'Configurações',           rota: '/config',    kbd: 'G X' }
       ];
 
       let aberto = false;
       let pacientes = [];
+      let recentes = [];     // pacientes das últimas consultas
       let resultados = [];
       let ativo = 0;
       let root, inputEl;
@@ -178,7 +194,7 @@
               <div class="cmdk-foot">
                 <span><kbd>↑↓</kbd> navegar</span>
                 <span><kbd>↵</kbd> abrir</span>
-                <span><kbd>esc</kbd> fechar</span>
+                <span><kbd>?</kbd> atalhos</span>
               </div>
             </div>
           </div>
@@ -196,23 +212,34 @@
         });
       }
 
+      function itemPaciente(p, grupo) {
+        return {
+          tipo: grupo, paciente: true, rotulo: p.nome,
+          ini: (window.UI && UI.getInitials) ? UI.getInitials(p.nome) : '?',
+          cor: (window.UI && UI.avatarColorFromName) ? UI.avatarColorFromName(p.nome) : 'var(--color-primary-500)',
+          meta: p.dataNascimento && window.UI ? (UI.calculateAge(p.dataNascimento) + ' anos') : '',
+          rota: '/paciente/' + p.id
+        };
+      }
+
       function filtrar() {
         const q = norm(inputEl.value.trim());
-        const acoes = ACTIONS.filter(a => !q || norm(a.rotulo).includes(q));
-        let pacs = [];
-        if (q) {
-          pacs = pacientes
-            .filter(p => norm(p.nome).includes(q))
-            .slice(0, 8)
-            .map(p => ({
-              tipo: 'paciente', icone: 'i-file', rotulo: p.nome,
-              meta: p.dataNascimento ? (UI.calculateAge(p.dataNascimento) + ' anos') : '',
-              rota: '/paciente/' + p.id
-            }));
+        if (!q) {
+          // Sem busca: recentes em cima, ações e navegação embaixo
+          resultados = [...recentes.map(p => itemPaciente(p, 'recente')), ...ACTIONS];
+          pintar();
+          return;
         }
-        resultados = [...pacs, ...(q ? acoes : ACTIONS)];
+        const acoes = ACTIONS.filter(a => norm(a.rotulo).includes(q));
+        const pacs = pacientes
+          .filter(p => norm(p.nome).includes(q))
+          .slice(0, 8)
+          .map(p => itemPaciente(p, 'paciente'));
+        resultados = [...pacs, ...acoes];
         pintar();
       }
+
+      const ROTULO_GRUPO = { recente: 'Recentes', paciente: 'Pacientes', acao: 'Ações', nav: 'Ir para' };
 
       function pintar() {
         const box = root.querySelector('#cmdk-results');
@@ -223,16 +250,20 @@
         let html = '';
         let grupoAtual = '';
         resultados.forEach((r, i) => {
-          const grupo = r.tipo === 'paciente' ? 'Pacientes' : (r.tipo === 'acao' ? 'Ações' : 'Ir para');
+          const grupo = ROTULO_GRUPO[r.tipo] || '';
           if (grupo !== grupoAtual) {
             grupoAtual = grupo;
             html += `<div class="cmdk-group-label">${grupo}</div>`;
           }
+          const visual = r.paciente
+            ? `<span class="cmdk-ava" style="background:${r.cor}">${r.ini}</span>`
+            : `<svg class="icon"><use href="#${r.icone}"/></svg>`;
           html += `
             <button class="cmdk-item ${i === ativo ? 'active' : ''}" data-i="${i}">
-              <svg class="icon"><use href="#${r.icone}"/></svg>
+              ${visual}
               <span>${r.rotulo}</span>
               ${r.meta ? `<span class="cmdk-item-meta">${r.meta}</span>` : ''}
+              ${r.kbd ? `<span class="cmdk-item-meta"><kbd>${r.kbd}</kbd></span>` : ''}
             </button>`;
         });
         box.innerHTML = html;
@@ -251,7 +282,26 @@
         const r = resultados[i];
         if (!r) return;
         fechar();
+        if (typeof r.fn === 'function') { r.fn(); return; }
         Router.navigate(r.rota);
+      }
+
+      async function carregarRecentes() {
+        recentes = [];
+        try {
+          if (window.DB && DB.listConsultasRecentes) {
+            const feed = await DB.listConsultasRecentes(40);
+            const vistos = new Set();
+            for (const c of feed) {
+              const id = c.pacienteId;
+              const nome = c.pacienteNome || (c.paciente && c.paciente.nome);
+              if (!id || vistos.has(id)) continue;
+              vistos.add(id);
+              recentes.push({ id, nome: nome || '(sem nome)', dataNascimento: c.pacienteDataNascimento || null });
+              if (recentes.length >= 5) break;
+            }
+          }
+        } catch (_) { recentes = []; }
       }
 
       async function abrir() {
@@ -261,6 +311,7 @@
         if (!root || !root.innerHTML) montar();
         document.getElementById('cmdk-root').style.display = '';
         try { pacientes = await DB.listPacientes(); } catch (_) { pacientes = []; }
+        await carregarRecentes();
         inputEl.value = '';
         ativo = 0;
         filtrar();
@@ -273,6 +324,8 @@
         document.getElementById('cmdk-root').style.display = 'none';
       }
 
+      function estaAberto() { return aberto; }
+
       document.addEventListener('keydown', (e) => {
         if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
           e.preventDefault();
@@ -280,7 +333,127 @@
         }
       });
 
-      return { abrir, fechar };
+      return { abrir, fechar, estaAberto };
+    })();
+
+    /* ---- Atalhos de teclado globais + folha de ajuda (?) ---- */
+    window.KbdHelp = (() => {
+      let aberto = false;
+      const LINHAS = [
+        ['Busca rápida', ['Ctrl', 'K']],
+        ['Busca rápida (alternativa)', ['/']],
+        ['Esta ajuda', ['?']],
+        ['Início', ['G', 'D']],
+        ['Pacientes', ['G', 'P']],
+        ['Agenda', ['G', 'A']],
+        ['Hiperdia', ['G', 'H']],
+        ['Últimas consultas', ['G', 'U']],
+        ['Templates', ['G', 'T']],
+        ['Sincronização', ['G', 'S']],
+        ['Configurações', ['G', 'X']],
+        ['Novo paciente', ['N', 'P']],
+        ['Nova prescrição', ['N', 'R']],
+        ['Bloquear cofre', ['Shift', 'L']]
+      ];
+
+      function montar() {
+        const root = document.getElementById('kbdhelp-root');
+        root.innerHTML = `
+          <div class="kbdhelp-overlay" id="kbdhelp-overlay">
+            <div class="kbdhelp" role="dialog" aria-modal="true" aria-label="Atalhos do teclado">
+              <h2>Atalhos do teclado</h2>
+              <div class="sub">Sequências: pressione a primeira tecla, depois a segunda (fora de campos de texto).</div>
+              <div class="kbdhelp-grid">
+                ${LINHAS.map(([rotulo, teclas]) => `
+                  <div class="kbdhelp-row">
+                    <span>${rotulo}</span>
+                    <span class="keys">${teclas.map(t => `<kbd>${t}</kbd>`).join('')}</span>
+                  </div>`).join('')}
+              </div>
+              <div class="kbdhelp-foot">Pressione <kbd>esc</kbd> para fechar</div>
+            </div>
+          </div>
+        `;
+        root.querySelector('#kbdhelp-overlay').addEventListener('mousedown', (e) => {
+          if (e.target.id === 'kbdhelp-overlay') fechar();
+        });
+      }
+
+      function abrir() {
+        if (aberto) return;
+        if (!window.Auth || !Auth.isUnlocked()) return;
+        const root = document.getElementById('kbdhelp-root');
+        if (!root.innerHTML) montar();
+        root.style.display = '';
+        aberto = true;
+      }
+      function fechar() {
+        if (!aberto) return;
+        document.getElementById('kbdhelp-root').style.display = 'none';
+        aberto = false;
+      }
+      function estaAberto() { return aberto; }
+      return { abrir, fechar, estaAberto };
+    })();
+
+    (() => {
+      const SEQ = {
+        'g d': '/',          'g p': '/pacientes', 'g a': '/agenda',
+        'g h': '/hiperdia',  'g u': '/consultas', 'g t': '/templates',
+        'g s': '/sync',      'g x': '/config',
+        'n p': '/paciente/novo', 'n r': '/prescricao'
+      };
+      let prefixo = null;
+      let timer = null;
+
+      function digitando(e) {
+        const t = e.target;
+        if (!t) return false;
+        const tag = (t.tagName || '').toLowerCase();
+        return tag === 'input' || tag === 'textarea' || tag === 'select' || t.isContentEditable;
+      }
+
+      document.addEventListener('keydown', (e) => {
+        if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+        // Esc fecha a ajuda
+        if (e.key === 'Escape' && window.KbdHelp && KbdHelp.estaAberto()) {
+          e.preventDefault(); KbdHelp.fechar(); return;
+        }
+        if (digitando(e)) return;
+        if (window.CmdK && CmdK.estaAberto()) return;
+        if (!window.Auth || !Auth.isUnlocked()) return;
+
+        const k = e.key.toLowerCase();
+
+        if (e.key === '?') {
+          e.preventDefault();
+          KbdHelp.estaAberto() ? KbdHelp.fechar() : KbdHelp.abrir();
+          prefixo = null;
+          return;
+        }
+        if (e.key === '/') { e.preventDefault(); CmdK.abrir(); prefixo = null; return; }
+        if (e.shiftKey && k === 'l') {
+          e.preventDefault();
+          Auth.lock().then(() => Router.navigate('/'));
+          prefixo = null;
+          return;
+        }
+        if (window.KbdHelp && KbdHelp.estaAberto()) return;
+
+        if (prefixo) {
+          const combo = prefixo + ' ' + k;
+          prefixo = null;
+          clearTimeout(timer);
+          if (SEQ[combo]) { e.preventDefault(); Router.navigate(SEQ[combo]); }
+          return;
+        }
+        if (k === 'g' || k === 'n') {
+          prefixo = k;
+          clearTimeout(timer);
+          timer = setTimeout(() => { prefixo = null; }, 900);
+        }
+      });
     })();
   </script>
 
@@ -307,6 +480,7 @@
   <script src="./modules/supabase-client.js"></script>
   <script src="./modules/sync.js"></script>
   <script src="./modules/hiperdia.js"></script>
+  <script src="./modules/sparkline.js"></script>
 
   <!-- Componentes de tela -->
   <script src="./components/setup-wizard.js"></script>
@@ -494,23 +668,28 @@
 
               <div class="nav-section">
                 <div class="nav-section-title">Clínica</div>
-                ${navItem('/', 'i-home', 'Início', r === '/')}
-                ${navItem('/pacientes', 'i-users', 'Pacientes', r.startsWith('/paciente'))}
-                ${navItem('/consultas', 'i-clock', 'Últimas consultas', r === '/consultas')}
-                ${navItem('/agenda', 'i-calendar', 'Agenda', r === '/agenda')}
-                ${navItem('/hiperdia', 'i-heart-pulse', 'Hiperdia', r === '/hiperdia')}
+                ${navItem('/', 'i-home', 'Início', r === '/', '<span class="nav-kbd">G D</span>')}
+                ${navItem('/pacientes', 'i-users', 'Pacientes', r.startsWith('/paciente'), '<span class="nav-kbd">G P</span>')}
+                ${navItem('/agenda', 'i-calendar', 'Agenda', r === '/agenda', '<span class="nav-kbd">G A</span>')}
+                ${navItem('/hiperdia', 'i-heart-pulse', 'Hiperdia', r === '/hiperdia', '<span class="nav-kbd">G H</span>')}
+                ${navItem('/consultas', 'i-clock', 'Últimas consultas', r === '/consultas', '<span class="nav-kbd">G U</span>')}
               </div>
 
               <div class="nav-section">
                 <div class="nav-section-title">Receituário</div>
-                ${navItem('/prescricao', 'i-rx', 'Nova prescrição', r === '/prescricao')}
-                ${navItem('/templates', 'i-clipboard', 'Templates', r === '/templates')}
+                ${navItem('/prescricao', 'i-rx', 'Nova prescrição', r === '/prescricao', '<span class="nav-kbd">N R</span>')}
+                ${navItem('/templates', 'i-clipboard', 'Templates', r === '/templates', '<span class="nav-kbd">G T</span>')}
               </div>
 
               <div class="nav-section">
                 <div class="nav-section-title">Sistema</div>
-                ${navItem('/sync', 'i-sync', 'Sincronização', r === '/sync')}
-                ${navItem('/config', 'i-settings', 'Configurações', r === '/config')}
+                ${navItem('/sync', 'i-sync', 'Sincronização', r === '/sync', '<span class="nav-kbd">G S</span>')}
+                ${navItem('/config', 'i-settings', 'Configurações', r === '/config', '<span class="nav-kbd">G X</span>')}
+                <button class="nav-item" onclick="window.KbdHelp && KbdHelp.abrir()">
+                  <svg class="icon"><use href="#i-keyboard"/></svg>
+                  <span>Atalhos</span>
+                  <span class="nav-kbd">?</span>
+                </button>
                 <button class="nav-item" id="btnTema"
                         onclick="window.Tema && Tema.toggle(); document.getElementById('temaLabel') && (document.getElementById('temaLabel').textContent = labelTema(Tema.get()))">
                   <span id="temaIcone" style="width:18px; text-align:center">${iconeTema(window.Tema && Tema.get())}</span>
@@ -559,14 +738,15 @@
               <button class="bottombar-item ${r.startsWith('/paciente') ? 'active' : ''}" onclick="Router.navigate('/pacientes')">
                 <svg class="icon"><use href="#i-users"/></svg><span>Pacientes</span>
               </button>
+              <button class="bottombar-item is-fab" onclick="CmdK.abrir()">
+                <span class="fab-circle"><svg class="icon"><use href="#i-search"/></svg></span>
+                <span>Buscar</span>
+              </button>
               <button class="bottombar-item ${r === '/agenda' ? 'active' : ''}" onclick="Router.navigate('/agenda')">
                 <svg class="icon"><use href="#i-calendar"/></svg><span>Agenda</span>
               </button>
-              <button class="bottombar-item ${r === '/prescricao' ? 'active' : ''}" onclick="Router.navigate('/prescricao')">
-                <svg class="icon"><use href="#i-rx"/></svg><span>Receita</span>
-              </button>
-              <button class="bottombar-item" onclick="CmdK.abrir()">
-                <svg class="icon"><use href="#i-search"/></svg><span>Buscar</span>
+              <button class="bottombar-item ${r === '/hiperdia' ? 'active' : ''}" onclick="Router.navigate('/hiperdia')">
+                <svg class="icon"><use href="#i-heart-pulse"/></svg><span>Hiperdia</span>
               </button>
             </nav>
           </div>

@@ -36,9 +36,11 @@ const PRECACHE_ASSETS = [
   './assets/lib/zgapdfsigner.min.js',
 
   // Ícones PWA
+  './assets/img/favicon.svg',
   './assets/img/icon-192.png',
   './assets/img/icon-512.png',
   './assets/img/icon-maskable-512.png',
+  './assets/img/apple-touch-icon.png',
 
   // Módulos core
   './modules/crypto.js',
@@ -63,6 +65,7 @@ const PRECACHE_ASSETS = [
   './modules/supabase-client.js',
   './modules/sync.js',
   './modules/hiperdia.js',
+  './modules/sparkline.js',
   './modules/tema.js',
 
   // Componentes de tela
