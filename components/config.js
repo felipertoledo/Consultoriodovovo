@@ -5,9 +5,9 @@
 function renderConfig(container) {
   container.innerHTML = `
     <div x-data="configScreen()" x-init="load()">
-      <div class="page-header">
-        <div>
-          <h1 class="page-title">Configurações</h1>
+      <div class="ficha-head">
+        <div class="ficha-id">
+          <div class="ficha-nome">Configurações</div>
           <p class="page-subtitle">Segurança, manutenção e auditoria</p>
         </div>
       </div>
@@ -88,7 +88,7 @@ function renderConfig(container) {
           </div>
           <div class="flex gap-2 mt-3" style="flex-wrap: wrap">
             <button class="btn btn-danger" @click="confirmarRestauracao()" :disabled="working">
-              <span x-show="!working">⚠ Substituir tudo e restaurar</span>
+              <span x-show="!working">Substituir tudo e restaurar</span>
               <span x-show="working">Restaurando…</span>
             </button>
             <button class="btn btn-ghost" @click="cancelarRestauracao()">Cancelar</button>
@@ -176,7 +176,7 @@ function renderConfig(container) {
               <span x-show="!syncOcupado" x-text="syncForm.vaultId ? '🔗 Parear com cofre existente' : '✨ Criar novo cofre remoto'"></span>
               <span x-show="syncOcupado">Conectando…</span>
             </button>
-            <button class="btn btn-ghost" @click="copiarSqlSetup()">📋 Copiar SQL do setup</button>
+            <button class="btn btn-ghost" @click="copiarSqlSetup()"><svg class="icon"><use href="#i-copy"></use></svg> Copiar SQL do setup</button>
           </div>
         </div>
 
@@ -192,14 +192,14 @@ function renderConfig(container) {
               </div>
               <div class="text-xs muted" x-show="!syncStatus.lastSyncedAt">Nunca sincronizou</div>
               <div class="text-xs" x-show="syncStatus.lastSyncError" style="color: var(--color-danger);">
-                ⚠ Último erro: <span x-text="syncStatus.lastSyncError"></span>
+                Último erro: <span x-text="syncStatus.lastSyncError"></span>
               </div>
             </div>
           </div>
 
           <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom: var(--space-3);">
             <button class="btn btn-primary" @click="sincronizarAgora()" :disabled="syncOcupado">
-              <span x-show="!syncOcupado">🔄 Sincronizar agora</span>
+              <span x-show="!syncOcupado"><svg class="icon"><use href="#i-sync"></use></svg> Sincronizar agora</span>
               <span x-show="syncOcupado">Sincronizando…</span>
             </button>
             <button class="btn" @click="mostrarVaultId = !mostrarVaultId">
@@ -214,7 +214,7 @@ function renderConfig(container) {
             <strong>Vault ID (para parear outros dispositivos):</strong>
             <code style="display:block; padding: 6px; margin-top: 6px; user-select: all; word-break: break-all;" x-text="syncStatus.vaultId"></code>
             <p class="text-xs mt-2">
-              ⚠ Copie isso para usar em outro dispositivo (notebook, celular). Quem souber este código + sua senha mestre tem acesso ao cofre.
+              Copie isso para usar em outro dispositivo (notebook, celular). Quem souber este código + sua senha mestre tem acesso ao cofre.
               <strong>Sem a senha, este código sozinho não serve para ler nada</strong> (dados cifrados).
             </p>
           </div>
@@ -279,8 +279,8 @@ function renderConfig(container) {
         <div x-show="certInfo">
           <div class="alert" :class="certInfo?.expirado ? 'alert-danger' : (certInfo?.diasParaExpirar < 30 ? 'alert-warning' : 'alert-success')">
             <div>
-              <strong x-show="certInfo?.expirado">⚠ Certificado EXPIRADO</strong>
-              <strong x-show="!certInfo?.expirado && certInfo?.diasParaExpirar < 30">⚠ Certificado expira em breve</strong>
+              <strong x-show="certInfo?.expirado">Certificado EXPIRADO</strong>
+              <strong x-show="!certInfo?.expirado && certInfo?.diasParaExpirar < 30">Certificado expira em breve</strong>
               <strong x-show="!certInfo?.expirado && certInfo?.diasParaExpirar >= 30">✓ Certificado válido</strong>
             </div>
           </div>
@@ -312,7 +312,7 @@ function renderConfig(container) {
           <div class="flex gap-2 mt-4" style="flex-wrap: wrap">
             <button class="btn btn-danger" @click="removerCertificado()">🗑 Remover certificado</button>
             <button class="btn btn-ghost" @click="limparCacheSenha()" x-show="senhaCacheAtiva">
-              🔒 Esquecer senha em cache
+              <svg class="icon"><use href="#i-lock"></use></svg> Esquecer senha em cache
             </button>
           </div>
 
@@ -349,7 +349,7 @@ function renderConfig(container) {
       </div>
 
       <div class="card mt-4">
-        <h3 class="card-title mb-4">📋 Trilha de auditoria recente</h3>
+        <h3 class="card-title mb-4">Trilha de auditoria recente</h3>
         <p class="text-sm muted mb-4">Últimas 50 ações registradas neste navegador.</p>
         <div x-show="auditEntries.length === 0" class="empty-state">
           <p>Nenhuma ação registrada ainda.</p>
@@ -382,7 +382,7 @@ function renderConfig(container) {
       </div>
 
       <div class="card mt-4">
-        <h3 class="card-title mb-4">🔒 Bloquear cofre</h3>
+        <h3 class="card-title mb-4">Bloquear cofre</h3>
         <p class="text-sm mb-4">Trava o acesso imediatamente. Você precisará digitar a senha novamente.
         Bloqueio automático ocorre após 15 minutos de inatividade.</p>
         <button class="btn btn-secondary" @click="lock()">Bloquear agora</button>
@@ -420,7 +420,7 @@ function renderConfig(container) {
             📥 Instalar app
           </button>
           <button class="btn btn-secondary" @click="verificarAtualizacao()" :disabled="checkingUpdate">
-            <span x-show="!checkingUpdate">🔄 Verificar atualizações</span>
+            <span x-show="!checkingUpdate"><svg class="icon"><use href="#i-sync"></use></svg> Verificar atualizações</span>
             <span x-show="checkingUpdate">Verificando…</span>
           </button>
         </div>
@@ -432,7 +432,7 @@ function renderConfig(container) {
       </div>
 
       <div class="card mt-4" style="border-color: var(--color-danger)">
-        <h3 class="card-title mb-4" style="color: var(--color-danger)">⚠️ Zona de perigo</h3>
+        <h3 class="card-title mb-4" style="color: var(--color-danger); display:flex; align-items:center; gap:8px"><svg class="icon" style="width:15px;height:15px"><use href="#i-alert"></use></svg>Zona de perigo</h3>
         <p class="text-sm mb-4">Apagar todos os dados deste navegador. Operação <strong>irreversível</strong>.
         Útil apenas para reset completo (testes, troca de equipamento sem migração).</p>
         <button class="btn btn-danger" @click="wipe()">Apagar TUDO deste navegador</button>

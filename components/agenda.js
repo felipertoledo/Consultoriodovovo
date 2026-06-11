@@ -346,69 +346,80 @@ function componenteAgenda() {
 function renderAgendaTemplate() {
   return `
 <div x-data="componenteAgenda()" x-init="init()">
-  <div class="card mb-4">
-    <h2 class="card-title">📅 Agenda</h2>
+  <div class="ficha-head">
+    <div class="ficha-id">
+      <div class="ficha-nome">Agenda</div>
+      <div class="ficha-sub">Próximas consultas, retornos e faltosos do território</div>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn-primary" @click="abrirNovoAgendamento()">
+        <svg class="icon"><use href="#i-plus"></use></svg>
+        Novo agendamento
+      </button>
+    </div>
+  </div>
 
-    <!-- Cards de métrica -->
-    <div class="metricas-row" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 12px;">
-      <div class="metrica-card" style="padding:12px; background:#dcfce7; border-radius:8px; text-align:center;">
-        <div style="font-size:2em; font-weight:bold; color:#166534" x-text="metricas.hoje"></div>
-        <div style="font-size:0.85em; color:#166534">hoje</div>
-      </div>
-      <div class="metrica-card" style="padding:12px; background:#fef3c7; border-radius:8px; text-align:center;">
-        <div style="font-size:2em; font-weight:bold; color:#92400e" x-text="metricas.semana"></div>
-        <div style="font-size:0.85em; color:#92400e">próximos 7 dias</div>
-      </div>
-      <div class="metrica-card" style="padding:12px; background:#dbeafe; border-radius:8px; text-align:center;">
-        <div style="font-size:2em; font-weight:bold; color:#1e40af" x-text="metricas.mes"></div>
-        <div style="font-size:0.85em; color:#1e40af">próximos 30 dias</div>
-      </div>
-      <div class="metrica-card" style="padding:12px; background:#fee2e2; border-radius:8px; text-align:center; cursor:pointer"
-           @click="trocarAba('faltosos')">
-        <div style="font-size:2em; font-weight:bold; color:#991b1b" x-text="metricas.faltosos"></div>
-        <div style="font-size:0.85em; color:#991b1b">faltosos</div>
-      </div>
+  <!-- Abas com contagem (métricas e navegação unificadas) -->
+  <div class="flex items-center gap-3 mb-4" style="flex-wrap: wrap">
+    <div class="seg" role="tablist" aria-label="Período">
+      <button :class="aba === 'hoje' ? 'on' : ''" @click="trocarAba('hoje')">
+        Hoje <span class="text-mono" x-text="'· ' + metricas.hoje"></span>
+      </button>
+      <button :class="aba === 'semana' ? 'on' : ''" @click="trocarAba('semana')">
+        7 dias <span class="text-mono" x-text="'· ' + metricas.semana"></span>
+      </button>
+      <button :class="aba === 'mes' ? 'on' : ''" @click="trocarAba('mes')">
+        30 dias <span class="text-mono" x-text="'· ' + metricas.mes"></span>
+      </button>
+    </div>
+    <button class="btn btn-sm" :class="aba === 'faltosos' ? 'btn-danger' : 'btn-ghost'"
+            @click="trocarAba('faltosos')" style="border-radius: var(--radius-full)">
+      <svg class="icon"><use href="#i-alert"></use></svg>
+      Faltosos <span class="text-mono" x-text="metricas.faltosos"></span>
+    </button>
+  </div>
+
+  <!-- Lista (ledger) -->
+  <div class="folha">
+    <div x-show="carregando" aria-hidden="true">
+      <div class="skel" style="height: 56px; margin-bottom: 8px"></div>
+      <div class="skel" style="height: 56px"></div>
+    </div>
+    <div x-show="!carregando && agendamentos.length === 0" class="empty-state" style="padding: var(--space-6) 0">
+      <h3 x-show="aba === 'faltosos'">Nenhum faltoso</h3>
+      <h3 x-show="aba !== 'faltosos'">Nenhum agendamento neste período</h3>
+      <p x-show="aba !== 'faltosos'" class="text-sm muted mt-1">Crie um agendamento para vê-lo aparecer no trilho do dia.</p>
     </div>
 
-    <!-- Abas -->
-    <div class="tabs" style="display:flex; gap:6px; margin-top: 16px; border-bottom: 1px solid #e5e7eb;">
-      <button class="btn btn-sm" :style="aba === 'hoje' ? 'background:#166534;color:#fff' : ''" @click="trocarAba('hoje')">Hoje</button>
-      <button class="btn btn-sm" :style="aba === 'semana' ? 'background:#166534;color:#fff' : ''" @click="trocarAba('semana')">7 dias</button>
-      <button class="btn btn-sm" :style="aba === 'mes' ? 'background:#166534;color:#fff' : ''" @click="trocarAba('mes')">30 dias</button>
-      <button class="btn btn-sm" :style="aba === 'faltosos' ? 'background:#991b1b;color:#fff' : ''" @click="trocarAba('faltosos')">⚠️ Faltosos</button>
-      <button class="btn btn-primary btn-sm" style="margin-left:auto" @click="abrirNovoAgendamento()">+ Novo agendamento</button>
-    </div>
-
-    <!-- Lista -->
-    <div class="agenda-lista mt-3">
-      <div x-show="carregando" style="text-align:center; opacity:0.6; padding: 20px;">Carregando…</div>
-      <div x-show="!carregando && agendamentos.length === 0" style="text-align:center; opacity:0.6; padding: 20px;">
-        <span x-show="aba === 'faltosos'">Nenhum faltoso. 🎉</span>
-        <span x-show="aba !== 'faltosos'">Nenhum agendamento neste período.</span>
-      </div>
+    <div class="ledger" x-show="!carregando && agendamentos.length > 0">
       <template x-for="ag in agendamentos" :key="ag.id">
-        <div class="agenda-item card mb-2" :class="classePorData(ag.data)"
-             style="padding: 12px; border-left: 4px solid #166534;">
-          <div style="display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap;">
-            <div style="flex:0 0 90px; text-align:center;">
-              <div style="font-size:1.5em; font-weight:bold; color:#166534" x-text="ag.data.slice(8,10) + '/' + ag.data.slice(5,7)"></div>
-              <div style="font-size:0.85em; opacity:0.7" x-text="diaSemana(ag.data)"></div>
-              <div style="font-size:0.85em" x-text="ag.hora || ''"></div>
+        <div class="ledger-item" :class="classePorData(ag.data)">
+          <div class="ledger-date">
+            <div style="font-weight: var(--weight-bold); color: var(--text-primary); font-size: var(--text-base)"
+                 x-text="ag.data.slice(8,10) + '/' + ag.data.slice(5,7)"></div>
+            <div x-text="diaSemana(ag.data)"></div>
+            <div style="color: var(--color-primary-700); font-weight: var(--weight-semibold)" x-text="ag.hora || ''"></div>
+          </div>
+          <div class="ledger-body">
+            <div style="font-weight: var(--weight-bold); cursor: pointer"
+                 @click="irParaPaciente(ag)" x-text="(ag.pacienteNome || '(sem nome)')"></div>
+            <div class="text-sm mt-1">
+              <span class="snap-pill" x-text="ag.tipo"></span>
+              <span x-show="ag.observacao" class="muted" style="margin-left: 8px" x-text="'· ' + ag.observacao"></span>
             </div>
-            <div style="flex:1; min-width:200px;">
-              <div style="font-weight:bold; cursor:pointer; color:#166534" @click="irParaPaciente(ag)" x-text="(ag.pacienteNome || '(sem nome)')"></div>
-              <div style="font-size:0.9em; margin-top:4px;">
-                <span x-text="iconePorTipo(ag.tipo) + ' ' + ag.tipo"></span>
-                <span x-show="ag.observacao" style="opacity:0.8; margin-left:8px;" x-text="'· ' + ag.observacao"></span>
-              </div>
-              <div style="font-size:0.8em; opacity:0.6; margin-top:2px;" x-text="distanciaHoje(ag.data)"></div>
-            </div>
-            <div style="display:flex; gap:4px; flex-wrap:wrap;">
-              <button class="btn btn-sm btn-primary" @click="atender(ag)" x-show="aba !== 'faltosos' || ag.status === 'marcado'">▶ Atender</button>
-              <button class="btn btn-sm" @click="abrirEditarAgendamento(ag)">✏</button>
-              <button class="btn btn-sm" @click="marcarFalta(ag)" x-show="aba === 'hoje' || aba === 'faltosos'" title="Marcar como faltou">⊘</button>
-              <button class="btn btn-sm" @click="cancelar(ag)" title="Cancelar">×</button>
-            </div>
+            <div class="text-xs muted mt-1" x-text="distanciaHoje(ag.data)"></div>
+          </div>
+          <div class="flex gap-1" style="flex-wrap: wrap; align-self: center">
+            <button class="btn btn-sm btn-primary" @click="atender(ag)"
+                    x-show="aba !== 'faltosos' || ag.status === 'marcado'">Atender</button>
+            <button class="btn btn-sm btn-ghost btn-icon" @click="abrirEditarAgendamento(ag)" title="Editar">
+              <svg class="icon"><use href="#i-edit"></use></svg>
+            </button>
+            <button class="btn btn-sm btn-ghost" @click="marcarFalta(ag)"
+                    x-show="aba === 'hoje' || aba === 'faltosos'" title="Marcar como faltou">Faltou</button>
+            <button class="btn btn-sm btn-ghost btn-icon" @click="cancelar(ag)" title="Cancelar">
+              <svg class="icon"><use href="#i-x"></use></svg>
+            </button>
           </div>
         </div>
       </template>
@@ -416,58 +427,61 @@ function renderAgendaTemplate() {
   </div>
 
   <!-- Modal de novo/editar agendamento -->
-  <div x-show="modalAberto" x-cloak
-       style="position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px;"
-       @click.self="fecharModal()">
-    <div class="card" style="max-width:500px; width:100%; max-height:90vh; overflow-y:auto;" @click.stop>
-      <h3 class="card-title" x-text="modalEditandoId ? 'Editar agendamento' : 'Novo agendamento'"></h3>
+  <div x-show="modalAberto" x-cloak class="modal-overlay" @click.self="fecharModal()">
+    <div class="modal-sheet" style="max-width: 520px" @click.stop>
+      <div class="modal-head">
+        <h3 x-text="modalEditandoId ? 'Editar agendamento' : 'Novo agendamento'"></h3>
+        <button class="btn btn-sm btn-icon btn-ghost" @click="fecharModal()">
+          <svg class="icon"><use href="#i-x"></use></svg>
+        </button>
+      </div>
 
-      <div class="mt-3">
-        <label class="text-sm" style="font-weight:600">Paciente</label>
+      <div>
+        <label class="label text-sm">Paciente</label>
         <input class="input" type="text" x-model="formAg.pacienteBusca" @input="buscarPaciente()"
                placeholder="Digite o nome do paciente…" :disabled="!!modalEditandoId || modoNovoPaciente">
-        <div x-show="pacientesEncontrados.length > 0 && !modoNovoPaciente"
-             style="background:#fff; border:1px solid #d1d5db; border-radius:6px; margin-top:4px; max-height:200px; overflow-y:auto;">
+        <div x-show="pacientesEncontrados.length > 0 && !modoNovoPaciente" class="picker-list">
           <template x-for="p in pacientesEncontrados" :key="p.id">
-            <div @click="selecionarPaciente(p)" style="padding:8px 12px; cursor:pointer; border-bottom: 1px solid #f3f4f6;">
+            <div class="picker-item" @click="selecionarPaciente(p)">
               <strong x-text="p.nome"></strong>
-              <small x-show="p.dataNascimento" x-text="' · ' + (p.dataNascimento || '')"></small>
+              <small class="muted" x-show="p.dataNascimento" x-text="p.dataNascimento || ''"></small>
             </div>
           </template>
         </div>
 
         <!-- Não achou? Cadastrar novo paciente inline -->
         <div x-show="buscou && pacientesEncontrados.length === 0 && !pacienteSelecionado && !modoNovoPaciente && formAg.pacienteBusca.trim().length >= 2"
-             style="margin-top: 8px; padding: 10px; background: #fef3c7; border-radius: 6px; border-left: 3px solid #d97706;">
-          <div style="font-size:0.9em; color:#92400e; margin-bottom:6px;">
-            Nenhum paciente encontrado com esse nome.
-          </div>
+             class="lab-warn mt-2" style="flex-direction: column; align-items: flex-start; gap: 8px">
+          <span>Nenhum paciente encontrado com esse nome.</span>
           <button type="button" class="btn btn-sm btn-primary" @click="iniciarCadastroNovo()">
-            + Cadastrar <strong x-text="'&quot;' + formAg.pacienteBusca.trim() + '&quot;'"></strong> como novo paciente
+            <svg class="icon"><use href="#i-plus"></use></svg>
+            Cadastrar <strong x-text="'&quot;' + formAg.pacienteBusca.trim() + '&quot;'"></strong> como novo paciente
           </button>
         </div>
 
         <!-- Cadastro mínimo de paciente novo -->
-        <div x-show="modoNovoPaciente" x-cloak
-             style="margin-top: 10px; padding: 12px; background: #f0fdf4; border-radius: 8px; border: 2px solid #166534;">
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <strong style="color:#166534">📝 Cadastro mínimo de paciente novo</strong>
-            <button type="button" class="btn btn-sm" style="margin-left:auto" @click="cancelarCadastroNovo()">×</button>
+        <div x-show="modoNovoPaciente" x-cloak class="picker-pop mt-3">
+          <div class="flex items-center gap-2 mb-2">
+            <svg class="icon" style="width: 14px; height: 14px; color: var(--color-primary-700)"><use href="#i-user-plus"></use></svg>
+            <strong>Cadastro mínimo de paciente novo</strong>
+            <button type="button" class="btn btn-sm btn-icon btn-ghost" style="margin-left:auto" @click="cancelarCadastroNovo()">
+              <svg class="icon"><use href="#i-x"></use></svg>
+            </button>
           </div>
-          <div style="font-size:0.85em; opacity:0.75; margin-bottom:10px;">
+          <p class="text-xs muted mb-3">
             Só o essencial para agendar. Complete o cadastro (endereço, CNS, antecedentes) na hora da consulta.
-          </div>
-          <div class="mt-2">
-            <label class="text-sm" style="font-weight:600">Nome completo</label>
+          </p>
+          <div>
+            <label class="label text-sm">Nome completo</label>
             <input class="input" type="text" x-model="novoPaciente.nome">
           </div>
           <div class="mt-2" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
             <div>
-              <label class="text-sm" style="font-weight:600">Data de nascimento</label>
+              <label class="label text-sm">Data de nascimento</label>
               <input class="input" type="date" x-model="novoPaciente.dataNascimento">
             </div>
             <div>
-              <label class="text-sm" style="font-weight:600">Sexo</label>
+              <label class="label text-sm">Sexo</label>
               <select class="input" x-model="novoPaciente.sexo">
                 <option value="">—</option>
                 <option value="F">Feminino</option>
@@ -481,32 +495,32 @@ function renderAgendaTemplate() {
 
       <div class="mt-3" style="display:grid; grid-template-columns: 2fr 1fr; gap: 10px;">
         <div>
-          <label class="text-sm" style="font-weight:600">Data</label>
+          <label class="label text-sm">Data</label>
           <input class="input" type="date" x-model="formAg.data">
         </div>
         <div>
-          <label class="text-sm" style="font-weight:600">Hora</label>
+          <label class="label text-sm">Hora</label>
           <input class="input" type="time" x-model="formAg.hora">
         </div>
       </div>
 
       <div class="mt-3">
-        <label class="text-sm" style="font-weight:600">Tipo</label>
+        <label class="label text-sm">Tipo</label>
         <select class="input" x-model="formAg.tipo">
-          <option value="consulta">🩺 Consulta</option>
-          <option value="retorno">🔄 Retorno</option>
-          <option value="grupo">👥 Grupo</option>
-          <option value="outro">📋 Outro</option>
+          <option value="consulta">Consulta</option>
+          <option value="retorno">Retorno</option>
+          <option value="grupo">Grupo</option>
+          <option value="outro">Outro</option>
         </select>
       </div>
 
       <div class="mt-3">
-        <label class="text-sm" style="font-weight:600">Observação</label>
+        <label class="label text-sm">Observação</label>
         <textarea class="textarea" rows="2" x-model="formAg.observacao" placeholder="Motivo / contexto (opcional)"></textarea>
       </div>
 
-      <div class="mt-4" style="display:flex; gap:8px; justify-content:flex-end;">
-        <button class="btn" @click="fecharModal()" :disabled="salvandoModal">Cancelar</button>
+      <div class="mt-4 flex gap-2 justify-between" style="justify-content: flex-end">
+        <button class="btn btn-secondary" @click="fecharModal()" :disabled="salvandoModal">Cancelar</button>
         <button class="btn btn-primary" @click="salvarModal()" :disabled="salvandoModal">
           <span x-show="!salvandoModal" x-text="modalEditandoId ? 'Salvar alterações' : (modoNovoPaciente ? 'Cadastrar paciente e criar agendamento' : 'Criar agendamento')"></span>
           <span x-show="salvandoModal">Salvando…</span>
@@ -525,17 +539,6 @@ window.renderAgendaTemplate = renderAgendaTemplate;
  * Renderiza a tela de agenda dentro de um container (usado pelo router).
  */
 function renderAgenda(container) {
-  container.innerHTML = `
-    <div class="page-header">
-      <div>
-        <h1 class="page-title">📅 Agenda</h1>
-        <p class="page-subtitle">Próximas consultas e faltosos</p>
-      </div>
-      <div class="page-actions">
-        <button class="btn btn-ghost" onclick="Router.navigate('/')">← Voltar</button>
-      </div>
-    </div>
-    ${renderAgendaTemplate()}
-  `;
+  container.innerHTML = renderAgendaTemplate();
 }
 window.renderAgenda = renderAgenda;

@@ -1,108 +1,88 @@
 /* ============================================================
-   exame-psiquico.js — Componente do exame psíquico estruturado
-   Modos: Breve (10 domínios) ou Completo (18 domínios)
+   exame-psiquico.js — Exame psíquico estruturado
+   Prancheta v3: grade de domínios. Borda esquerda verde =
+   sem alterações; âmbar = alterado. Prosa em papel-carbono
+   (tinta escura nos DOIS temas — é o trecho "impresso").
+   Modos: Breve (10 domínios) ou Completo (18 — Dalgalarrondo)
    ============================================================ */
 
 function renderExamePsiquico(container, modo, selecoesIniciais, onChange) {
   // Estado é montado via Alpine.js
   container.innerHTML = `
     <div x-data="examePsiquico('${modo}')" x-init="init()">
-      <div class="flex items-center justify-between mb-4" style="flex-wrap: wrap; gap: var(--space-3)">
-        <div>
-          <strong x-text="dominios.length + ' domínios'"></strong>
-          <span class="text-sm muted" x-text="modo === 'breve' ? '(versão APS)' : '(Dalgalarrondo completo)'"></span>
+      <div class="psy-toolbar">
+        <div class="seg" role="tablist" aria-label="Modo do exame">
+          <button :class="modo === 'breve' ? 'on' : ''" @click="trocarModo('breve')">Breve · 10</button>
+          <button :class="modo === 'completo' ? 'on' : ''" @click="trocarModo('completo')">Completo · 18</button>
         </div>
-        <div class="flex gap-2">
-          <button class="btn btn-secondary text-sm" :class="modo === 'breve' ? 'btn-primary' : ''"
-                  @click="trocarModo('breve')">Breve (10)</button>
-          <button class="btn btn-secondary text-sm" :class="modo === 'completo' ? 'btn-primary' : ''"
-                  @click="trocarModo('completo')">Completo (18)</button>
+        <span class="text-xs muted" x-text="modo === 'breve' ? 'versão APS' : 'Dalgalarrondo completo'"></span>
+        <div class="sec-meta-right">
+          <button class="btn btn-ghost btn-sm" @click="expandirTodos()">Expandir</button>
+          <button class="btn btn-ghost btn-sm" @click="recolherTodos()">Recolher</button>
+          <button class="btn btn-secondary btn-sm" @click="marcarTodosNormais()">
+            <svg class="icon"><use href="#i-check"></use></svg>
+            Tudo sem alterações
+          </button>
         </div>
       </div>
 
-      <div class="flex gap-2 mb-4" style="flex-wrap: wrap">
-        <button class="btn btn-ghost text-sm" @click="expandirTodos()">Expandir todos</button>
-        <button class="btn btn-ghost text-sm" @click="recolherTodos()">Recolher todos</button>
-        <button class="btn btn-ghost text-sm" @click="marcarTodosNormais()">Marcar todos "sem alterações"</button>
-      </div>
-
-      <template x-for="dom in dominios" :key="dom.id">
-        <div class="dominio-card">
-          <div class="dominio-header" @click="toggle(dom.id)">
-            <div class="flex items-center gap-2" style="flex: 1">
-              <span x-text="aberto[dom.id] ? '▼' : '▶'" style="color: var(--text-muted)"></span>
-              <strong x-text="dom.nome"></strong>
-              <span class="tooltip-trigger"
-                    @click.stop="mostrarTooltip(dom.id)"
-                    @mouseover="hoverTooltip(dom.id)"
-                    @mouseleave="esconderTooltip()">ⓘ</span>
-            </div>
-            <div class="dominio-status" x-show="!aberto[dom.id]">
-              <span x-show="selecoes[dom.id]?.length > 0" class="badge badge-info"
+      <div class="psy-grid">
+        <template x-for="dom in dominios" :key="dom.id">
+          <div class="psy-dom" :class="(selecoes[dom.id] || []).length > 0 ? 'is-alt' : ''">
+            <div class="psy-dom-head" @click="toggle(dom.id)">
+              <span class="pd-nome" x-text="dom.nome"></span>
+              <button class="psy-help" type="button"
+                      @click.stop="mostrarTooltip(dom.id)"
+                      @mouseover="hoverTooltip(dom.id)"
+                      @mouseleave="esconderTooltip()"
+                      :aria-label="'O que avaliar em ' + dom.nome">
+                <svg class="icon"><use href="#i-help"></use></svg>
+              </button>
+              <span class="pd-state alt" x-show="(selecoes[dom.id] || []).length > 0"
                     x-text="resumoCurto(dom)"></span>
-              <span x-show="!selecoes[dom.id]?.length" class="badge badge-success">✓ Sem alterações</span>
+              <span class="pd-state ok" x-show="!(selecoes[dom.id] || []).length">sem alterações</span>
+              <svg class="icon" style="width: 13px; height: 13px; color: var(--text-muted); transition: transform 140ms"
+                   :style="aberto[dom.id] ? 'transform: rotate(90deg)' : ''">
+                <use href="#i-chevron-right"></use>
+              </svg>
+            </div>
+
+            <div class="psy-tip" x-show="tooltipAtivo === dom.id" x-cloak x-text="dom.tooltip"></div>
+
+            <div class="psy-body" x-show="aberto[dom.id]" x-cloak>
+              <div class="psy-chips">
+                <template x-for="opcao in dom.opcoes" :key="opcao">
+                  <button class="psy-chip"
+                          :class="(selecoes[dom.id] || []).includes(opcao) ? 'on' : ''"
+                          @click="toggleOpcao(dom, opcao)"
+                          x-text="opcao"></button>
+                </template>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0">
+                <label class="label text-sm">Observação livre <span class="hint">(opcional)</span></label>
+                <textarea class="textarea text-sm" rows="2"
+                          x-model="observacoes[dom.id]"
+                          @input="emitirMudanca()"
+                          :placeholder="'Detalhes adicionais sobre ' + dom.nome.toLowerCase()"></textarea>
+              </div>
             </div>
           </div>
+        </template>
+      </div>
 
-          <div class="tooltip-content" x-show="tooltipAtivo === dom.id"
-               x-cloak
-               x-text="dom.tooltip"></div>
-
-          <div class="dominio-body" x-show="aberto[dom.id]" x-cloak>
-            <div class="chips-container">
-              <template x-for="opcao in dom.opcoes" :key="opcao">
-                <button class="chip"
-                        :class="(selecoes[dom.id] || []).includes(opcao) ? 'chip-selected' : ''"
-                        @click="toggleOpcao(dom, opcao)"
-                        x-text="opcao"></button>
-              </template>
-            </div>
-
-            <div class="form-group mt-3">
-              <label class="label text-sm">Observação livre <span class="hint">(opcional)</span></label>
-              <textarea class="textarea text-sm" rows="2"
-                        x-model="observacoes[dom.id]"
-                        @input="emitirMudanca()"
-                        :placeholder="'Detalhes adicionais sobre ' + dom.nome.toLowerCase()"></textarea>
-            </div>
-          </div>
+      <div class="prosa-card">
+        <div class="prosa-title">
+          <svg class="icon"><use href="#i-file"></use></svg>
+          Prosa gerada para o prontuário
         </div>
-      </template>
-
-      <div class="card mt-6" style="background: var(--color-primary-50); border-color: var(--color-primary-200)">
-        <h4 class="mb-2">📝 Prosa gerada para o prontuário</h4>
-        <p class="text-sm" x-text="prosaGerada" style="white-space: pre-wrap; font-family: var(--font-sans); line-height: var(--leading-relaxed);"></p>
-        <button class="btn btn-secondary text-sm mt-3" @click="copiarProsa()">📋 Copiar prosa</button>
+        <p class="prosa-texto" x-text="prosaGerada"></p>
+        <button class="btn btn-sm mt-3" @click="copiarProsa()">
+          <svg class="icon"><use href="#i-copy"></use></svg>
+          Copiar prosa
+        </button>
       </div>
     </div>
-
-    <style>
-      .dominio-card { background: var(--bg-surface); border: 1px solid var(--border-subtle);
-                      border-radius: var(--radius-md); margin-bottom: var(--space-2); overflow: hidden; }
-      .dominio-header { display: flex; align-items: center; padding: var(--space-3);
-                        cursor: pointer; transition: background var(--transition-fast);
-                        gap: var(--space-3); flex-wrap: wrap; }
-      .dominio-header:hover { background: var(--bg-sunken); }
-      .dominio-status { display: flex; gap: var(--space-2); align-items: center; }
-      .dominio-body { padding: var(--space-3) var(--space-4) var(--space-4);
-                       border-top: 1px solid var(--border-subtle); background: var(--bg-sunken); }
-      .tooltip-trigger { display: inline-flex; align-items: center; justify-content: center;
-                          width: 18px; height: 18px; border-radius: 50%;
-                          background: var(--color-primary-100); color: var(--color-primary);
-                          font-size: 11px; cursor: help; flex-shrink: 0; }
-      .tooltip-content { background: var(--text-primary); color: var(--text-inverse);
-                          padding: var(--space-3); border-radius: var(--radius-md);
-                          font-size: var(--text-sm); line-height: var(--leading-relaxed);
-                          margin: 0 var(--space-3) var(--space-3); }
-      .chips-container { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
-      .chip { padding: var(--space-2) var(--space-3); border: 1px solid var(--border-default);
-              background: var(--bg-surface); border-radius: var(--radius-full);
-              font-size: var(--text-sm); cursor: pointer;
-              transition: all var(--transition-fast); }
-      .chip:hover { border-color: var(--color-primary); }
-      .chip-selected { background: var(--color-primary); color: var(--text-on-primary);
-                        border-color: var(--color-primary); }
-    </style>
   `;
 
   // Salva o callback no elemento para uso pelo Alpine

@@ -14,36 +14,34 @@
 function renderPrescricaoRapida(container) {
   container.innerHTML = `
     <div x-data="prescricaoRapida()" x-init="load()">
-      <div class="page-header">
-        <div>
-          <h1 class="page-title">💊 Nova prescrição</h1>
-          <p class="page-subtitle">Receita rápida — sem precisar abrir consulta</p>
-        </div>
-        <div class="page-actions">
-          <button class="btn btn-ghost" @click="$dispatch('navigate', '/')">← Voltar</button>
+      <div class="ficha-head">
+        <div class="ficha-id">
+          <div class="ficha-nome">Nova prescrição</div>
+          <div class="ficha-sub">Receita rápida — sem precisar abrir consulta</div>
         </div>
       </div>
 
       <!-- Indicador de passos -->
-      <div class="card mb-4" style="padding: var(--space-3) var(--space-4)">
-        <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; font-size: var(--text-sm)">
-          <span :style="step === 1 ? 'font-weight: var(--weight-semibold); color: var(--color-primary)' : 'color: var(--text-secondary)'">
-            1. Paciente
-          </span>
-          <span class="muted">→</span>
-          <span :style="step === 2 ? 'font-weight: var(--weight-semibold); color: var(--color-primary)' : 'color: var(--text-secondary)'">
-            2. Tipo de receita
-          </span>
-          <span class="muted">→</span>
-          <span :style="step === 3 ? 'font-weight: var(--weight-semibold); color: var(--color-primary)' : 'color: var(--text-secondary)'">
-            3. Medicamentos
-          </span>
+      <div class="stepper">
+        <div class="step" :class="step === 1 ? 'on' : 'done'">
+          <span class="st-num"><span x-show="step === 1">1</span><svg class="icon" x-show="step > 1" style="width:12px;height:12px"><use href="#i-check"></use></svg></span>
+          Paciente
+        </div>
+        <div class="step-sep"></div>
+        <div class="step" :class="step === 2 ? 'on' : (step > 2 ? 'done' : '')">
+          <span class="st-num"><span x-show="step <= 2">2</span><svg class="icon" x-show="step > 2" style="width:12px;height:12px"><use href="#i-check"></use></svg></span>
+          Tipo de receita
+        </div>
+        <div class="step-sep"></div>
+        <div class="step" :class="step === 3 ? 'on' : ''">
+          <span class="st-num">3</span>
+          Medicamentos
         </div>
       </div>
 
       <!-- ============ PASSO 1: Paciente ============ -->
-      <div class="card" x-show="step === 1">
-        <h3 class="card-title mb-4">1. Para quem é a receita?</h3>
+      <div class="folha" x-show="step === 1">
+        <h3 class="sec-title mb-4">Para quem é a receita?</h3>
 
         <div class="form-group">
           <label class="label">
@@ -138,77 +136,80 @@ function renderPrescricaoRapida(container) {
 
         <div class="flex justify-end mt-4">
           <button class="btn btn-primary" @click="step = 2" :disabled="!podeAvancarPaciente()">
-            Continuar →
+            Continuar
           </button>
         </div>
       </div>
 
       <!-- ============ PASSO 2: Tipo ============ -->
-      <div class="card" x-show="step === 2">
-        <h3 class="card-title mb-4">2. Qual tipo de receituário?</h3>
+      <div class="folha" x-show="step === 2">
+        <h3 class="sec-title mb-4">Qual tipo de receituário?</h3>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-3)">
-          <label class="tipo-card" :class="tipoReceita === 'simples' ? 'selected' : ''" @click="tipoReceita = 'simples'">
+        <div class="doc-tiles">
+          <label class="doc-tile" :class="tipoReceita === 'simples' ? 'on' : ''" @click="tipoReceita = 'simples'">
             <input type="radio" name="tipo" value="simples" x-model="tipoReceita" style="display: none">
-            <div style="font-weight: var(--weight-semibold); color: var(--color-primary)">📄 Receituário comum</div>
-            <div class="text-xs muted mt-1">Antibióticos, anti-hipertensivos, antidiabéticos e demais medicamentos sem controle especial.</div>
+            <svg class="icon"><use href="#i-rx"></use></svg>
+            <span class="dt-nome">Receituário comum</span>
+            <span class="dt-sub">Antibióticos, anti-hipertensivos, antidiabéticos e demais medicamentos sem controle especial.</span>
           </label>
 
-          <label class="tipo-card" :class="tipoReceita === 'controle' ? 'selected' : ''" @click="tipoReceita = 'controle'">
+          <label class="doc-tile" :class="tipoReceita === 'controle' ? 'on' : ''" @click="tipoReceita = 'controle'">
             <input type="radio" name="tipo" value="controle" x-model="tipoReceita" style="display: none">
-            <div style="font-weight: var(--weight-semibold); color: var(--color-primary)">📋 Controle especial (branca)</div>
-            <div class="text-xs muted mt-1">Lista C1 — antidepressivos, anticonvulsivantes, antipsicóticos não-benzodiazepínicos. Duas vias. Validade 30 dias.</div>
+            <svg class="icon"><use href="#i-clipboard"></use></svg>
+            <span class="dt-nome">Controle especial (branca)</span>
+            <span class="dt-sub">Lista C1 — antidepressivos, anticonvulsivantes, antipsicóticos não-benzodiazepínicos. Duas vias. Validade 30 dias.</span>
           </label>
 
-          <label class="tipo-card" :class="tipoReceita === 'azul' ? 'selected' : ''" @click="tipoReceita = 'azul'">
+          <label class="doc-tile" :class="tipoReceita === 'azul' ? 'on' : ''" @click="tipoReceita = 'azul'">
             <input type="radio" name="tipo" value="azul" x-model="tipoReceita" style="display: none">
-            <div style="font-weight: var(--weight-semibold); color: var(--color-primary)">📘 Azul B1/B2</div>
-            <div class="text-xs muted mt-1">Psicotrópicos (benzodiazepínicos, anorexígenos). Validade 30 dias.</div>
-            <div class="text-xs" style="color: var(--color-danger); margin-top: var(--space-1)">⚠ Notificação de Receita Azul é documento separado, fornecido pela VISA municipal.</div>
+            <svg class="icon"><use href="#i-pill"></use></svg>
+            <span class="dt-nome">Azul B1/B2</span>
+            <span class="dt-sub">Psicotrópicos (benzodiazepínicos, anorexígenos). Validade 30 dias.</span>
+            <span class="dt-sub" style="color: var(--color-danger)">Notificação de Receita Azul é documento separado, fornecido pela VISA municipal.</span>
           </label>
         </div>
 
         <div class="flex justify-between mt-4">
-          <button class="btn btn-ghost" @click="step = 1">← Trocar paciente</button>
-          <button class="btn btn-primary" @click="step = 3">Continuar →</button>
+          <button class="btn btn-ghost" @click="step = 1">Trocar paciente</button>
+          <button class="btn btn-primary" @click="step = 3">Continuar</button>
         </div>
       </div>
 
       <!-- ============ PASSO 3: Medicamentos ============ -->
-      <div class="card" x-show="step === 3">
+      <div class="folha" x-show="step === 3">
         <div class="flex justify-between items-center mb-3" style="flex-wrap: wrap; gap: var(--space-2);">
-          <h3 class="card-title" style="margin: 0;">3. Medicamentos</h3>
+          <h3 class="sec-title" style="margin: 0;">Medicamentos</h3>
           <button class="btn btn-sm" @click="abrirPickerTemplate()" x-show="templatesDisponiveis.length > 0">
-            📋 Carregar template
+            <svg class="icon"><use href="#i-clipboard"></use></svg> Carregar template
           </button>
           <button class="btn btn-sm btn-ghost" @click="$dispatch('navigate', '/templates')" x-show="templatesDisponiveis.length === 0"
                   title="Cadastrar templates para acelerar prescrições futuras">
-            📋 Criar templates
+            <svg class="icon"><use href="#i-clipboard"></use></svg> Criar templates
           </button>
         </div>
 
         <!-- Dropdown de templates (Sprint A2) -->
-        <div x-show="pickerTemplateAberto" x-cloak
-             style="border: 2px solid #166534; border-radius: 8px; padding: 12px; background: #f0fdf4; margin-bottom: var(--space-3);">
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <strong>📋 Escolha um template</strong>
-            <button class="btn btn-sm" style="margin-left:auto" @click="pickerTemplateAberto = false">×</button>
+        <div x-show="pickerTemplateAberto" x-cloak class="picker-pop mb-3">
+          <div class="flex items-center gap-2 mb-2">
+            <svg class="icon" style="width:14px;height:14px;color:var(--color-primary-700)"><use href="#i-clipboard"></use></svg>
+            <strong>Escolha um template</strong>
+            <button class="btn btn-sm btn-icon btn-ghost" style="margin-left:auto" @click="pickerTemplateAberto = false">
+              <svg class="icon"><use href="#i-x"></use></svg>
+            </button>
           </div>
-          <div style="max-height: 240px; overflow-y: auto; background:#fff; border-radius:6px;">
+          <div class="picker-list" style="margin-top: 0">
             <template x-for="t in templatesDisponiveis" :key="t.id">
-              <div @click="carregarTemplate(t)"
-                   style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #e5e7eb;"
+              <div class="picker-item" style="display: block" @click="carregarTemplate(t)"
                    :style="t.tipo !== tipoReceita ? 'opacity: 0.55' : ''">
-                <div style="display:flex; align-items:center; gap:8px;">
+                <div class="flex items-center gap-2">
                   <strong x-text="t.nome"></strong>
-                  <span style="font-size:0.8em; padding:1px 6px; background:#f3f4f6; border-radius:4px;"
-                        x-text="t.tipo === 'simples' ? 'comum' : (t.tipo === 'controle' ? 'controle' : 'azul')"></span>
-                  <span x-show="t.usoCount > 0" style="font-size:0.8em; opacity:0.6;" x-text="'usado ' + t.usoCount + 'x'"></span>
+                  <span class="snap-pill" x-text="t.tipo === 'simples' ? 'comum' : (t.tipo === 'controle' ? 'controle' : 'azul')"></span>
+                  <span x-show="t.usoCount > 0" class="text-xs muted" x-text="'usado ' + t.usoCount + 'x'"></span>
                 </div>
-                <div style="font-size:0.85em; opacity:0.75; margin-top:3px;"
+                <div class="text-sm muted mt-1"
                      x-text="(t.medicacoes || []).map(m => m.nome).filter(Boolean).join(' + ')"></div>
-                <div x-show="t.tipo !== tipoReceita" style="font-size:0.75em; color:#92400e; margin-top:3px;">
-                  ⚠️ Trocará o tipo de receituário para <strong x-text="t.tipo === 'simples' ? 'Comum' : (t.tipo === 'controle' ? 'Controle especial' : 'Azul B1/B2')"></strong>
+                <div x-show="t.tipo !== tipoReceita" class="text-xs mt-1" style="color: var(--color-accent-700)">
+                  Trocará o tipo de receituário para <strong x-text="t.tipo === 'simples' ? 'Comum' : (t.tipo === 'controle' ? 'Controle especial' : 'Azul B1/B2')"></strong>
                 </div>
               </div>
             </template>
@@ -263,7 +264,7 @@ function renderPrescricaoRapida(container) {
         </div>
 
         <div class="flex justify-between mt-4">
-          <button class="btn btn-ghost" @click="step = 2">← Trocar tipo</button>
+          <button class="btn btn-ghost" @click="step = 2">Trocar tipo</button>
           <button class="btn btn-primary" @click="gerarPrescricao()" :disabled="!podeGerar()">
             👁️ Pré-visualizar PDF
           </button>

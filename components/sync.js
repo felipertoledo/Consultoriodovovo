@@ -6,8 +6,10 @@
 function renderSync(container) {
   container.innerHTML = `
     <div x-data="sincronizacaoComponent()" x-init="carregar()">
-      <div class="page-header">
-        <h1 class="page-title">🔄 Sincronização entre dispositivos</h1>
+      <div class="ficha-head">
+        <div class="ficha-id">
+          <div class="ficha-nome">Sincronização entre dispositivos</div>
+        </div>
         <p class="page-subtitle">Cofre criptografado replicado em servidor próprio (Supabase). Servidor nunca decifra seus dados.</p>
       </div>
 
@@ -20,9 +22,9 @@ function renderSync(container) {
           A sincronização permite ter o mesmo cofre em mais de um dispositivo (notebook, celular, tablet).
           Os dados sobem ao servidor já criptografados com sua senha mestre — o servidor armazena bytes opacos.
         </p>
-        <p class="text-sm mb-4" style="background: #fef3c7; padding: 10px; border-radius: 6px; color: #92400e;">
-          ⚠ Você precisa de um projeto <strong>Supabase</strong> (free tier funciona: 500 MB de storage, suficiente
-          para milhares de consultas). Crie em <a href="https://supabase.com" target="_blank" rel="noopener" style="color:#92400e; text-decoration: underline;">supabase.com</a>.
+        <p class="text-sm mb-4" class="lab-warn">
+          Você precisa de um projeto <strong>Supabase</strong> (free tier funciona: 500 MB de storage, suficiente
+          para milhares de consultas). Crie em <a href="https://supabase.com" target="_blank" rel="noopener" style="text-decoration: underline; color: inherit;">supabase.com</a>.
         </p>
 
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
@@ -55,7 +57,7 @@ function renderSync(container) {
             <li>No painel do projeto, vá em <strong>SQL Editor</strong> → cole e execute o SQL abaixo</li>
           </ol>
           <div style="display:flex; gap:8px; margin: var(--space-3) 0;">
-            <button class="btn btn-sm btn-primary" @click="copiarSqlSetup()">📋 Copiar SQL de setup</button>
+            <button class="btn btn-sm btn-primary" @click="copiarSqlSetup()"><svg class="icon"><use href="#i-copy"></use></svg> Copiar SQL de setup</button>
             <span class="text-xs muted" x-show="sqlCopiado">✓ Copiado!</span>
           </div>
           <details style="margin-top: var(--space-3);">
@@ -90,7 +92,7 @@ function renderSync(container) {
             </small>
           </div>
 
-          <div x-show="erroSetup" style="background: #fef2f2; color: #991b1b; padding: 10px; border-radius: 6px; margin-top: var(--space-3);" x-text="erroSetup"></div>
+          <div x-show="erroSetup" class="alert alert-error mt-3" x-text="erroSetup"></div>
 
           <div class="mt-4" style="display:flex; gap:8px; justify-content:flex-end;">
             <button class="btn" @click="passo = 1">← Voltar</button>
@@ -106,16 +108,16 @@ function renderSync(container) {
           <h4>✅ Passo 3 de 3 — cofre conectado</h4>
           <p class="text-sm mb-3">Sincronização ativada. Seus dados serão criptografados com sua senha mestre antes de subir.</p>
 
-          <div style="background: #fef3c7; padding: 12px; border-radius: 6px; margin: var(--space-3) 0;">
-            <p class="text-sm" style="color: #92400e; margin: 0;">
-              ⚠ <strong>Importante:</strong> para conectar outros dispositivos, você precisará deste <strong>Vault ID</strong> (junto com URL + anon key + a mesma senha mestre):
+          <div class="lab-warn" style="display: block; margin: var(--space-3) 0;">
+            <p class="text-sm" style="margin: 0;">
+              <strong>Importante:</strong> para conectar outros dispositivos, você precisará deste <strong>Vault ID</strong> (junto com URL + anon key + a mesma senha mestre):
             </p>
             <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
-              <code style="background:#fff; padding:6px 10px; border-radius: 4px; font-size: 0.85em; word-break: break-all;" x-text="status.vaultId"></code>
-              <button class="btn btn-sm" @click="copiarVaultId()">📋</button>
-              <span class="text-xs" x-show="vaultIdCopiado" style="color:#16a34a">✓ Copiado!</span>
+              <code class="text-mono" style="background: var(--bg-surface); border: 1px solid var(--border-subtle); padding:6px 10px; border-radius: var(--radius-sm); font-size: 0.85em; word-break: break-all;" x-text="status.vaultId"></code>
+              <button class="btn btn-sm" @click="copiarVaultId()" title="Copiar Vault ID"><svg class="icon"><use href="#i-copy"></use></svg></button>
+              <span class="text-xs" x-show="vaultIdCopiado" style="color: var(--semaforo-verde)">Copiado!</span>
             </div>
-            <p class="text-xs mt-2" style="color: #92400e;">Anote em local seguro. Sem ele você não consegue parear novos dispositivos.</p>
+            <p class="text-xs mt-2" style="opacity: 0.85;">Anote em local seguro. Sem ele você não consegue parear novos dispositivos.</p>
           </div>
 
           <div class="mt-4" style="display:flex; gap:8px; justify-content:flex-end;">
@@ -135,8 +137,8 @@ function renderSync(container) {
           <button class="btn btn-sm" style="margin-left:auto" @click="cancelarSetup()">×</button>
         </div>
 
-        <p class="text-sm mb-4" style="background: #fef3c7; padding: 10px; border-radius: 6px; color: #92400e;">
-          ⚠ Você precisa: <strong>(1)</strong> a mesma senha mestre que está usando neste cofre,
+        <p class="text-sm mb-4" class="lab-warn">
+          Você precisa: <strong>(1)</strong> a mesma senha mestre que está usando neste cofre,
           <strong>(2)</strong> URL + anon key do Supabase do outro dispositivo, e <strong>(3)</strong> o Vault ID.
           <br>
           Sem isso, os dados baixados ficam ilegíveis (cifrados com outra senha).
@@ -163,7 +165,7 @@ function renderSync(container) {
           <small class="muted">O identificador único do cofre, gerado quando o primeiro dispositivo foi configurado.</small>
         </div>
 
-        <div x-show="erroSetup" style="background: #fef2f2; color: #991b1b; padding: 10px; border-radius: 6px; margin-top: var(--space-3);" x-text="erroSetup"></div>
+        <div x-show="erroSetup" class="alert alert-error mt-3" x-text="erroSetup"></div>
 
         <div class="mt-4" style="display:flex; gap:8px; justify-content:flex-end;">
           <button class="btn" @click="cancelarSetup()">Cancelar</button>
@@ -181,7 +183,7 @@ function renderSync(container) {
         <div class="card mb-3">
           <h3 class="card-title mb-3">
             <span x-show="!sincronizando">📡 Status</span>
-            <span x-show="sincronizando">🔄 Sincronizando…</span>
+            <span x-show="sincronizando">Sincronizando…</span>
           </h3>
 
           <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-3);">
@@ -203,13 +205,13 @@ function renderSync(container) {
             </div>
           </div>
 
-          <div x-show="status.lastSyncError" style="background: #fef2f2; color: #991b1b; padding: 10px; border-radius: 6px; margin-top: var(--space-3);">
+          <div x-show="status.lastSyncError" class="alert alert-error mt-3">
             <strong>Último erro:</strong> <span x-text="status.lastSyncError"></span>
           </div>
 
           <div class="mt-3" style="display:flex; gap:8px; flex-wrap: wrap;">
             <button class="btn btn-primary" @click="sincronizarAgora()" :disabled="sincronizando || !status.online">
-              <span x-show="!sincronizando">🔄 Sincronizar agora</span>
+              <span x-show="!sincronizando"><svg class="icon"><use href="#i-sync"></use></svg> Sincronizar agora</span>
               <span x-show="sincronizando">Aguarde…</span>
             </button>
             <button class="btn" @click="autoSyncAtivo = !autoSyncAtivo; aplicarAutoSync()">
@@ -231,8 +233,8 @@ function renderSync(container) {
               <div>
                 <strong>Vault ID:</strong>
                 <code style="background: var(--bg-sunken); padding: 2px 6px; border-radius: 3px; font-size: 0.85em; word-break: break-all;" x-text="status.vaultId"></code>
-                <button class="btn btn-sm" @click="copiarVaultId()" style="margin-left: 6px;">📋</button>
-                <span class="text-xs" x-show="vaultIdCopiado" style="color:#16a34a">✓</span>
+                <button class="btn btn-sm" @click="copiarVaultId()" style="margin-left: 6px;" title="Copiar"><svg class="icon"><use href="#i-copy"></use></svg></button>
+                <span class="text-xs" x-show="vaultIdCopiado" style="color: var(--semaforo-verde)">✓</span>
               </div>
               <div style="font-size: 0.85em;" class="muted">
                 A <strong>anon key</strong> está armazenada localmente e pode ser obtida no painel Supabase (Settings → API).
@@ -246,23 +248,23 @@ function renderSync(container) {
         <div x-show="ultimoResultado" class="card mb-3" x-cloak>
           <h3 class="card-title mb-2">📊 Última operação</h3>
           <div class="text-sm" x-show="ultimoResultado && ultimoResultado.sucesso">
-            <p style="color: #16a34a;">✓ Sincronização concluída.</p>
+            <p style="color: var(--semaforo-verde);">Sincronização concluída.</p>
             <ul style="font-size: 0.9em;">
               <li>📤 Enviados ao servidor: <strong x-text="(ultimoResultado && ultimoResultado.uploaded) || 0"></strong> registros</li>
               <li>📥 Baixados do servidor: <strong x-text="(ultimoResultado && ultimoResultado.downloaded) || 0"></strong> registros</li>
               <li x-show="ultimoResultado && ultimoResultado.conflitos && ultimoResultado.conflitos.length > 0">
-                ⚠ Conflitos: <strong x-text="(ultimoResultado && ultimoResultado.conflitos && ultimoResultado.conflitos.length) || 0"></strong> (versão local mais recente preservada)
+                Conflitos: <strong x-text="(ultimoResultado && ultimoResultado.conflitos && ultimoResultado.conflitos.length) || 0"></strong> (versão local mais recente preservada)
               </li>
             </ul>
           </div>
           <div class="text-sm" x-show="ultimoResultado && !ultimoResultado.sucesso">
-            <p style="color: #991b1b;">✗ Falhou: <span x-text="ultimoResultado.erro"></span></p>
+            <p style="color: var(--color-danger);">Falhou: <span x-text="ultimoResultado.erro"></span></p>
           </div>
         </div>
 
         <!-- Zona de perigo: desconectar -->
-        <div class="card" style="border-color: #fecaca;">
-          <h3 class="card-title mb-3" style="color: #991b1b;">⚠ Zona de perigo</h3>
+        <div class="card" style="border-color: var(--color-danger);">
+          <h3 class="card-title mb-3" style="color: var(--color-danger); display:flex; align-items:center; gap:8px;"><svg class="icon" style="width:15px;height:15px"><use href="#i-alert"></use></svg>Zona de perigo</h3>
           <p class="text-sm mb-3">
             Desconectar este dispositivo NÃO apaga seus dados locais e NÃO apaga os dados do servidor.
             Apenas remove a configuração de sync deste dispositivo.

@@ -216,7 +216,7 @@ function renderTemplates(container) {
   container.innerHTML = `
     <div class="page-header">
       <div>
-        <h1 class="page-title">📋 Templates de prescrição</h1>
+        <h1 class="page-title">Templates de prescrição</h1>
         <p class="page-subtitle">Receitas reutilizáveis para crônicos estáveis</p>
       </div>
       <div class="page-actions">
@@ -243,12 +243,12 @@ function renderTemplates(container) {
       </div>
 
       <template x-for="t in templates" :key="t.id">
-        <div class="card mb-3" style="border-left: 4px solid #166534;">
+        <div class="card mb-3" style="border-left: 3px solid var(--color-primary-600);">
           <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
             <div style="flex:1; min-width:200px;">
               <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                 <strong style="font-size:1.1em" x-text="t.nome"></strong>
-                <span style="font-size:0.85em; padding:2px 8px; background:#f3f4f6; border-radius:4px;" x-text="rotuloTipo(t.tipo)"></span>
+                <span class="snap-pill" x-text="rotuloTipo(t.tipo)"></span>
                 <span x-show="t.usoCount > 0" style="font-size:0.85em; opacity:0.7;" x-text="'usado ' + t.usoCount + 'x'"></span>
               </div>
               <div style="font-size:0.9em; margin-top:6px; opacity:0.85;">
@@ -299,7 +299,7 @@ function renderTemplates(container) {
               <button class="btn btn-sm" @click="adicionarMed()" style="margin-left:auto">+ Adicionar med.</button>
             </div>
             <template x-for="(m, i) in formT.medicacoes" :key="i">
-              <div style="padding:10px; background:#f9fafb; border-radius:6px; margin-top:8px;">
+              <div style="padding:10px; background: var(--bg-sunken); border-radius: var(--radius-sm); margin-top:8px;">
                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
                   <span style="font-size:0.85em; font-weight:600;" x-text="'Med ' + (i + 1)"></span>
                   <button class="btn btn-sm" @click="removerMed(i)" style="margin-left:auto; opacity:0.7">×</button>

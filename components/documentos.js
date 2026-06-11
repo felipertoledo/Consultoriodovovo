@@ -6,88 +6,72 @@
 function renderDocumentos(container, pacienteId, tipo) {
   container.innerHTML = `
     <div x-data="documentosScreen(${parseInt(pacienteId, 10)}, '${tipo || 'menu'}')" x-init="load()">
-      <div class="page-header">
-        <div>
-          <button class="btn btn-ghost" @click="voltar()">← Voltar</button>
-          <h1 class="page-title mt-2" x-text="titulo"></h1>
-          <p class="page-subtitle">
-            <span x-text="paciente.nome"></span>
-            <span x-show="paciente.dataNascimento">
-              · <span x-text="calcAge(paciente.dataNascimento) + ' anos'"></span>
-            </span>
-          </p>
+      <div class="ficha-head">
+        <button class="btn btn-ghost btn-icon" @click="voltar()" title="Voltar">
+          <svg class="icon" style="transform: rotate(180deg)"><use href="#i-arrow-right"></use></svg>
+        </button>
+        <div class="ficha-id">
+          <div class="ficha-nome" x-text="titulo"></div>
+          <div class="ficha-sub">
+            <strong x-text="paciente.nome"></strong>
+            <span x-show="paciente.dataNascimento" x-text="calcAge(paciente.dataNascimento) + ' anos'"></span>
+          </div>
         </div>
       </div>
 
       <!-- Menu de seleção de tipo -->
-      <div x-show="tipo === 'menu'" class="card">
-        <h3 class="card-title mb-4">Selecione o tipo de documento</h3>
+      <div x-show="tipo === 'menu'" class="folha">
+        <h3 class="sec-title mb-4">Selecione o tipo de documento</h3>
 
-        <div class="text-sm muted mb-3" style="margin-top: var(--space-2)">Prescrições</div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-6);">
-          <button class="btn btn-secondary" style="padding: var(--space-4); text-align: left; height: auto;"
-                  @click="abrirTipo('receita')">
-            <div>
-              <div style="font-weight: var(--weight-semibold); font-size: var(--text-base);">📋 Receituário simples</div>
-              <div class="text-xs muted mt-2">Medicações comuns sem controle especial</div>
-            </div>
+        <div class="minimap-title" style="padding-left: 0; margin-top: var(--space-2)">Prescrições</div>
+        <div class="doc-tiles mb-5">
+          <button class="doc-tile" @click="abrirTipo('receita')">
+            <svg class="icon"><use href="#i-rx"></use></svg>
+            <span class="dt-nome">Receituário simples</span>
+            <span class="dt-sub">Medicações comuns sem controle especial</span>
           </button>
-          <button class="btn btn-secondary" style="padding: var(--space-4); text-align: left; height: auto;"
-                  @click="abrirTipo('controle')">
-            <div>
-              <div style="font-weight: var(--weight-semibold); font-size: var(--text-base);">📑 Receituário de controle especial</div>
-              <div class="text-xs muted mt-2">Branco em 2 vias — antimicrobianos, retinoides (Lista C1)</div>
-            </div>
+          <button class="doc-tile" @click="abrirTipo('controle')">
+            <svg class="icon"><use href="#i-clipboard"></use></svg>
+            <span class="dt-nome">Controle especial</span>
+            <span class="dt-sub">Branco em 2 vias — antimicrobianos, retinoides (Lista C1)</span>
           </button>
-          <button class="btn btn-secondary" style="padding: var(--space-4); text-align: left; height: auto;"
-                  @click="abrirTipo('azul')">
-            <div>
-              <div style="font-weight: var(--weight-semibold); font-size: var(--text-base);">📘 Receituário azul B1/B2</div>
-              <div class="text-xs muted mt-2">Psicotrópicos — benzodiazepínicos, hipnóticos (Lista B)</div>
-            </div>
+          <button class="doc-tile" @click="abrirTipo('azul')">
+            <svg class="icon"><use href="#i-pill"></use></svg>
+            <span class="dt-nome">Azul B1/B2</span>
+            <span class="dt-sub">Psicotrópicos — benzodiazepínicos, hipnóticos (Lista B)</span>
           </button>
         </div>
 
-        <div class="text-sm muted mb-3">Atestados e solicitações</div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-6);">
-          <button class="btn btn-secondary" style="padding: var(--space-4); text-align: left; height: auto;"
-                  @click="abrirTipo('atestado')">
-            <div>
-              <div style="font-weight: var(--weight-semibold); font-size: var(--text-base);">📝 Atestado médico</div>
-              <div class="text-xs muted mt-2">Comparecimento ou afastamento</div>
-            </div>
+        <div class="minimap-title" style="padding-left: 0">Atestados e solicitações</div>
+        <div class="doc-tiles mb-5">
+          <button class="doc-tile" @click="abrirTipo('atestado')">
+            <svg class="icon"><use href="#i-file"></use></svg>
+            <span class="dt-nome">Atestado médico</span>
+            <span class="dt-sub">Comparecimento ou afastamento</span>
           </button>
-          <button class="btn btn-secondary" style="padding: var(--space-4); text-align: left; height: auto;"
-                  @click="abrirTipo('exames')">
-            <div>
-              <div style="font-weight: var(--weight-semibold); font-size: var(--text-base);">🧪 Solicitação de exames</div>
-              <div class="text-xs muted mt-2">Laboratório, imagem e procedimentos</div>
-            </div>
+          <button class="doc-tile" @click="abrirTipo('exames')">
+            <svg class="icon"><use href="#i-flask"></use></svg>
+            <span class="dt-nome">Solicitação de exames</span>
+            <span class="dt-sub">Laboratório, imagem e procedimentos</span>
           </button>
         </div>
 
-        <div class="text-sm muted mb-3">Documentos clínicos e legais</div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-3);">
-          <button class="btn btn-secondary" style="padding: var(--space-4); text-align: left; height: auto;"
-                  @click="abrirTipo('relatorio')">
-            <div>
-              <div style="font-weight: var(--weight-semibold); font-size: var(--text-base);">📄 Relatório clínico</div>
-              <div class="text-xs muted mt-2">Para outros profissionais, parecer, encaminhamento</div>
-            </div>
+        <div class="minimap-title" style="padding-left: 0">Documentos clínicos e legais</div>
+        <div class="doc-tiles">
+          <button class="doc-tile" @click="abrirTipo('relatorio')">
+            <svg class="icon"><use href="#i-file"></use></svg>
+            <span class="dt-nome">Relatório clínico</span>
+            <span class="dt-sub">Para outros profissionais, parecer, encaminhamento</span>
           </button>
-          <button class="btn btn-secondary" style="padding: var(--space-4); text-align: left; height: auto;"
-                  @click="abrirTipo('prontuario')">
-            <div>
-              <div style="font-weight: var(--weight-semibold); font-size: var(--text-base);">📚 Cópia do prontuário</div>
-              <div class="text-xs muted mt-2">Cópia integral para o paciente (LGPD art. 18, IV)</div>
-            </div>
+          <button class="doc-tile" @click="abrirTipo('prontuario')">
+            <svg class="icon"><use href="#i-clipboard"></use></svg>
+            <span class="dt-nome">Cópia do prontuário</span>
+            <span class="dt-sub">Cópia integral para o paciente (LGPD art. 18, IV)</span>
           </button>
-          <button class="btn btn-secondary" style="padding: var(--space-4); text-align: left; height: auto;"
-                  @click="abrirTipo('consulta-impressa')">
-            <div>
-              <div style="font-weight: var(--weight-semibold); font-size: var(--text-base);">🖨️ Consulta para impressão</div>
-              <div class="text-xs muted mt-2">PDF completo de uma consulta com espaço para assinar à mão e arquivar</div>
-            </div>
+          <button class="doc-tile" @click="abrirTipo('consulta-impressa')">
+            <svg class="icon"><use href="#i-print"></use></svg>
+            <span class="dt-nome">Consulta para impressão</span>
+            <span class="dt-sub">PDF completo de uma consulta com espaço para assinar à mão e arquivar</span>
           </button>
         </div>
       </div>
@@ -168,7 +152,7 @@ function renderDocumentos(container, pacienteId, tipo) {
         </div>
 
         <div class="flex gap-2 justify-between" style="flex-wrap: wrap">
-          <button class="btn btn-ghost" @click="tipo = 'menu'">← Outro tipo</button>
+          <button class="btn btn-ghost" @click="tipo = 'menu'">Outro tipo</button>
           <div class="flex gap-2" style="flex-wrap: wrap">
             <a class="btn btn-secondary" href="https://memed.com.br/login" target="_blank" rel="noopener"
                title="Abrir Memed em nova aba (sem integração)">
@@ -252,7 +236,7 @@ function renderDocumentos(container, pacienteId, tipo) {
         </div>
 
         <div class="flex gap-2 justify-between" style="flex-wrap: wrap">
-          <button class="btn btn-ghost" @click="tipo = 'menu'">← Outro tipo</button>
+          <button class="btn btn-ghost" @click="tipo = 'menu'">Outro tipo</button>
           <button class="btn btn-primary" @click="gerarAtestado()">
             👁️ Pré-visualizar PDF
           </button>
@@ -318,7 +302,7 @@ function renderDocumentos(container, pacienteId, tipo) {
         </div>
 
         <div class="flex gap-2 justify-between" style="flex-wrap: wrap">
-          <button class="btn btn-ghost" @click="tipo = 'menu'">← Outro tipo</button>
+          <button class="btn btn-ghost" @click="tipo = 'menu'">Outro tipo</button>
           <button class="btn btn-primary" @click="gerarExames()"
                   :disabled="totalExames === 0">
             👁️ Pré-visualizar PDF
@@ -378,7 +362,7 @@ function renderDocumentos(container, pacienteId, tipo) {
         </div>
 
         <div class="flex gap-2 justify-between" style="flex-wrap: wrap">
-          <button class="btn btn-ghost" @click="tipo = 'menu'">← Outro tipo</button>
+          <button class="btn btn-ghost" @click="tipo = 'menu'">Outro tipo</button>
           <div class="flex gap-2" style="flex-wrap: wrap">
             <a class="btn btn-secondary" href="https://memed.com.br/login" target="_blank" rel="noopener"
                title="Abrir Memed em nova aba (sem integração)">
@@ -393,7 +377,7 @@ function renderDocumentos(container, pacienteId, tipo) {
 
       <!-- ============== FORMULÁRIO: RECEITUÁRIO AZUL B1/B2 ============== -->
       <div x-show="tipo === 'azul'">
-        <div class="alert alert-info" style="background: #DBEAFE; color: #1E40AF; border-color: #93C5FD">
+        <div class="alert alert-info">
           <div>
             <strong>Receituário azul — Notificação de Receita Lista B.</strong>
             Para benzodiazepínicos, hipnóticos e outras substâncias psicotrópicas da Lista B
@@ -460,7 +444,7 @@ function renderDocumentos(container, pacienteId, tipo) {
         </div>
 
         <div class="flex gap-2 justify-between" style="flex-wrap: wrap">
-          <button class="btn btn-ghost" @click="tipo = 'menu'">← Outro tipo</button>
+          <button class="btn btn-ghost" @click="tipo = 'menu'">Outro tipo</button>
           <div class="flex gap-2" style="flex-wrap: wrap">
             <a class="btn btn-secondary" href="https://memed.com.br/login" target="_blank" rel="noopener"
                title="Abrir Memed em nova aba (sem integração)">
@@ -543,7 +527,7 @@ function renderDocumentos(container, pacienteId, tipo) {
         </div>
 
         <div class="flex gap-2 justify-between" style="flex-wrap: wrap">
-          <button class="btn btn-ghost" @click="tipo = 'menu'">← Outro tipo</button>
+          <button class="btn btn-ghost" @click="tipo = 'menu'">Outro tipo</button>
           <button class="btn btn-primary" @click="gerarRelatorio()">👁️ Pré-visualizar PDF</button>
         </div>
       </div>
@@ -574,7 +558,7 @@ function renderDocumentos(container, pacienteId, tipo) {
         </div>
 
         <div class="flex gap-2 justify-between" style="flex-wrap: wrap">
-          <button class="btn btn-ghost" @click="tipo = 'menu'">← Outro tipo</button>
+          <button class="btn btn-ghost" @click="tipo = 'menu'">Outro tipo</button>
           <button class="btn btn-primary" @click="gerarProntuario()">👁️ Pré-visualizar PDF</button>
         </div>
       </div>
@@ -604,7 +588,7 @@ function renderDocumentos(container, pacienteId, tipo) {
         </div>
 
         <div class="flex gap-2 justify-between" style="flex-wrap: wrap">
-          <button class="btn btn-ghost" @click="tipo = 'menu'">← Outro tipo</button>
+          <button class="btn btn-ghost" @click="tipo = 'menu'">Outro tipo</button>
           <button class="btn btn-primary" @click="gerarConsultaImpressao()"
                   :disabled="!consultaImpressaoId">
             👁️ Pré-visualizar PDF

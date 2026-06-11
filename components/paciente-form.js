@@ -8,429 +8,435 @@ function renderPacienteForm(container, id) {
   const isNew = (id === 'novo' || id == null);
   const idParam = isNew ? 'null' : parseInt(id, 10);
   container.innerHTML = `
-    <div x-data="pacienteForm(${idParam})" x-init="load()">
-      <div class="page-header">
-        <div>
-          <button class="btn btn-ghost" @click="$dispatch('navigate', '/pacientes')">
-            ← Voltar
-          </button>
-          <h1 class="page-title mt-2" x-text="isNew ? 'Novo paciente' : (paciente.nome || 'Paciente')"></h1>
-          <p class="page-subtitle" x-show="!isNew">
-            Cadastrado em <span x-text="formatDate(paciente.createdAt)"></span> ·
-            atualizado em <span x-text="formatDate(paciente.updatedAt)"></span>
-          </p>
-          <div class="paciente-badges" x-show="!isNew && paciente.tipoVaga">
-            <span class="vaga-badge" :class="'vaga-badge-' + paciente.tipoVaga"
+    <div x-data="pacienteForm(${idParam})"
+         x-init="load(); $nextTick(() => window.ScrollSpy && ScrollSpy.ligar($root))">
+
+      <div class="ficha-head">
+        <button class="btn btn-ghost btn-icon" @click="$dispatch('navigate', '/pacientes')" title="Voltar ao fichário">
+          <svg class="icon" style="transform: rotate(180deg)"><use href="#i-arrow-right"></use></svg>
+        </button>
+        <div class="ficha-id">
+          <div class="ficha-nome" x-text="isNew ? 'Novo paciente' : (paciente.nome || 'Paciente')"></div>
+          <div class="ficha-sub" x-show="!isNew">
+            <span x-show="paciente.dataNascimento" x-text="calcAge(paciente.dataNascimento) + ' anos'"></span>
+            <span x-show="paciente.sexo" x-text="paciente.sexo"></span>
+            <span x-show="paciente.tipoVaga" class="vaga-badge-mini"
+                  :class="'vaga-badge-' + paciente.tipoVaga"
                   x-text="rotuloVaga(paciente.tipoVaga)"></span>
+            <span class="muted">cadastro <span x-text="formatDate(paciente.createdAt)"></span> · atualizado <span x-text="formatDate(paciente.updatedAt)"></span></span>
           </div>
         </div>
         <div class="page-actions">
-          <span class="text-xs muted" x-show="autoSaveStatus" x-text="autoSaveStatus"></span>
-          <button class="btn btn-danger" @click="remove()" x-show="!isNew">Excluir</button>
-          <button class="btn btn-primary" @click="save()" :disabled="!isValid() || saving">
-            <span x-show="!saving" x-text="isNew ? 'Cadastrar' : 'Salvar'"></span>
-            <span x-show="saving">Salvando…</span>
+          <button class="btn btn-secondary" @click="abrirDocumentos()" x-show="!isNew">
+            <svg class="icon"><use href="#i-file"></use></svg>
+            Gerar documento
+          </button>
+          <button class="btn btn-primary" @click="novaConsulta()" x-show="!isNew">
+            <svg class="icon"><use href="#i-plus"></use></svg>
+            Nova consulta
           </button>
         </div>
       </div>
 
-      <!-- ========== TIMELINE DE CONSULTAS ========== -->
-      <div class="card mt-4" x-show="!isNew">
-        <div class="flex justify-between items-center mb-4" style="flex-wrap: wrap; gap: var(--space-3)">
-          <h3 class="card-title">📋 Consultas (<span x-text="consultas.length"></span>)</h3>
-          <div class="flex gap-2">
-            <button class="btn btn-secondary" @click="abrirDocumentos()">📄 Gerar documento</button>
-            <button class="btn btn-primary" @click="novaConsulta()">+ Nova consulta</button>
-          </div>
+      <!-- Histórico de consultas (ledger) -->
+      <div class="folha mb-4" x-show="!isNew" data-spy="hist">
+        <div class="sec-head" style="margin-bottom: var(--space-4)">
+          <h3 class="sec-title">Histórico de consultas</h3>
+          <span class="sec-meta"><span x-text="consultas.length"></span> registro(s)</span>
         </div>
 
-        <div x-show="loadingConsultas" class="empty-state">
-          <div class="spinner" style="margin: 0 auto"></div>
+        <div x-show="loadingConsultas" aria-hidden="true">
+          <div class="skel" style="height: 56px; margin-bottom: 8px"></div>
+          <div class="skel" style="height: 56px"></div>
         </div>
 
-        <div x-show="!loadingConsultas && consultas.length === 0" class="empty-state">
+        <div x-show="!loadingConsultas && consultas.length === 0" class="empty-state" style="padding: var(--space-6) 0">
           <h3>Nenhuma consulta registrada</h3>
           <p>Comece registrando a primeira consulta deste paciente.</p>
-          <button class="btn btn-primary mt-3" @click="novaConsulta()">+ Registrar primeira consulta</button>
+          <button class="btn btn-primary mt-3" @click="novaConsulta()">
+            <svg class="icon"><use href="#i-plus"></use></svg>
+            Registrar primeira consulta
+          </button>
         </div>
 
-        <div class="consultas-timeline" x-show="!loadingConsultas && consultas.length > 0">
+        <div class="ledger" x-show="!loadingConsultas && consultas.length > 0">
           <template x-for="c in consultas" :key="c.id">
-            <div class="consulta-item consulta-item-v2" @click="abrirConsulta(c.id)">
-              <div class="consulta-data consulta-data-v2">
-                <div class="consulta-data-day" x-text="formatConsultaDay(c.dataHora)"></div>
-                <div class="consulta-data-month" x-text="formatConsultaMonth(c.dataHora)"></div>
-                <div class="consulta-data-time" x-text="formatConsultaTime(c.dataHora)"></div>
+            <div class="ledger-item" style="cursor: pointer" @click="abrirConsulta(c.id)">
+              <div class="ledger-date">
+                <div style="font-weight: var(--weight-bold); color: var(--text-primary)"
+                     x-text="formatConsultaDay(c.dataHora) + ' ' + formatConsultaMonth(c.dataHora)"></div>
+                <div x-text="formatConsultaTime(c.dataHora)"></div>
               </div>
-              <div class="consulta-info">
-                <div class="consulta-titulo consulta-titulo-v2">
+              <div class="ledger-body">
+                <div style="font-weight: var(--weight-semibold)">
                   <span x-text="c.queixaPrincipal || 'Consulta'"></span>
-                  <span x-show="c.queixaDuracao" class="text-sm muted"
-                        x-text="' · ' + c.queixaDuracao"></span>
+                  <span x-show="c.queixaDuracao" class="text-sm muted" x-text="' · ' + c.queixaDuracao"></span>
                 </div>
 
-                <!-- Chips de hipótese -->
-                <div class="consulta-hipoteses-chips" x-show="c.hipoteses && c.hipoteses.length > 0">
+                <div class="flex gap-2 mt-2" style="flex-wrap: wrap" x-show="c.hipoteses && c.hipoteses.length > 0">
                   <template x-for="(h, hi) in (c.hipoteses || [])" :key="hi">
                     <span class="consulta-hip-chip">
                       <span x-text="textoHipotese(h)"></span>
-                      <span class="consulta-hip-ciap" x-show="ciapHipotese(h)" x-text="ciapHipotese(h)"></span>
+                      <span class="code-pill ciap" style="margin-left: 0" x-show="ciapHipotese(h)" x-text="ciapHipotese(h)"></span>
                     </span>
                   </template>
                 </div>
-                <div class="consulta-resumo muted" x-show="!c.hipoteses || c.hipoteses.length === 0">
+                <div class="text-sm muted mt-1" x-show="!c.hipoteses || c.hipoteses.length === 0">
                   Sem hipóteses registradas
                 </div>
 
-                <!-- Snapshot clínico: PA + ícones de conteúdo -->
-                <div class="consulta-snapshot">
-                  <span class="consulta-pill" x-show="paFormatada(c)">
-                    🩸 PA <span x-text="paFormatada(c)"></span>
+                <div class="flex items-center gap-2 mt-2" style="flex-wrap: wrap">
+                  <span class="snap-pill pa" x-show="paFormatada(c)">
+                    <svg class="icon"><use href="#i-vitals"></use></svg>
+                    PA <span x-text="paFormatada(c)"></span>
                   </span>
-                  <span class="consulta-pill" x-show="c.peso" >
-                    ⚖️ <span x-text="c.peso + ' kg'"></span>
+                  <span class="snap-pill" x-show="c.peso">
+                    <span x-text="c.peso + ' kg'"></span>
                   </span>
-                  <span class="consulta-icon" x-show="temExames(c)" title="Exames laboratoriais">🧪</span>
-                  <span class="consulta-icon" x-show="temConduta(c)" title="Conduta/prescrição registrada">💊</span>
-                  <span class="consulta-icon" x-show="c.exameFisicoDescricao" title="Exame físico">🩺</span>
+                  <span class="snap-icons">
+                    <svg class="icon" x-show="temExames(c)"><title>Exames laboratoriais</title><use href="#i-flask"></use></svg>
+                    <svg class="icon" x-show="temConduta(c)"><title>Conduta/prescrição registrada</title><use href="#i-pill"></use></svg>
+                    <svg class="icon" x-show="c.exameFisicoDescricao"><title>Exame físico</title><use href="#i-heart-pulse"></use></svg>
+                  </span>
                 </div>
               </div>
-              <div class="consulta-acoes">
-                <button class="btn btn-ghost text-sm">Abrir →</button>
-              </div>
+              <svg class="icon" style="width: 14px; height: 14px; color: var(--text-muted); align-self: center"><use href="#i-chevron-right"></use></svg>
             </div>
           </template>
         </div>
       </div>
 
-      <style>
-        .consulta-item-v2 { align-items: flex-start; }
-        .consulta-data-v2 {
-          min-width: 76px;
-          padding: 10px 8px;
-        }
-        .consulta-data-v2 .consulta-data-day { font-size: 1.7em; }
-        .consulta-titulo-v2 {
-          font-size: 1.1em;
-          font-weight: 600;
-          margin-bottom: 8px;
-        }
-        .consulta-hipoteses-chips {
-          display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;
-        }
-        .consulta-hip-chip {
-          font-size: 0.78em;
-          padding: 3px 10px;
-          border-radius: 12px;
-          background: var(--bg-sunken);
-          border: 1px solid var(--border-subtle);
-          display: inline-flex; align-items: center; gap: 5px;
-        }
-        .consulta-hip-ciap {
-          font-weight: 700;
-          font-size: 0.85em;
-          color: var(--color-primary);
-          background: rgba(34, 197, 94, 0.12);
-          padding: 0 5px; border-radius: 5px;
-        }
-        [data-theme="dark"] .consulta-hip-ciap {
-          color: #4ADE80; background: rgba(74, 222, 128, 0.18);
-        }
-        .consulta-snapshot {
-          display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
-          font-size: 0.82em;
-        }
-        .consulta-pill {
-          padding: 2px 8px; border-radius: 8px;
-          background: rgba(220, 38, 38, 0.08);
-          color: #b91c1c;
-          font-weight: 500;
-        }
-        [data-theme="dark"] .consulta-pill {
-          background: rgba(248, 113, 113, 0.15); color: #FCA5A5;
-        }
-        .consulta-icon { font-size: 1.05em; }
-      </style>
+      <div class="workbench has-map">
+        <div>
+          <div class="folha">
 
-      <div class="card">
-        <h3 class="card-title mb-4">Dados pessoais</h3>
+            <!-- 01 · Dados pessoais -->
+            <section class="sec" data-spy="p1">
+              <span class="sec-num">01</span>
+              <div class="sec-head"><h3 class="sec-title">Dados pessoais</h3></div>
 
-        <div class="form-row cols-2">
-          <div class="form-group">
-            <label class="label" for="f_nome">Nome completo <span class="required">*</span></label>
-            <input id="f_nome" type="text" class="input" x-model="paciente.nome"
-                   @input="touch()" placeholder="Nome completo do paciente">
-            <div class="field-error" x-show="touched && !paciente.nome">Campo obrigatório</div>
+              <div class="form-row cols-2">
+                <div class="form-group">
+                  <label class="label" for="f_nome">Nome completo <span class="required">*</span></label>
+                  <input id="f_nome" type="text" class="input" x-model="paciente.nome"
+                         @input="touch()" placeholder="Nome completo do paciente">
+                  <div class="field-error" x-show="touched && !paciente.nome">Campo obrigatório</div>
+                </div>
+                <div class="form-group">
+                  <label class="label" for="f_nasc">Data de nascimento <span class="required">*</span></label>
+                  <input id="f_nasc" type="date" class="input" x-model="paciente.dataNascimento" @input="touch()">
+                  <div class="field-help" x-show="paciente.dataNascimento">
+                    <span x-text="calcAge(paciente.dataNascimento)"></span> anos
+                  </div>
+                  <div class="field-error" x-show="touched && !paciente.dataNascimento">Campo obrigatório</div>
+                </div>
+              </div>
+
+              <div class="form-row cols-3">
+                <div class="form-group">
+                  <label class="label" for="f_sexo">Sexo</label>
+                  <select id="f_sexo" class="select" x-model="paciente.sexo" @change="touch()">
+                    <option value="">—</option>
+                    <option value="Feminino">Feminino</option>
+                    <option value="Masculino">Masculino</option>
+                    <option value="Intersexo">Intersexo</option>
+                    <option value="Não declarado">Não declarado</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="label" for="f_genero">Identidade de gênero</label>
+                  <input id="f_genero" type="text" class="input" x-model="paciente.identidadeGenero"
+                         @input="touch()" placeholder="(opcional)">
+                </div>
+                <div class="form-group">
+                  <label class="label" for="f_civil">Estado civil</label>
+                  <select id="f_civil" class="select" x-model="paciente.estadoCivil" @change="touch()">
+                    <option value="">—</option>
+                    <option>Solteiro(a)</option>
+                    <option>Casado(a)</option>
+                    <option>União estável</option>
+                    <option>Divorciado(a)</option>
+                    <option>Viúvo(a)</option>
+                    <option>Separado(a)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row cols-2">
+                <div class="form-group">
+                  <label class="label" for="f_profissao">Profissão / ocupação</label>
+                  <input id="f_profissao" type="text" class="input" x-model="paciente.profissao"
+                         @input="touch()" placeholder="Ex: Aposentado, Professora">
+                </div>
+                <div class="form-group">
+                  <label class="label" for="f_escolaridade">Escolaridade</label>
+                  <select id="f_escolaridade" class="select" x-model="paciente.escolaridade" @change="touch()">
+                    <option value="">—</option>
+                    <option>Sem escolaridade</option>
+                    <option>Fundamental incompleto</option>
+                    <option>Fundamental completo</option>
+                    <option>Médio incompleto</option>
+                    <option>Médio completo</option>
+                    <option>Superior incompleto</option>
+                    <option>Superior completo</option>
+                    <option>Pós-graduação</option>
+                  </select>
+                </div>
+              </div>
+            </section>
+
+            <!-- 02 · Situação socioeconômica -->
+            <section class="sec" data-spy="p2">
+              <span class="sec-num">02</span>
+              <div class="sec-head">
+                <h3 class="sec-title">Situação socioeconômica</h3>
+                <span class="sec-meta">cuidado inversamente proporcional ao privilégio</span>
+              </div>
+
+              <div class="form-group">
+                <label class="label">Tipo de atendimento</label>
+                <div class="vaga-radios">
+                  <label class="vaga-radio" :class="paciente.tipoVaga === 'sus' ? 'vaga-radio-active vaga-sus' : ''">
+                    <input type="radio" name="tipoVaga" value="sus" x-model="paciente.tipoVaga" @change="touch()">
+                    <span>SUS</span>
+                  </label>
+                  <label class="vaga-radio" :class="paciente.tipoVaga === 'particular' ? 'vaga-radio-active vaga-particular' : ''">
+                    <input type="radio" name="tipoVaga" value="particular" x-model="paciente.tipoVaga" @change="touch()">
+                    <span>Particular</span>
+                  </label>
+                  <label class="vaga-radio" :class="paciente.tipoVaga === 'convenio' ? 'vaga-radio-active vaga-convenio' : ''">
+                    <input type="radio" name="tipoVaga" value="convenio" x-model="paciente.tipoVaga" @change="touch()">
+                    <span>Convênio</span>
+                  </label>
+                  <button type="button" class="vaga-radio-clear" x-show="paciente.tipoVaga"
+                          @click="paciente.tipoVaga = ''; touch()" title="Limpar seleção">×</button>
+                </div>
+                <small class="field-help" x-show="paciente.tipoVaga === 'convenio'">
+                  Informe o nome do plano no campo "Convênio / particular" abaixo (seção Documentos).
+                </small>
+              </div>
+
+              <div class="form-row cols-3">
+                <div class="form-group">
+                  <label class="label" for="f_fonte_renda">Fonte de renda principal</label>
+                  <select id="f_fonte_renda" class="select" x-model="paciente.fonteRenda" @change="touch()">
+                    <option value="">—</option>
+                    <option value="formal">Trabalho formal (CLT/servidor)</option>
+                    <option value="informal">Trabalho informal / autônomo</option>
+                    <option value="aposentadoria">Aposentadoria</option>
+                    <option value="pensao">Pensão</option>
+                    <option value="bpc">BPC/LOAS</option>
+                    <option value="bolsa_familia">Bolsa Família / auxílio</option>
+                    <option value="desempregado">Sem fonte de renda / desempregado(a)</option>
+                    <option value="outra">Outra</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="label" for="f_renda_pessoal">Renda pessoal</label>
+                  <select id="f_renda_pessoal" class="select" x-model="paciente.rendaPessoal" @change="touch()">
+                    <option value="">—</option>
+                    <option value="sem_renda">Sem renda</option>
+                    <option value="ate_1">Até 1 salário mínimo</option>
+                    <option value="1_2">1 a 2 salários mínimos</option>
+                    <option value="2_3">2 a 3 salários mínimos</option>
+                    <option value="3_5">3 a 5 salários mínimos</option>
+                    <option value="mais_5">Mais de 5 salários mínimos</option>
+                    <option value="nao_informado">Prefere não informar</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="label" for="f_renda_familiar">Renda familiar</label>
+                  <select id="f_renda_familiar" class="select" x-model="paciente.rendaFamiliar" @change="touch()">
+                    <option value="">—</option>
+                    <option value="sem_renda">Sem renda</option>
+                    <option value="ate_1">Até 1 salário mínimo</option>
+                    <option value="1_2">1 a 2 salários mínimos</option>
+                    <option value="2_3">2 a 3 salários mínimos</option>
+                    <option value="3_5">3 a 5 salários mínimos</option>
+                    <option value="mais_5">Mais de 5 salários mínimos</option>
+                    <option value="nao_informado">Prefere não informar</option>
+                  </select>
+                </div>
+              </div>
+            </section>
+
+            <!-- 03 · Documentos -->
+            <section class="sec" data-spy="p3">
+              <span class="sec-num">03</span>
+              <div class="sec-head"><h3 class="sec-title">Documentos</h3></div>
+              <div class="form-row cols-2">
+                <div class="form-group">
+                  <label class="label" for="f_cpf">CPF</label>
+                  <input id="f_cpf" type="text" class="input text-mono" x-model="paciente.cpf"
+                         @input="touch(); formatCPF()" placeholder="000.000.000-00" maxlength="14">
+                </div>
+                <div class="form-group">
+                  <label class="label" for="f_rg">RG</label>
+                  <input id="f_rg" type="text" class="input text-mono" x-model="paciente.rg" @input="touch()"
+                         placeholder="00.000.000-0">
+                </div>
+              </div>
+              <div class="form-row cols-2">
+                <div class="form-group">
+                  <label class="label" for="f_cns">Cartão SUS (CNS)</label>
+                  <input id="f_cns" type="text" class="input text-mono" x-model="paciente.cns" @input="touch()"
+                         placeholder="000 0000 0000 0000">
+                </div>
+                <div class="form-group">
+                  <label class="label" for="f_conv">Convênio / particular</label>
+                  <input id="f_conv" type="text" class="input" x-model="paciente.convenio" @input="touch()"
+                         placeholder="SUS, particular, nome do plano">
+                </div>
+              </div>
+            </section>
+
+            <!-- 04 · Contato -->
+            <section class="sec" data-spy="p4">
+              <span class="sec-num">04</span>
+              <div class="sec-head"><h3 class="sec-title">Contato</h3></div>
+              <div class="form-row cols-2">
+                <div class="form-group">
+                  <label class="label" for="f_whats">WhatsApp / celular</label>
+                  <input id="f_whats" type="text" class="input" x-model="paciente.whatsapp" @input="touch()"
+                         placeholder="(19) 99999-9999">
+                </div>
+                <div class="form-group">
+                  <label class="label" for="f_tel">Telefone fixo</label>
+                  <input id="f_tel" type="text" class="input" x-model="paciente.telefone" @input="touch()"
+                         placeholder="(19) 3333-3333">
+                </div>
+              </div>
+              <div class="form-group" style="margin-bottom: 0">
+                <label class="label" for="f_email">E-mail</label>
+                <input id="f_email" type="email" class="input" x-model="paciente.email" @input="touch()"
+                       placeholder="email@exemplo.com">
+              </div>
+            </section>
+
+            <!-- 05 · Endereço -->
+            <section class="sec" data-spy="p5">
+              <span class="sec-num">05</span>
+              <div class="sec-head"><h3 class="sec-title">Endereço</h3></div>
+              <div class="form-row cols-3">
+                <div class="form-group" style="grid-column: span 2">
+                  <label class="label" for="f_logr">Logradouro</label>
+                  <input id="f_logr" type="text" class="input" x-model="paciente.logradouro"
+                         @input="touch()" placeholder="Rua, avenida...">
+                </div>
+                <div class="form-group">
+                  <label class="label" for="f_num">Número</label>
+                  <input id="f_num" type="text" class="input" x-model="paciente.numero" @input="touch()">
+                </div>
+              </div>
+              <div class="form-row cols-2">
+                <div class="form-group">
+                  <label class="label" for="f_compl">Complemento</label>
+                  <input id="f_compl" type="text" class="input" x-model="paciente.complemento" @input="touch()">
+                </div>
+                <div class="form-group">
+                  <label class="label" for="f_bairro">Bairro</label>
+                  <input id="f_bairro" type="text" class="input" x-model="paciente.bairro" @input="touch()">
+                </div>
+              </div>
+              <div class="form-row cols-3">
+                <div class="form-group">
+                  <label class="label" for="f_cidade">Cidade</label>
+                  <input id="f_cidade" type="text" class="input" x-model="paciente.cidade" @input="touch()">
+                </div>
+                <div class="form-group">
+                  <label class="label" for="f_uf">UF</label>
+                  <input id="f_uf" type="text" class="input" x-model="paciente.uf" @input="touch()"
+                         maxlength="2" placeholder="SP">
+                </div>
+                <div class="form-group">
+                  <label class="label" for="f_cep">CEP</label>
+                  <input id="f_cep" type="text" class="input text-mono" x-model="paciente.cep" @input="touch()"
+                         placeholder="00000-000">
+                </div>
+              </div>
+            </section>
+
+            <!-- 06 · Emergência -->
+            <section class="sec" data-spy="p6">
+              <span class="sec-num">06</span>
+              <div class="sec-head"><h3 class="sec-title">Contato de emergência / responsável</h3></div>
+              <div class="form-row cols-3">
+                <div class="form-group">
+                  <label class="label" for="f_emerg_nome">Nome</label>
+                  <input id="f_emerg_nome" type="text" class="input" x-model="paciente.emergenciaNome"
+                         @input="touch()" placeholder="Nome do contato">
+                </div>
+                <div class="form-group">
+                  <label class="label" for="f_emerg_par">Parentesco / vínculo</label>
+                  <input id="f_emerg_par" type="text" class="input" x-model="paciente.emergenciaParentesco"
+                         @input="touch()" placeholder="Filha, cônjuge, cuidador">
+                </div>
+                <div class="form-group">
+                  <label class="label" for="f_emerg_tel">WhatsApp / telefone</label>
+                  <input id="f_emerg_tel" type="text" class="input" x-model="paciente.emergenciaTelefone"
+                         @input="touch()" placeholder="(19) 99999-9999">
+                </div>
+              </div>
+            </section>
+
+            <!-- 07 · Observações -->
+            <section class="sec" data-spy="p7">
+              <span class="sec-num">07</span>
+              <div class="sec-head"><h3 class="sec-title">Observações gerais</h3></div>
+              <div class="form-group" style="margin-bottom: 0">
+                <label class="label" for="f_obs">Notas não-clínicas sobre o paciente
+                  <span class="hint">(rede de apoio, acessibilidade, preferências de contato)</span>
+                </label>
+                <textarea id="f_obs" class="textarea auto-grow" x-model="paciente.observacoes"
+                          @input="touch(); autoGrow($event.target)" rows="4"
+                          placeholder="Mora sozinho? Tem dificuldade de locomoção? Quem traz à consulta?"></textarea>
+              </div>
+            </section>
           </div>
-          <div class="form-group">
-            <label class="label" for="f_nasc">Data de nascimento <span class="required">*</span></label>
-            <input id="f_nasc" type="date" class="input" x-model="paciente.dataNascimento" @input="touch()">
-            <div class="field-help" x-show="paciente.dataNascimento">
-              <span x-text="calcAge(paciente.dataNascimento)"></span> anos
-            </div>
-            <div class="field-error" x-show="touched && !paciente.dataNascimento">Campo obrigatório</div>
+
+          <div class="actionbar">
+            <svg class="icon" style="width:13px;height:13px;color:var(--text-muted)"><use href="#i-lock"></use></svg>
+            <span class="ab-status" x-text="autoSaveStatus || 'AES-GCM 256 local'"></span>
+            <div class="ab-spacer"></div>
+            <button class="btn btn-ghost" style="color: var(--color-danger)" @click="remove()" x-show="!isNew">
+              <svg class="icon"><use href="#i-trash"></use></svg>
+              Excluir
+            </button>
+            <button class="btn btn-secondary" @click="$dispatch('navigate', '/pacientes')">Cancelar</button>
+            <button class="btn btn-primary" @click="save()" :disabled="!isValid() || saving">
+              <span x-show="!saving" x-text="isNew ? 'Cadastrar' : 'Salvar alterações'"></span>
+              <span x-show="saving">Salvando…</span>
+            </button>
           </div>
         </div>
 
-        <div class="form-row cols-3">
-          <div class="form-group">
-            <label class="label" for="f_sexo">Sexo</label>
-            <select id="f_sexo" class="select" x-model="paciente.sexo" @change="touch()">
-              <option value="">—</option>
-              <option value="Feminino">Feminino</option>
-              <option value="Masculino">Masculino</option>
-              <option value="Intersexo">Intersexo</option>
-              <option value="Não declarado">Não declarado</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="label" for="f_genero">Identidade de gênero</label>
-            <input id="f_genero" type="text" class="input" x-model="paciente.identidadeGenero"
-                   @input="touch()" placeholder="(opcional)">
-          </div>
-          <div class="form-group">
-            <label class="label" for="f_civil">Estado civil</label>
-            <select id="f_civil" class="select" x-model="paciente.estadoCivil" @change="touch()">
-              <option value="">—</option>
-              <option>Solteiro(a)</option>
-              <option>Casado(a)</option>
-              <option>União estável</option>
-              <option>Divorciado(a)</option>
-              <option>Viúvo(a)</option>
-              <option>Separado(a)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-row cols-2">
-          <div class="form-group">
-            <label class="label" for="f_profissao">Profissão / ocupação</label>
-            <input id="f_profissao" type="text" class="input" x-model="paciente.profissao"
-                   @input="touch()" placeholder="Ex: Aposentado, Professora">
-          </div>
-          <div class="form-group">
-            <label class="label" for="f_escolaridade">Escolaridade</label>
-            <select id="f_escolaridade" class="select" x-model="paciente.escolaridade" @change="touch()">
-              <option value="">—</option>
-              <option>Sem escolaridade</option>
-              <option>Fundamental incompleto</option>
-              <option>Fundamental completo</option>
-              <option>Médio incompleto</option>
-              <option>Médio completo</option>
-              <option>Superior incompleto</option>
-              <option>Superior completo</option>
-              <option>Pós-graduação</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- ========== SITUAÇÃO SOCIOECONÔMICA (v0.17) ========== -->
-      <div class="card mt-4">
-        <h3 class="card-title mb-4">💰 Situação socioeconômica</h3>
-
-        <div class="form-group">
-          <label class="label">Tipo de atendimento</label>
-          <div class="vaga-radios">
-            <label class="vaga-radio" :class="paciente.tipoVaga === 'sus' ? 'vaga-radio-active vaga-sus' : ''">
-              <input type="radio" name="tipoVaga" value="sus" x-model="paciente.tipoVaga" @change="touch()">
-              <span>🏥 SUS</span>
-            </label>
-            <label class="vaga-radio" :class="paciente.tipoVaga === 'particular' ? 'vaga-radio-active vaga-particular' : ''">
-              <input type="radio" name="tipoVaga" value="particular" x-model="paciente.tipoVaga" @change="touch()">
-              <span>💳 Particular</span>
-            </label>
-            <label class="vaga-radio" :class="paciente.tipoVaga === 'convenio' ? 'vaga-radio-active vaga-convenio' : ''">
-              <input type="radio" name="tipoVaga" value="convenio" x-model="paciente.tipoVaga" @change="touch()">
-              <span>📋 Convênio</span>
-            </label>
-            <button type="button" class="vaga-radio-clear" x-show="paciente.tipoVaga"
-                    @click="paciente.tipoVaga = ''; touch()" title="Limpar seleção">×</button>
-          </div>
-          <small class="field-help" x-show="paciente.tipoVaga === 'convenio'">
-            Informe o nome do plano no campo "Convênio / particular" abaixo (seção Documentos).
-          </small>
-        </div>
-
-        <div class="form-row cols-3">
-          <div class="form-group">
-            <label class="label" for="f_fonte_renda">Fonte de renda principal</label>
-            <select id="f_fonte_renda" class="select" x-model="paciente.fonteRenda" @change="touch()">
-              <option value="">—</option>
-              <option value="formal">Trabalho formal (CLT/servidor)</option>
-              <option value="informal">Trabalho informal / autônomo</option>
-              <option value="aposentadoria">Aposentadoria</option>
-              <option value="pensao">Pensão</option>
-              <option value="bpc">BPC/LOAS</option>
-              <option value="bolsa_familia">Bolsa Família / auxílio</option>
-              <option value="desempregado">Sem fonte de renda / desempregado(a)</option>
-              <option value="outra">Outra</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="label" for="f_renda_pessoal">Renda pessoal</label>
-            <select id="f_renda_pessoal" class="select" x-model="paciente.rendaPessoal" @change="touch()">
-              <option value="">—</option>
-              <option value="sem_renda">Sem renda</option>
-              <option value="ate_1">Até 1 salário mínimo</option>
-              <option value="1_2">1 a 2 salários mínimos</option>
-              <option value="2_3">2 a 3 salários mínimos</option>
-              <option value="3_5">3 a 5 salários mínimos</option>
-              <option value="mais_5">Mais de 5 salários mínimos</option>
-              <option value="nao_informado">Prefere não informar</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="label" for="f_renda_familiar">Renda familiar</label>
-            <select id="f_renda_familiar" class="select" x-model="paciente.rendaFamiliar" @change="touch()">
-              <option value="">—</option>
-              <option value="sem_renda">Sem renda</option>
-              <option value="ate_1">Até 1 salário mínimo</option>
-              <option value="1_2">1 a 2 salários mínimos</option>
-              <option value="2_3">2 a 3 salários mínimos</option>
-              <option value="3_5">3 a 5 salários mínimos</option>
-              <option value="mais_5">Mais de 5 salários mínimos</option>
-              <option value="nao_informado">Prefere não informar</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="card mt-4">
-        <h3 class="card-title mb-4">Documentos</h3>
-        <div class="form-row cols-2">
-          <div class="form-group">
-            <label class="label" for="f_cpf">CPF</label>
-            <input id="f_cpf" type="text" class="input" x-model="paciente.cpf"
-                   @input="touch(); formatCPF()" placeholder="000.000.000-00" maxlength="14">
-          </div>
-          <div class="form-group">
-            <label class="label" for="f_rg">RG</label>
-            <input id="f_rg" type="text" class="input" x-model="paciente.rg" @input="touch()"
-                   placeholder="00.000.000-0">
-          </div>
-        </div>
-        <div class="form-row cols-2">
-          <div class="form-group">
-            <label class="label" for="f_cns">Cartão SUS (CNS)</label>
-            <input id="f_cns" type="text" class="input" x-model="paciente.cns" @input="touch()"
-                   placeholder="000 0000 0000 0000">
-          </div>
-          <div class="form-group">
-            <label class="label" for="f_conv">Convênio / particular</label>
-            <input id="f_conv" type="text" class="input" x-model="paciente.convenio" @input="touch()"
-                   placeholder="SUS, particular, nome do plano">
-          </div>
-        </div>
-      </div>
-
-      <div class="card mt-4">
-        <h3 class="card-title mb-4">Contato</h3>
-        <div class="form-row cols-2">
-          <div class="form-group">
-            <label class="label" for="f_whats">WhatsApp / celular</label>
-            <input id="f_whats" type="text" class="input" x-model="paciente.whatsapp" @input="touch()"
-                   placeholder="(19) 99999-9999">
-          </div>
-          <div class="form-group">
-            <label class="label" for="f_tel">Telefone fixo</label>
-            <input id="f_tel" type="text" class="input" x-model="paciente.telefone" @input="touch()"
-                   placeholder="(19) 3333-3333">
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="label" for="f_email">E-mail</label>
-          <input id="f_email" type="email" class="input" x-model="paciente.email" @input="touch()"
-                 placeholder="email@exemplo.com">
-        </div>
-      </div>
-
-      <div class="card mt-4">
-        <h3 class="card-title mb-4">Endereço</h3>
-        <div class="form-row cols-3">
-          <div class="form-group" style="grid-column: span 2">
-            <label class="label" for="f_logr">Logradouro</label>
-            <input id="f_logr" type="text" class="input" x-model="paciente.logradouro"
-                   @input="touch()" placeholder="Rua, avenida...">
-          </div>
-          <div class="form-group">
-            <label class="label" for="f_num">Número</label>
-            <input id="f_num" type="text" class="input" x-model="paciente.numero" @input="touch()">
-          </div>
-        </div>
-        <div class="form-row cols-2">
-          <div class="form-group">
-            <label class="label" for="f_compl">Complemento</label>
-            <input id="f_compl" type="text" class="input" x-model="paciente.complemento" @input="touch()">
-          </div>
-          <div class="form-group">
-            <label class="label" for="f_bairro">Bairro</label>
-            <input id="f_bairro" type="text" class="input" x-model="paciente.bairro" @input="touch()">
-          </div>
-        </div>
-        <div class="form-row cols-3">
-          <div class="form-group">
-            <label class="label" for="f_cidade">Cidade</label>
-            <input id="f_cidade" type="text" class="input" x-model="paciente.cidade" @input="touch()">
-          </div>
-          <div class="form-group">
-            <label class="label" for="f_uf">UF</label>
-            <input id="f_uf" type="text" class="input" x-model="paciente.uf" @input="touch()"
-                   maxlength="2" placeholder="SP">
-          </div>
-          <div class="form-group">
-            <label class="label" for="f_cep">CEP</label>
-            <input id="f_cep" type="text" class="input" x-model="paciente.cep" @input="touch()"
-                   placeholder="00000-000">
-          </div>
-        </div>
-      </div>
-
-      <div class="card mt-4">
-        <h3 class="card-title mb-4">Contato de emergência / responsável</h3>
-        <div class="form-row cols-3">
-          <div class="form-group">
-            <label class="label" for="f_emerg_nome">Nome</label>
-            <input id="f_emerg_nome" type="text" class="input" x-model="paciente.emergenciaNome"
-                   @input="touch()" placeholder="Nome do contato">
-          </div>
-          <div class="form-group">
-            <label class="label" for="f_emerg_par">Parentesco / vínculo</label>
-            <input id="f_emerg_par" type="text" class="input" x-model="paciente.emergenciaParentesco"
-                   @input="touch()" placeholder="Filha, cônjuge, cuidador">
-          </div>
-          <div class="form-group">
-            <label class="label" for="f_emerg_tel">WhatsApp / telefone</label>
-            <input id="f_emerg_tel" type="text" class="input" x-model="paciente.emergenciaTelefone"
-                   @input="touch()" placeholder="(19) 99999-9999">
-          </div>
-        </div>
-      </div>
-
-      <div class="card mt-4">
-        <h3 class="card-title mb-4">Observações gerais</h3>
-        <div class="form-group">
-          <label class="label" for="f_obs">Notas não-clínicas sobre o paciente
-            <span class="hint">(rede de apoio, acessibilidade, preferências de contato)</span>
-          </label>
-          <textarea id="f_obs" class="textarea auto-grow" x-model="paciente.observacoes"
-                    @input="touch(); autoGrow($event.target)" rows="4"
-                    placeholder="Mora sozinho? Tem dificuldade de locomoção? Quem traz à consulta?"></textarea>
-        </div>
-      </div>
-
-
-      <div class="mt-6 mb-6 flex justify-between items-center" style="flex-wrap: wrap; gap: var(--space-3)">
-        <span class="text-xs muted">
-          🔒 Dados criptografados localmente com AES-GCM 256
-        </span>
-        <div class="flex gap-2">
-          <button class="btn btn-secondary" @click="$dispatch('navigate', '/pacientes')">Cancelar</button>
-          <button class="btn btn-primary" @click="save()" :disabled="!isValid() || saving">
-            <span x-show="!saving" x-text="isNew ? 'Cadastrar' : 'Salvar alterações'"></span>
-            <span x-show="saving">Salvando…</span>
+        <nav class="minimap" aria-label="Seções do cadastro">
+          <div class="minimap-title">Cadastro</div>
+          <button class="minimap-item" data-spy-for="hist" x-show="!isNew" @click="ScrollSpy.irPara('hist')">
+            <span class="mm-dot" :class="consultas.length ? 'done' : ''"></span> Histórico
           </button>
-        </div>
+          <button class="minimap-item" data-spy-for="p1" @click="ScrollSpy.irPara('p1')">
+            <span class="mm-dot" :class="(paciente.nome && paciente.dataNascimento) ? 'done' : 'warn'"></span> Dados pessoais
+          </button>
+          <button class="minimap-item" data-spy-for="p2" @click="ScrollSpy.irPara('p2')">
+            <span class="mm-dot" :class="paciente.tipoVaga ? 'done' : ''"></span> Socioeconômica
+          </button>
+          <button class="minimap-item" data-spy-for="p3" @click="ScrollSpy.irPara('p3')">
+            <span class="mm-dot" :class="(paciente.cpf || paciente.cns) ? 'done' : ''"></span> Documentos
+          </button>
+          <button class="minimap-item" data-spy-for="p4" @click="ScrollSpy.irPara('p4')">
+            <span class="mm-dot" :class="(paciente.whatsapp || paciente.telefone || paciente.email) ? 'done' : ''"></span> Contato
+          </button>
+          <button class="minimap-item" data-spy-for="p5" @click="ScrollSpy.irPara('p5')">
+            <span class="mm-dot" :class="(paciente.logradouro || paciente.cidade) ? 'done' : ''"></span> Endereço
+          </button>
+          <button class="minimap-item" data-spy-for="p6" @click="ScrollSpy.irPara('p6')">
+            <span class="mm-dot" :class="paciente.emergenciaNome ? 'done' : ''"></span> Emergência
+          </button>
+          <button class="minimap-item" data-spy-for="p7" @click="ScrollSpy.irPara('p7')">
+            <span class="mm-dot" :class="paciente.observacoes ? 'done' : ''"></span> Observações
+          </button>
+        </nav>
       </div>
     </div>
   `;

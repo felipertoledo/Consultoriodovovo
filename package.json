@@ -1,6 +1,6 @@
 {
   "name": "consultorio-do-vovo",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "description": "EMR local-first criptografado para Atenção Primária — Felipe Ribeiro Toledo (CRM-SP 216.986)",
   "private": true,
   "scripts": {

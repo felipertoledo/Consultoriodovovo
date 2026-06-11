@@ -51,6 +51,51 @@
         console.error('[CV] jsPDF NÃO carregou! Verifique assets/lib/jspdf.umd.min.js');
       }
     })();
+
+    /* ---- ScrollSpy: ativa itens do minimapa conforme a rolagem ---- */
+    window.ScrollSpy = (() => {
+      let obs = null;
+      function ligar(rootEl) {
+        try {
+          desligar();
+          if (typeof IntersectionObserver === 'undefined') return;
+          const secs = rootEl.querySelectorAll('[data-spy]');
+          if (!secs.length) return;
+          const mapa = rootEl.closest ? document : document;
+          obs = new IntersectionObserver((entries) => {
+            entries.forEach(en => {
+              if (!en.isIntersecting) return;
+              const id = en.target.getAttribute('data-spy');
+              document.querySelectorAll('.minimap-item').forEach(mi => {
+                mi.classList.toggle('active', mi.getAttribute('data-spy-for') === id);
+              });
+            });
+          }, { rootMargin: '-25% 0px -65% 0px', threshold: 0 });
+          secs.forEach(s => obs.observe(s));
+        } catch (_) {}
+      }
+      function irPara(id) {
+        const el = document.querySelector('[data-spy="' + id + '"]');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      function desligar() { if (obs) { obs.disconnect(); obs = null; } }
+      return { ligar, irPara, desligar };
+    })();
+
+    /* ---- Rail: estado colapsado persistido ---- */
+    window.Rail = (() => {
+      const KEY = 'cdv_rail';
+      function get() {
+        try { return localStorage.getItem(KEY) === 'min' ? 'min' : 'full'; } catch (_) { return 'full'; }
+      }
+      function toggle() {
+        const novo = get() === 'min' ? 'full' : 'min';
+        try { localStorage.setItem(KEY, novo); } catch (_) {}
+        const shell = document.querySelector('.app-shell');
+        if (shell) shell.setAttribute('data-rail', novo);
+      }
+      return { get, toggle };
+    })();
   </script>
 </head>
 <body>
@@ -131,6 +176,53 @@
       </symbol>
       <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="m9 5.5 6.5 6.5L9 18.5"/>
+      </symbol>
+      <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m5.5 9 6.5 6.5L18.5 9"/>
+      </symbol>
+      <symbol id="i-collapse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m14 7-5 5 5 5"/><path d="M19 5v14"/><path d="M4 12h9"/>
+      </symbol>
+      <symbol id="i-vitals" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12h4l2.2-5.5L13 17l2.4-5H21"/>
+      </symbol>
+      <symbol id="i-brain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 4.5a3 3 0 0 0-3-1.4 3 3 0 0 0-2.6 2.2A3.2 3.2 0 0 0 4 8.4a3.3 3.3 0 0 0 .6 5.4A3.2 3.2 0 0 0 7 19.5c.9.8 2.3 1 3.4.4.6-.3 1.1-.8 1.6-1.4"/>
+        <path d="M12 4.5a3 3 0 0 1 3-1.4 3 3 0 0 1 2.6 2.2A3.2 3.2 0 0 1 20 8.4a3.3 3.3 0 0 1-.6 5.4 3.2 3.2 0 0 1-2.4 5.7c-.9.8-2.3 1-3.4.4-.6-.3-1.1-.8-1.6-1.4"/>
+        <path d="M12 4.5v14"/>
+      </symbol>
+      <symbol id="i-flask" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9.5 3h5"/><path d="M10 3v6.2L4.7 18a2 2 0 0 0 1.8 3h11a2 2 0 0 0 1.8-3L14 9.2V3"/><path d="M7.5 14.5h9"/>
+      </symbol>
+      <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 8h3l1.6-2.4A1.5 1.5 0 0 1 9.9 5h4.2a1.5 1.5 0 0 1 1.3.6L17 8h3a1.5 1.5 0 0 1 1.5 1.5V18A1.5 1.5 0 0 1 20 19.5H4A1.5 1.5 0 0 1 2.5 18V9.5A1.5 1.5 0 0 1 4 8z"/><circle cx="12" cy="13.3" r="3.4"/>
+      </symbol>
+      <symbol id="i-paperclip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m20 11.5-7.8 7.8a5 5 0 0 1-7-7L13 4.5a3.3 3.3 0 0 1 4.7 4.7l-7.6 7.6a1.7 1.7 0 0 1-2.4-2.4l7-7"/>
+      </symbol>
+      <symbol id="i-print" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M7 8V3.5h10V8"/><path d="M5 8h14a2 2 0 0 1 2 2v6h-4"/><path d="M7 16H3v-6a2 2 0 0 1 2-2"/><rect x="7" y="14" width="10" height="6.5" rx="1"/>
+      </symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 7h16"/><path d="M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7"/><path d="M6.5 7l.9 12.1A2 2 0 0 0 9.4 21h5.2a2 2 0 0 0 2-1.9L17.5 7"/><path d="M10 11v6M14 11v6"/>
+      </symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      </symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3.5 2.8 19.5h18.4z"/><path d="M12 10v4.2"/><circle cx="12" cy="17" r="0.4" fill="currentColor"/>
+      </symbol>
+      <symbol id="i-pill" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="8.5" width="18" height="7" rx="3.5" transform="rotate(-32 12 12)"/><path d="m8.6 8.2 6.8 7.6"/>
+      </symbol>
+      <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16.5 3.8a2.1 2.1 0 0 1 3 3L8 18.3l-4.2 1.2L5 15.3z"/><path d="m14.5 5.8 3 3"/>
+      </symbol>
+      <symbol id="i-user-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="10" cy="8" r="3.4"/><path d="M4 20c.6-3.2 3-5 6-5s5.4 1.8 6 5"/><path d="M19 7v6M16 10h6"/>
+      </symbol>
+      <symbol id="i-whatsapp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3.5a8.5 8.5 0 0 0-7.3 12.8L3.5 20.5l4.4-1.1A8.5 8.5 0 1 0 12 3.5z"/><path d="M9 8.8c.5 2.8 3.4 5.6 6.2 6.2l.9-1.7-2.1-1-.9.7c-.9-.5-1.6-1.2-2.1-2.1l.7-.9-1-2.1z"/>
       </symbol>
     </defs>
   </svg>
@@ -644,6 +736,27 @@
       }
 
       // Item de navegação (sidebar)
+      const CRUMBS = {
+        '/': ['Início'],
+        '/pacientes': ['Pacientes'],
+        '/paciente': ['Pacientes', 'Ficha do paciente'],
+        '/consultas': ['Últimas consultas'],
+        '/agenda': ['Agenda'],
+        '/hiperdia': ['Hiperdia'],
+        '/prescricao': ['Receituário', 'Nova prescrição'],
+        '/templates': ['Receituário', 'Templates'],
+        '/sync': ['Sistema', 'Sincronização'],
+        '/config': ['Sistema', 'Configurações']
+      };
+      function renderCrumbs(r) {
+        const trilha = CRUMBS[r] || ['Início'];
+        return trilha.map((c, i) => {
+          const here = i === trilha.length - 1;
+          const sep = i > 0 ? '<svg class="icon crumb-sep" style="width:12px;height:12px"><use href="#i-chevron-right"/></svg>' : '';
+          return sep + '<span class="crumb' + (here ? ' here' : '') + '">' + c + '</span>';
+        }).join('');
+      }
+
       function navItem(rota, icone, rotulo, ativo, extra) {
         return `
           <button class="nav-item ${ativo ? 'active' : ''}" onclick="Router.navigate('${rota}')">
@@ -656,7 +769,7 @@
       function renderAppShell(activeRoute) {
         const r = activeRoute;
         app.innerHTML = `
-          <div class="app-shell">
+          <div class="app-shell" data-rail="${window.Rail ? Rail.get() : 'full'}">
             <aside class="app-sidebar">
               <div class="brand">
                 <div class="brand-logo"><svg><use href="#i-selo"/></svg></div>
@@ -709,15 +822,21 @@
                 </div>
                 <div>AES-256 local · trava sozinho em 15 min sem uso</div>
               </div>
+
+              <button class="rail-toggle" onclick="Rail.toggle()" title="Recolher/expandir menu">
+                <svg class="icon"><use href="#i-collapse"/></svg>
+                <span>Recolher</span>
+              </button>
             </aside>
 
             <header class="app-header">
+              <nav class="crumbs" aria-label="Localização">${renderCrumbs(r)}</nav>
+              <div class="header-spacer"></div>
               <button class="search-trigger" onclick="CmdK.abrir()" title="Busca rápida (Ctrl+K)">
                 <svg class="icon"><use href="#i-search"/></svg>
-                <span>Buscar paciente ou ação…</span>
+                <span>Buscar…</span>
                 <kbd>Ctrl K</kbd>
               </button>
-              <div class="header-spacer"></div>
               <span class="header-clock" id="headerClock"></span>
               <div class="header-actions">
                 <button class="btn btn-ghost btn-icon" onclick="Auth.lock().then(() => Router.navigate('/'))"
