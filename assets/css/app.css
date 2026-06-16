@@ -2144,13 +2144,31 @@ body {
 .psy-dom.is-alt { border-left-color: var(--color-accent-500); }
 .psy-dom-head {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
   padding: 10px 12px;
   cursor: pointer;
 }
 .psy-dom-head:hover { background: var(--bg-sunken); }
-.psy-dom-head .pd-nome { font-weight: var(--weight-semibold); font-size: var(--text-sm); flex: 1; min-width: 0; }
+.psy-dom-head .pd-top { display: flex; align-items: flex-start; gap: 8px; }
+.psy-dom-head .pd-nome {
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+  flex: 1;
+  min-width: 0;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.psy-dom-head .pd-chevron {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 140ms;
+  margin-top: 1px;
+}
+.psy-dom-head .pd-statewrap { display: flex; }
 .psy-dom-head .pd-state {
   font-size: 10px;
   font-weight: var(--weight-bold);
@@ -2159,6 +2177,7 @@ body {
   padding: 2px 8px;
   border-radius: var(--radius-full);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 .psy-dom-head .pd-state.ok  { background: var(--color-primary-100); color: var(--color-primary-900); }
 .psy-dom-head .pd-state.alt { background: var(--color-accent-100); color: #5C3B0B; }

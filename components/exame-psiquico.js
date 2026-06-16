@@ -30,21 +30,25 @@ function renderExamePsiquico(container, modo, selecoesIniciais, onChange) {
         <template x-for="dom in dominios" :key="dom.id">
           <div class="psy-dom" :class="(selecoes[dom.id] || []).length > 0 ? 'is-alt' : ''">
             <div class="psy-dom-head" @click="toggle(dom.id)">
-              <span class="pd-nome" x-text="dom.nome"></span>
-              <button class="psy-help" type="button"
-                      @click.stop="mostrarTooltip(dom.id)"
-                      @mouseover="hoverTooltip(dom.id)"
-                      @mouseleave="esconderTooltip()"
-                      :aria-label="'O que avaliar em ' + dom.nome">
-                <svg class="icon"><use href="#i-help"></use></svg>
-              </button>
-              <span class="pd-state alt" x-show="(selecoes[dom.id] || []).length > 0"
-                    x-text="resumoCurto(dom)"></span>
-              <span class="pd-state ok" x-show="!(selecoes[dom.id] || []).length">sem alterações</span>
-              <svg class="icon" style="width: 13px; height: 13px; color: var(--text-muted); transition: transform 140ms"
-                   :style="aberto[dom.id] ? 'transform: rotate(90deg)' : ''">
-                <use href="#i-chevron-right"></use>
-              </svg>
+              <div class="pd-top">
+                <span class="pd-nome" x-text="dom.nome"></span>
+                <button class="psy-help" type="button"
+                        @click.stop="mostrarTooltip(dom.id)"
+                        @mouseover="hoverTooltip(dom.id)"
+                        @mouseleave="esconderTooltip()"
+                        :aria-label="'O que avaliar em ' + dom.nome">
+                  <svg class="icon"><use href="#i-help"></use></svg>
+                </button>
+                <svg class="icon pd-chevron"
+                     :style="aberto[dom.id] ? 'transform: rotate(90deg)' : ''">
+                  <use href="#i-chevron-right"></use>
+                </svg>
+              </div>
+              <div class="pd-statewrap">
+                <span class="pd-state alt" x-show="(selecoes[dom.id] || []).length > 0"
+                      x-text="resumoCurto(dom)"></span>
+                <span class="pd-state ok" x-show="!(selecoes[dom.id] || []).length">sem alterações</span>
+              </div>
             </div>
 
             <div class="psy-tip" x-show="tooltipAtivo === dom.id" x-cloak x-text="dom.tooltip"></div>
