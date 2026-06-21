@@ -224,6 +224,9 @@
       <symbol id="i-whatsapp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 3.5a8.5 8.5 0 0 0-7.3 12.8L3.5 20.5l4.4-1.1A8.5 8.5 0 1 0 12 3.5z"/><path d="M9 8.8c.5 2.8 3.4 5.6 6.2 6.2l.9-1.7-2.1-1-.9.7c-.9-.5-1.6-1.2-2.1-2.1l.7-.9-1-2.1z"/>
       </symbol>
+      <symbol id="i-cash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>
+      </symbol>
     </defs>
   </svg>
 
@@ -255,6 +258,7 @@
         { tipo: 'nav',  icone: 'i-calendar',    rotulo: 'Agenda',                  rota: '/agenda',    kbd: 'G A' },
         { tipo: 'nav',  icone: 'i-heart-pulse', rotulo: 'Painel Hiperdia',         rota: '/hiperdia',  kbd: 'G H' },
         { tipo: 'nav',  icone: 'i-clock',       rotulo: 'Últimas consultas',       rota: '/consultas', kbd: 'G U' },
+        { tipo: 'nav',  icone: 'i-cash',        rotulo: 'Financeiro',              rota: '/financeiro', kbd: 'G F' },
         { tipo: 'nav',  icone: 'i-clipboard',   rotulo: 'Templates de prescrição', rota: '/templates', kbd: 'G T' },
         { tipo: 'nav',  icone: 'i-sync',        rotulo: 'Sincronização',           rota: '/sync',      kbd: 'G S' },
         { tipo: 'nav',  icone: 'i-settings',    rotulo: 'Configurações',           rota: '/config',    kbd: 'G X' }
@@ -492,6 +496,7 @@
       const SEQ = {
         'g d': '/',          'g p': '/pacientes', 'g a': '/agenda',
         'g h': '/hiperdia',  'g u': '/consultas', 'g t': '/templates',
+        'g f': '/financeiro',
         'g s': '/sync',      'g x': '/config',
         'n p': '/paciente/novo', 'n r': '/prescricao'
       };
@@ -573,6 +578,7 @@
   <script src="./modules/sync.js"></script>
   <script src="./modules/hiperdia.js"></script>
   <script src="./modules/sparkline.js"></script>
+  <script src="./modules/financeiro.js"></script>
 
   <!-- Componentes de tela -->
   <script src="./components/setup-wizard.js"></script>
@@ -589,6 +595,7 @@
   <script src="./components/sync.js"></script>
   <script src="./components/hiperdia.js"></script>
   <script src="./components/consultas-recentes.js"></script>
+  <script src="./components/financeiro.js"></script>
   <script src="./components/config.js"></script>
 
   <!-- Captura do prompt de instalação do PWA -->
@@ -741,6 +748,7 @@
         '/pacientes': ['Pacientes'],
         '/paciente': ['Pacientes', 'Ficha do paciente'],
         '/consultas': ['Últimas consultas'],
+        '/financeiro': ['Financeiro'],
         '/agenda': ['Agenda'],
         '/hiperdia': ['Hiperdia'],
         '/prescricao': ['Receituário', 'Nova prescrição'],
@@ -786,6 +794,7 @@
                 ${navItem('/agenda', 'i-calendar', 'Agenda', r === '/agenda', '<span class="nav-kbd">G A</span>')}
                 ${navItem('/hiperdia', 'i-heart-pulse', 'Hiperdia', r === '/hiperdia', '<span class="nav-kbd">G H</span>')}
                 ${navItem('/consultas', 'i-clock', 'Últimas consultas', r === '/consultas', '<span class="nav-kbd">G U</span>')}
+                ${navItem('/financeiro', 'i-cash', 'Financeiro', r === '/financeiro', '<span class="nav-kbd">G F</span>')}
               </div>
 
               <div class="nav-section">
@@ -949,6 +958,12 @@
         if (!Auth.isUnlocked()) { Router.navigate('/'); return; }
         const target = renderAppShell('/consultas');
         renderConsultasRecentes(target);
+      });
+
+      Router.register('/financeiro', () => {
+        if (!Auth.isUnlocked()) { Router.navigate('/'); return; }
+        const target = renderAppShell('/financeiro');
+        renderFinanceiro(target);
       });
 
       Router.register('/sync', () => {
