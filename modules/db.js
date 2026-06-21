@@ -61,8 +61,21 @@ const DB = (() => {
     //   mimeType, tamanhos) cifrada em `payload`.
     anexos: '++id, consultaId, pacienteId, ordem, tipo, createdAt, deleted'
   });
-
-  // ---- Estado interno (DEK em memória, NUNCA persistida) ----
+  db.version(5).stores({
+    pacientes: '++id, nameHash, createdAt, updatedAt, deleted',
+    consultas: '++id, pacienteId, dataHora, createdAt, updatedAt, deleted',
+    auditLog: '++id, timestamp, action, entity',
+    config: 'key',
+    agendamentos: '++id, pacienteId, data, status, createdAt, deleted',
+    templatesPrescricao: '++id, tipo, usoCount, createdAt, deleted',
+    anexos: '++id, consultaId, pacienteId, ordem, tipo, createdAt, deleted',
+    // lancamentos financeiros: id auto, FK paciente (opcional),
+    //   'data' = data do recebimento (YYYY-MM-DD, índice para filtro),
+    //   'mes'  = YYYY-MM (índice para agregação mensal e gráfico).
+    //   valor, descrição, forma de pagamento, cache de nome e observação
+    //   ficam criptografados em `payload`.
+    lancamentos: '++id, pacienteId, data, mes, createdAt, deleted'
+  });
   let currentDEK = null;
   let nameHashSalt = null;
 
@@ -823,12 +836,135 @@ const DB = (() => {
   }
 
   // ---- RESET TOTAL (debug / wipe) ----
+  // ============================================================
+  // LANÇAMENTOS FINANCEIROS (Sprint Financeiro)
+  // ============================================================
+
+  /** Cria um lançamento de receita. valor em reais (número). */
+  async function createLancamento(l) {
+    const dek = getDEK();
+    const now = new Date().toISOString();
+    const data = l.data;                       // YYYY-MM-DD
+    const mes = (data || '').slice(0, 7);      // YYYY-MM
+    const payload = {
+      valor: Number(l.valor) || 0,
+      descricao: l.descricao || '',
+      formaPagamento: l.formaPagamento || '',
+      pacienteNome: l.pacienteNome || '',      // cache para exibição
+      observacao: l.observacao || ''
+    };
+    const ciphered = await CryptoModule.encrypt(dek, payload);
+    const id = await db.lancamentos.add({
+      pacienteId: l.pacienteId || null,
+      data,
+      mes,
+      payload: ciphered,
+      createdAt: now,
+      updatedAt: now,
+      deleted: 0
+    });
+    await audit('CREATE_LANCAMENTO', 'lancamento', id, { data, mes });
+    return id;
+  }
+
+  async function getLancamento(id) {
+    const dek = getDEK();
+    const row = await db.lancamentos.get(id);
+    if (!row || row.deleted) return null;
+    const decrypted = await CryptoModule.decrypt(dek, row.payload);
+    return {
+      id: row.id, pacienteId: row.pacienteId, data: row.data, mes: row.mes,
+      createdAt: row.createdAt, updatedAt: row.updatedAt, ...decrypted
+    };
+  }
+
+  async function updateLancamento(id, l) {
+    const dek = getDEK();
+    const now = new Date().toISOString();
+    const data = l.data;
+    const mes = (data || '').slice(0, 7);
+    const payload = {
+      valor: Number(l.valor) || 0,
+      descricao: l.descricao || '',
+      formaPagamento: l.formaPagamento || '',
+      pacienteNome: l.pacienteNome || '',
+      observacao: l.observacao || ''
+    };
+    const ciphered = await CryptoModule.encrypt(dek, payload);
+    await db.lancamentos.update(id, {
+      pacienteId: l.pacienteId || null,
+      data, mes, payload: ciphered, updatedAt: now
+    });
+    await audit('UPDATE_LANCAMENTO', 'lancamento', id, { data, mes });
+  }
+
+  async function softDeleteLancamento(id) {
+    await db.lancamentos.update(id, { deleted: 1, updatedAt: new Date().toISOString() });
+    await audit('DELETE_LANCAMENTO', 'lancamento', id, {});
+  }
+
+  /**
+   * Lista lançamentos, decifrados, ordenados por data desc.
+   * Filtros: { mes (YYYY-MM), dataInicio, dataFim, pacienteId }
+   */
+  async function listLancamentos({ mes, dataInicio, dataFim, pacienteId } = {}) {
+    const dek = getDEK();
+    let collection;
+    if (mes) {
+      collection = db.lancamentos.where('mes').equals(mes);
+    } else if (dataInicio && dataFim) {
+      collection = db.lancamentos.where('data').between(dataInicio, dataFim, true, true);
+    } else if (pacienteId) {
+      collection = db.lancamentos.where('pacienteId').equals(pacienteId);
+    } else {
+      collection = db.lancamentos.toCollection();
+    }
+    let rows = await collection.toArray();
+    rows = rows.filter(r => !r.deleted);
+    if (pacienteId && (mes || dataInicio)) rows = rows.filter(r => r.pacienteId === pacienteId);
+
+    const out = [];
+    for (const row of rows) {
+      try {
+        const dec = await CryptoModule.decrypt(dek, row.payload);
+        out.push({
+          id: row.id, pacienteId: row.pacienteId, data: row.data, mes: row.mes,
+          createdAt: row.createdAt, updatedAt: row.updatedAt, ...dec
+        });
+      } catch (e) { console.error('Erro ao decifrar lançamento', row.id, e); }
+    }
+    out.sort((a, b) => (b.data || '').localeCompare(a.data || '') || (b.createdAt || '').localeCompare(a.createdAt || ''));
+    return out;
+  }
+
+  /** Conjunto de meses (YYYY-MM) que têm lançamentos, desc. Útil para navegação. */
+  async function listMesesComLancamentos() {
+    const rows = await db.lancamentos.toCollection().toArray();
+    const set = new Set(rows.filter(r => !r.deleted).map(r => r.mes).filter(Boolean));
+    return [...set].sort().reverse();
+  }
+
+  // ---- Configuração de impostos/deduções (local, em config) ----
+  // Estrutura: [{ nome: 'ISS', percentual: 5 }, ...]
+  async function getImpostos() {
+    const entry = await db.config.get('impostos');
+    return (entry && Array.isArray(entry.value)) ? entry.value : [];
+  }
+  async function setImpostos(lista) {
+    const limpa = (Array.isArray(lista) ? lista : [])
+      .map(i => ({ nome: String(i.nome || '').trim(), percentual: Number(i.percentual) || 0 }))
+      .filter(i => i.nome.length > 0);
+    await db.config.put({ key: 'impostos', value: limpa });
+    return limpa;
+  }
+
   async function wipeEverything() {
     await db.pacientes.clear();
     await db.consultas.clear();
     await db.agendamentos.clear();
     await db.templatesPrescricao.clear();
     await db.anexos.clear();
+    await db.lancamentos.clear();
     await db.auditLog.clear();
     await db.config.clear();
     lock();
@@ -857,6 +993,9 @@ const DB = (() => {
     // Anexos (Sprint B2)
     createAnexo, getAnexoMeta, getAnexoCompleto, listAnexosByConsulta,
     listAnexosCompletoByConsulta, updateAnexoMeta, softDeleteAnexo, contarAnexosByConsulta,
+    // Lançamentos financeiros
+    createLancamento, getLancamento, updateLancamento, softDeleteLancamento,
+    listLancamentos, listMesesComLancamentos, getImpostos, setImpostos,
     // Audit
     audit, getRecentAudit,
     // Danger

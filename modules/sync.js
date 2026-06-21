@@ -27,7 +27,8 @@
     'consultas',
     'agendamentos',
     'templatesPrescricao',
-    'anexos'
+    'anexos',
+    'lancamentos'
   ];
 
   // ============================================================
