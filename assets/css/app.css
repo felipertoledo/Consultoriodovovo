@@ -1324,9 +1324,13 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--color-primary-
 #route-content > * {
   animation: page-in 300ms cubic-bezier(.22, 1, .36, 1) both;
 }
+/* Nota: animação de entrada da rota usa apenas opacity de propósito.
+   Um transform aqui tornaria o filho de #route-content (que envolve a
+   página E o .modal-overlay) um "containing block" para position:fixed,
+   prendendo os modais dentro da área de conteúdo. Manter sem transform. */
 @keyframes page-in {
-  from { opacity: 0; transform: translateY(7px); }
-  to   { opacity: 1; transform: none; }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 /* ---- Masthead (cabeçalho-almanaque do dashboard) ---- */
