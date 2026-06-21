@@ -12,7 +12,7 @@ function assert(c, m) { if (!c) throw new Error(m || 'falhou'); }
 function assertEq(a, b, m) { if (a !== b) throw new Error(`${m || ''}: ${JSON.stringify(a)} !== ${JSON.stringify(b)}`); }
 
 const ROOT = path.resolve(__dirname, '..');
-const F = require(path.join(ROOT, 'modules/financeiro.js'));
+const F = require(path.join(ROOT, 'modules/financeiro-core.js'));
 
 (async () => {
   // ============================================================

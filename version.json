@@ -1,6 +1,6 @@
 {
-  "version": "0.22.0",
+  "version": "0.22.1",
   "buildDate": "2026-06-21",
-  "codename": "Controle financeiro",
-  "notes": "Novo módulo de controle financeiro. Registra cobrancas por consulta (vinculadas a paciente do cadastro ou avulsas), calcula faturamento mensal bruto e liquido com impostos/deducoes configuraveis (varias linhas: ISS, IR, INSS... definidas pelo usuario), e mostra grafico de evolucao mes a mes. O liquido e ESTIMATIVA linear (bruto menos a soma dos percentuais), nao apuracao fiscal. Nova store Dexie v5 lancamentos (PII cifrada em payload, data/mes em texto plano para filtro). Impostos guardados em config (local). Lancamentos incluidos no sync entre dispositivos. Arquivos novos: modules/financeiro.js, components/financeiro.js. Alterados: modules/db.js (store v5 + CRUD), index.html (rota /financeiro, menu, atalho G F, CmdK, breadcrumb, icone i-cash), service-worker.js (precache), modules/sync.js (TABELAS_SYNC)."
+  "codename": "Controle financeiro (fix de nomes)",
+  "notes": "Renomeado modules/financeiro.js para modules/financeiro-core.js para eliminar colisao de nome com components/financeiro.js (dois arquivos financeiro.js eram confundidos no upload manual, causando SyntaxError Identifier Financeiro already declared e renderFinanceiro undefined). Conteudo identico, apenas nome do arquivo e referencias atualizados."
 }
