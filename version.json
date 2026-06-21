@@ -1,6 +1,6 @@
 {
-  "version": "0.21.1",
-  "buildDate": "2026-06-16",
-  "codename": "Fix layout exame psíquico",
-  "notes": "Patch de layout: corrige o estouro visual no Exame Psíquico. Os cabeçalhos dos cards de domínio (grade) colocavam nome longo, badge de status e chevron todos em uma única linha flex com align-items:center; nomes longos (ex.: \"6. Pensamento (forma, curso e conteúdo)\") quebravam em várias linhas e o badge SEM ALTERAÇÕES, sem flex-shrink, ficava centralizado verticalmente no meio do texto, parecendo sobreposto. Reestruturado o cabeçalho (.psy-dom-head) em duas linhas: nome + ícone de ajuda + chevron na primeira linha (alinhados ao topo, nome com overflow-wrap:anywhere e quebra natural; chevron e ajuda com flex-shrink:0); badge de status em uma segunda linha própria (.pd-statewrap). Elimina a competição horizontal e funciona em qualquer largura de coluna do grid (1, 2 ou 3 colunas). Arquivos alterados: components/exame-psiquico.js (nova hierarquia .pd-top / .pd-statewrap / .pd-chevron) e assets/css/app.css (estilos correspondentes)."
+  "version": "0.21.2",
+  "buildDate": "2026-06-21",
+  "codename": "Fix modal de agendamento (containing block)",
+  "notes": "Patch de layout: corrige o modal de Novo/Editar agendamento (e o de consulta) que aparecia preso na área de conteúdo com o topo cortado — o campo de seleção/cadastro de paciente ficava fora da área visível. Causa raiz: a animação de entrada de página (route-in) do .app-main usava transform (translateY); qualquer transform != none torna o elemento um containing block para descendentes position:fixed, então o .modal-overlay (fixed) passava a se posicionar relativo ao .app-main (que tem max-width e fica abaixo do header) em vez da viewport. Resultado: overlay não cobria a tela inteira e o sheet, mais alto que a área do main, tinha o topo cortado sem como rolar até ele. Correção: a animação route-in agora usa apenas opacity (sem transform), eliminando o containing block. Conserta os dois únicos modais do app (agenda e consulta-form) de uma vez. Custo cosmético: a leve transição de slide entre páginas vira fade puro. Arquivo alterado: assets/css/app.css."
 }
