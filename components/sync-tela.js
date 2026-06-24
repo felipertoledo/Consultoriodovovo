@@ -327,7 +327,7 @@ function renderSync(container) {
             </ul>
           </div>
           <div class="text-sm" x-show="ultimoResultado && !ultimoResultado.sucesso">
-            <p style="color: var(--color-danger);">Falhou: <span x-text="ultimoResultado.erro"></span></p>
+            <p style="color: var(--color-danger);">Falhou: <span x-text="ultimoResultado && ultimoResultado.erro"></span></p>
           </div>
         </div>
 
