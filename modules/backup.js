@@ -168,6 +168,11 @@ const Backup = (() => {
   async function importFromEnvelope(envelope) {
     const dexie = DB.db;
 
+    // Desembrulha proxies reativos (Alpine) em objetos planos. Sem isto, o
+    // IndexedDB lança DataCloneError ("could not be cloned") ao tentar clonar
+    // os Proxy do Alpine no bulkAdd (envelope vem de uma propriedade x-data).
+    const data = JSON.parse(JSON.stringify(envelope.data));
+
     // Bloqueia o cofre atual (segurança)
     if (typeof Auth !== 'undefined' && Auth.isUnlocked && Auth.isUnlocked()) {
       Auth.lock();
@@ -187,29 +192,29 @@ const Backup = (() => {
         await dexie.config.clear();
 
         // Restaura todos os dados
-        if (envelope.data.pacientes.length > 0) {
-          await dexie.pacientes.bulkAdd(envelope.data.pacientes);
+        if (data.pacientes.length > 0) {
+          await dexie.pacientes.bulkAdd(data.pacientes);
         }
-        if (envelope.data.consultas.length > 0) {
-          await dexie.consultas.bulkAdd(envelope.data.consultas);
+        if (data.consultas.length > 0) {
+          await dexie.consultas.bulkAdd(data.consultas);
         }
         // Sprint A1: backups antigos (pre-v0.10.0) não têm agendamentos — retrocompatível
-        if (envelope.data.agendamentos && envelope.data.agendamentos.length > 0) {
-          await dexie.agendamentos.bulkAdd(envelope.data.agendamentos);
+        if (data.agendamentos && data.agendamentos.length > 0) {
+          await dexie.agendamentos.bulkAdd(data.agendamentos);
         }
         // Sprint A2: backups antigos (pre-v0.11.0) não têm templates — retrocompatível
-        if (envelope.data.templatesPrescricao && envelope.data.templatesPrescricao.length > 0) {
-          await dexie.templatesPrescricao.bulkAdd(envelope.data.templatesPrescricao);
+        if (data.templatesPrescricao && data.templatesPrescricao.length > 0) {
+          await dexie.templatesPrescricao.bulkAdd(data.templatesPrescricao);
         }
         // Sprint B2: backups antigos (pre-v0.12.0) não têm anexos — retrocompatível
-        if (envelope.data.anexos && envelope.data.anexos.length > 0) {
-          await dexie.anexos.bulkAdd(envelope.data.anexos);
+        if (data.anexos && data.anexos.length > 0) {
+          await dexie.anexos.bulkAdd(data.anexos);
         }
-        if (envelope.data.auditLog.length > 0) {
-          await dexie.auditLog.bulkAdd(envelope.data.auditLog);
+        if (data.auditLog.length > 0) {
+          await dexie.auditLog.bulkAdd(data.auditLog);
         }
-        if (envelope.data.config.length > 0) {
-          await dexie.config.bulkAdd(envelope.data.config);
+        if (data.config.length > 0) {
+          await dexie.config.bulkAdd(data.config);
         }
       }
     );
