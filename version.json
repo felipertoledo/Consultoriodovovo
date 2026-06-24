@@ -1,6 +1,6 @@
 {
-  "version": "0.24.0",
-  "buildDate": "2026-06-23",
-  "codename": "Sincronização via Firebase",
-  "notes": "Adicionado Firebase Realtime Database como provedor alternativo de sincronizacao, ao lado do Supabase ja existente. Novo modules/firebase-client.js (REST API do RTDB, sem SDK, espelha a interface do supabase-client). sync.js ganhou factory de provedor (criarClient) e funcoes configurarPrimarioFirebase/configurarSecundarioFirebase; config sem campo provider continua sendo tratada como Supabase (retrocompativel). Tela de Sincronizacao com seletor de provedor (Firebase/Supabase), campos e instrucoes condicionais. Dados locais permanecem a fonte da verdade; sync apenas replica."
+  "version": "0.24.1",
+  "buildDate": "2026-06-24",
+  "codename": "Sincronização via Firebase (fix de nome)",
+  "notes": "Renomeado components/sync.js para components/sync-tela.js para eliminar colisao de nome com modules/sync.js (os dois arquivos sync.js foram trocados no upload manual, deixando components/sync.js com o conteudo do modulo e a tela de sincronizacao em branco por falta de renderSync). Conteudo da tela identico ao da v0.24.0, apenas nome do arquivo e referencias (index.html, service-worker.js) atualizados. CACHE_VERSION bumpado para forcar o re-cache."
 }
