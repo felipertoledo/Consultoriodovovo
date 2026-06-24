@@ -1,459 +1,457 @@
 /* ================================================================
-   components/sync.js — Sprint D2
-   Tela /sync — sincronização entre dispositivos via Supabase ZK
+   modules/sync.js — Sprint D2
+
+   Lógica de sincronização entre o IndexedDB local e o Supabase.
+
+   Princípios:
+   - Zero-knowledge: cada registro é cifrado com a DEK ANTES de subir.
+     O servidor armazena bytes opacos.
+   - Last-write-wins por registro, comparando client_updated_at.
+   - Cada registro recebe um "record_key" universal: '{tabela}/{id}'.
+   - O ID local pode diferir entre dispositivos — usamos um id_externo
+     (ext_id) cifrado dentro do payload para casar registros entre
+     dispositivos. Primeiro dispositivo gera UUID; ao baixar em outro
+     dispositivo, o ext_id ancora a identidade.
+
+   Estado de sync local (em DB.config):
+     - sync.url, sync.anonKey, sync.vaultId — credenciais
+     - sync.lastSyncedAt — ISO da última pull bem-sucedida
+     - sync.ext_id_map — mapa { ext_id -> id_local } por tabela
    ================================================================ */
+(function () {
+  'use strict';
 
-function renderSync(container) {
-  container.innerHTML = `
-    <div x-data="sincronizacaoComponent()" x-init="carregar()">
-      <div class="ficha-head">
-        <div class="ficha-id">
-          <div class="ficha-nome">Sincronização entre dispositivos</div>
-        </div>
-        <p class="page-subtitle">Cofre criptografado replicado em servidor próprio (Supabase). Servidor nunca decifra seus dados.</p>
-      </div>
+  // Tabelas que entram no sync
+  const TABELAS_SYNC = [
+    'pacientes',
+    'consultas',
+    'agendamentos',
+    'templatesPrescricao',
+    'anexos',
+    'lancamentos'
+  ];
 
-      <!-- ============================================================ -->
-      <!-- NÃO CONFIGURADO — telas de setup                              -->
-      <!-- ============================================================ -->
-      <div x-show="!status.configurado && !setupAberto" class="card">
-        <h3 class="card-title mb-3">Sincronização não configurada</h3>
-        <p class="text-sm mb-4">
-          A sincronização permite ter o mesmo cofre em mais de um dispositivo (notebook, celular, tablet).
-          Os dados sobem ao servidor já criptografados com sua senha mestre — o servidor armazena bytes opacos.
-        </p>
-        <p class="text-sm mb-4" class="lab-warn">
-          Você precisa de um projeto <strong>Supabase</strong> (free tier funciona: 500 MB de storage, suficiente
-          para milhares de consultas). Crie em <a href="https://supabase.com" target="_blank" rel="noopener" style="text-decoration: underline; color: inherit;">supabase.com</a>.
-        </p>
-
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
-          <button class="btn btn-primary" @click="iniciarSetupPrimario()">
-            🏁 É o primeiro dispositivo
-          </button>
-          <button class="btn" @click="iniciarSetupSecundario()">
-            🔗 Conectar a um cofre existente
-          </button>
-        </div>
-      </div>
-
-      <!-- ============================================================ -->
-      <!-- SETUP PRIMÁRIO — 3 passos                                     -->
-      <!-- ============================================================ -->
-      <div x-show="!status.configurado && setupAberto === 'primario'" class="card" x-cloak>
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom: var(--space-4);">
-          <h3 class="card-title" style="margin:0">🏁 Setup do primeiro dispositivo</h3>
-          <button class="btn btn-sm" style="margin-left:auto" @click="cancelarSetup()">×</button>
-        </div>
-
-        <!-- Passo 1: setup Supabase -->
-        <div x-show="passo === 1">
-          <h4>Passo 1 de 3 — criar projeto no Supabase</h4>
-          <ol style="font-size:0.9em; line-height:1.7;">
-            <li>Acesse <a href="https://supabase.com" target="_blank" rel="noopener" style="text-decoration:underline">supabase.com</a> e crie uma conta (login com GitHub é o mais rápido)</li>
-            <li>Clique em "New Project" e dê um nome (ex: "consultorio-cofre")</li>
-            <li>Escolha uma senha de banco e a região mais próxima (São Paulo)</li>
-            <li>Aguarde o projeto provisionar (~2 minutos)</li>
-            <li>No painel do projeto, vá em <strong>SQL Editor</strong> → cole e execute o SQL abaixo</li>
-          </ol>
-          <div style="display:flex; gap:8px; margin: var(--space-3) 0;">
-            <button class="btn btn-sm btn-primary" @click="copiarSqlSetup()"><svg class="icon"><use href="#i-copy"></use></svg> Copiar SQL de setup</button>
-            <span class="text-xs muted" x-show="sqlCopiado">✓ Copiado!</span>
-          </div>
-          <details style="margin-top: var(--space-3);">
-            <summary style="cursor:pointer; font-size:0.9em;">Ver o SQL que será executado</summary>
-            <pre style="background: var(--bg-sunken); padding: var(--space-3); border-radius: 6px; font-size: 0.75em; overflow-x: auto; max-height: 300px;" x-text="sqlSetupTexto"></pre>
-          </details>
-          <div class="mt-4" style="display:flex; gap:8px; justify-content:flex-end;">
-            <button class="btn" @click="cancelarSetup()">Cancelar</button>
-            <button class="btn btn-primary" @click="passo = 2">Já executei o SQL →</button>
-          </div>
-        </div>
-
-        <!-- Passo 2: credenciais -->
-        <div x-show="passo === 2" x-cloak>
-          <h4>Passo 2 de 3 — Project URL + anon key</h4>
-          <p class="text-sm mb-3">No painel do Supabase, vá em <strong>Settings → API</strong> e copie:</p>
-
-          <div class="form-group">
-            <label class="label" style="font-weight:600">Project URL</label>
-            <input type="text" class="input" x-model.trim="form.url"
-                   placeholder="https://xxxxxx.supabase.co">
-            <small class="muted">URL do projeto (sempre começa com https:// e termina em .supabase.co)</small>
-          </div>
-
-          <div class="form-group">
-            <label class="label" style="font-weight:600">anon (public) key</label>
-            <input :type="mostrarKey ? 'text' : 'password'" class="input" x-model.trim="form.anonKey"
-                   placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…">
-            <small class="muted">
-              Chave pública (anon key) — pode ser usada do navegador.
-              <a href="#" @click.prevent="mostrarKey = !mostrarKey" x-text="mostrarKey ? 'Ocultar' : 'Mostrar'"></a>
-            </small>
-          </div>
-
-          <div x-show="erroSetup" class="alert alert-error mt-3" x-text="erroSetup"></div>
-
-          <div class="mt-4" style="display:flex; gap:8px; justify-content:flex-end;">
-            <button class="btn" @click="passo = 1">← Voltar</button>
-            <button class="btn btn-primary" @click="finalizarSetupPrimario()" :disabled="loading || !form.url || !form.anonKey">
-              <span x-show="!loading">Testar conexão e ativar →</span>
-              <span x-show="loading">Conectando…</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Passo 3: sucesso -->
-        <div x-show="passo === 3" x-cloak>
-          <h4>✅ Passo 3 de 3 — cofre conectado</h4>
-          <p class="text-sm mb-3">Sincronização ativada. Seus dados serão criptografados com sua senha mestre antes de subir.</p>
-
-          <div class="lab-warn" style="display: block; margin: var(--space-3) 0;">
-            <p class="text-sm" style="margin: 0;">
-              <strong>Importante:</strong> para conectar outros dispositivos, você precisará deste <strong>Vault ID</strong> (junto com URL + anon key + a mesma senha mestre):
-            </p>
-            <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
-              <code class="text-mono" style="background: var(--bg-surface); border: 1px solid var(--border-subtle); padding:6px 10px; border-radius: var(--radius-sm); font-size: 0.85em; word-break: break-all;" x-text="status.vaultId"></code>
-              <button class="btn btn-sm" @click="copiarVaultId()" title="Copiar Vault ID"><svg class="icon"><use href="#i-copy"></use></svg></button>
-              <span class="text-xs" x-show="vaultIdCopiado" style="color: var(--semaforo-verde)">Copiado!</span>
-            </div>
-            <p class="text-xs mt-2" style="opacity: 0.85;">Anote em local seguro. Sem ele você não consegue parear novos dispositivos.</p>
-          </div>
-
-          <div class="mt-4" style="display:flex; gap:8px; justify-content:flex-end;">
-            <button class="btn btn-primary" @click="setupAberto = null; passo = 1; sincronizarAgora()">
-              Sincronizar agora →
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ============================================================ -->
-      <!-- SETUP SECUNDÁRIO — conectar a cofre existente                 -->
-      <!-- ============================================================ -->
-      <div x-show="!status.configurado && setupAberto === 'secundario'" class="card" x-cloak>
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom: var(--space-4);">
-          <h3 class="card-title" style="margin:0">🔗 Conectar a um cofre existente</h3>
-          <button class="btn btn-sm" style="margin-left:auto" @click="cancelarSetup()">×</button>
-        </div>
-
-        <p class="text-sm mb-4" class="lab-warn">
-          Você precisa: <strong>(1)</strong> a mesma senha mestre que está usando neste cofre,
-          <strong>(2)</strong> URL + anon key do Supabase do outro dispositivo, e <strong>(3)</strong> o Vault ID.
-          <br>
-          Sem isso, os dados baixados ficam ilegíveis (cifrados com outra senha).
-        </p>
-
-        <div class="form-group">
-          <label class="label" style="font-weight:600">Project URL</label>
-          <input type="text" class="input" x-model.trim="form.url"
-                 placeholder="https://xxxxxx.supabase.co">
-        </div>
-
-        <div class="form-group">
-          <label class="label" style="font-weight:600">anon (public) key</label>
-          <input :type="mostrarKey ? 'text' : 'password'" class="input" x-model.trim="form.anonKey">
-          <small class="muted">
-            <a href="#" @click.prevent="mostrarKey = !mostrarKey" x-text="mostrarKey ? 'Ocultar' : 'Mostrar'"></a>
-          </small>
-        </div>
-
-        <div class="form-group">
-          <label class="label" style="font-weight:600">Vault ID</label>
-          <input type="text" class="input" x-model.trim="form.vaultId"
-                 placeholder="UUID v4 (ex: 9f8e7d6c-...)">
-          <small class="muted">O identificador único do cofre, gerado quando o primeiro dispositivo foi configurado.</small>
-        </div>
-
-        <div x-show="erroSetup" class="alert alert-error mt-3" x-text="erroSetup"></div>
-
-        <div class="mt-4" style="display:flex; gap:8px; justify-content:flex-end;">
-          <button class="btn" @click="cancelarSetup()">Cancelar</button>
-          <button class="btn btn-primary" @click="finalizarSetupSecundario()" :disabled="loading || !form.url || !form.anonKey || !form.vaultId">
-            <span x-show="!loading">Conectar e baixar dados →</span>
-            <span x-show="loading">Conectando…</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- ============================================================ -->
-      <!-- CONFIGURADO — painel de status                                -->
-      <!-- ============================================================ -->
-      <div x-show="status.configurado" x-cloak>
-        <div class="card mb-3">
-          <h3 class="card-title mb-3">
-            <span x-show="!sincronizando">📡 Status</span>
-            <span x-show="sincronizando">Sincronizando…</span>
-          </h3>
-
-          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-3);">
-            <div>
-              <div class="text-xs muted">Estado</div>
-              <div style="font-weight: 600;" x-text="status.online ? '🟢 Online' : '⚫ Offline'"></div>
-            </div>
-            <div>
-              <div class="text-xs muted">Servidor</div>
-              <div style="font-size: 0.9em;" x-text="status.url"></div>
-            </div>
-            <div>
-              <div class="text-xs muted">Papel</div>
-              <div style="font-weight: 600;" x-text="status.papel === 'primario' ? '🏁 Principal' : '🔗 Secundário'"></div>
-            </div>
-            <div>
-              <div class="text-xs muted">Última sincronização</div>
-              <div style="font-weight: 600;" x-text="formatarUltimaSync(status.lastSyncedAt)"></div>
-            </div>
-          </div>
-
-          <div x-show="status.lastSyncError" class="alert alert-error mt-3">
-            <strong>Último erro:</strong> <span x-text="status.lastSyncError"></span>
-          </div>
-
-          <div class="mt-3" style="display:flex; gap:8px; flex-wrap: wrap;">
-            <button class="btn btn-primary" @click="sincronizarAgora()" :disabled="sincronizando || !status.online">
-              <span x-show="!sincronizando"><svg class="icon"><use href="#i-sync"></use></svg> Sincronizar agora</span>
-              <span x-show="sincronizando">Aguarde…</span>
-            </button>
-            <button class="btn" @click="autoSyncAtivo = !autoSyncAtivo; aplicarAutoSync()">
-              <span x-text="autoSyncAtivo ? '⏸ Pausar auto-sync' : '▶ Ativar auto-sync (5min)'"></span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Vault ID e detalhes -->
-        <div class="card mb-3">
-          <h3 class="card-title mb-3">🔐 Detalhes do cofre</h3>
-          <div class="text-sm">
-            <p class="muted">Para parear outro dispositivo, copie esses dados:</p>
-            <div style="display: grid; gap: 8px; margin-top: 8px;">
-              <div>
-                <strong>URL:</strong>
-                <code style="background: var(--bg-sunken); padding: 2px 6px; border-radius: 3px; font-size: 0.85em;" x-text="status.url"></code>
-              </div>
-              <div>
-                <strong>Vault ID:</strong>
-                <code style="background: var(--bg-sunken); padding: 2px 6px; border-radius: 3px; font-size: 0.85em; word-break: break-all;" x-text="status.vaultId"></code>
-                <button class="btn btn-sm" @click="copiarVaultId()" style="margin-left: 6px;" title="Copiar"><svg class="icon"><use href="#i-copy"></use></svg></button>
-                <span class="text-xs" x-show="vaultIdCopiado" style="color: var(--semaforo-verde)">✓</span>
-              </div>
-              <div style="font-size: 0.85em;" class="muted">
-                A <strong>anon key</strong> está armazenada localmente e pode ser obtida no painel Supabase (Settings → API).
-                A <strong>senha mestre</strong> é a mesma que destranca este cofre — sem ela, os dados baixados ficam ilegíveis.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Resultado de última sincronização -->
-        <div x-show="ultimoResultado" class="card mb-3" x-cloak>
-          <h3 class="card-title mb-2">📊 Última operação</h3>
-          <div class="text-sm" x-show="ultimoResultado && ultimoResultado.sucesso">
-            <p style="color: var(--semaforo-verde);">Sincronização concluída.</p>
-            <ul style="font-size: 0.9em;">
-              <li>📤 Enviados ao servidor: <strong x-text="(ultimoResultado && ultimoResultado.uploaded) || 0"></strong> registros</li>
-              <li>📥 Baixados do servidor: <strong x-text="(ultimoResultado && ultimoResultado.downloaded) || 0"></strong> registros</li>
-              <li x-show="ultimoResultado && ultimoResultado.conflitos && ultimoResultado.conflitos.length > 0">
-                Conflitos: <strong x-text="(ultimoResultado && ultimoResultado.conflitos && ultimoResultado.conflitos.length) || 0"></strong> (versão local mais recente preservada)
-              </li>
-            </ul>
-          </div>
-          <div class="text-sm" x-show="ultimoResultado && !ultimoResultado.sucesso">
-            <p style="color: var(--color-danger);">Falhou: <span x-text="ultimoResultado.erro"></span></p>
-          </div>
-        </div>
-
-        <!-- Zona de perigo: desconectar -->
-        <div class="card" style="border-color: var(--color-danger);">
-          <h3 class="card-title mb-3" style="color: var(--color-danger); display:flex; align-items:center; gap:8px;"><svg class="icon" style="width:15px;height:15px"><use href="#i-alert"></use></svg>Zona de perigo</h3>
-          <p class="text-sm mb-3">
-            Desconectar este dispositivo NÃO apaga seus dados locais e NÃO apaga os dados do servidor.
-            Apenas remove a configuração de sync deste dispositivo.
-            <br>Para apagar os dados do servidor, faça pelo painel Supabase (ou rode <code>DELETE FROM cdv_vault_records</code>).
-          </p>
-          <button class="btn btn-danger" @click="desconectar()">Desconectar este dispositivo</button>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function sincronizacaoComponent() {
-  return {
-    status: { configurado: false },
-    setupAberto: null,    // null | 'primario' | 'secundario'
-    passo: 1,
-    form: { url: '', anonKey: '', vaultId: '' },
-    mostrarKey: false,
-    erroSetup: null,
-    sincronizando: false,
-    autoSyncAtivo: false,
-    ultimoResultado: null,
-    sqlCopiado: false,
-    vaultIdCopiado: false,
-    sqlSetupTexto: '',
-    _timer: null,
-
-    async carregar() {
-      this.status = await Sync.status();
-      // SQL é estático
-      this.sqlSetupTexto = (typeof SupabaseClient !== 'undefined' && SupabaseClient.SQL_SETUP) || '(módulo SupabaseClient não carregado)';
-      // Recupera preferência de auto-sync (default ativo se já configurado)
-      try {
-        const cfg = await DB.db.config.get('sync_auto');
-        this.autoSyncAtivo = cfg && cfg.value === true;
-      } catch (_) {
-        this.autoSyncAtivo = false;
-      }
-      this.aplicarAutoSync();
-
-      // Refresh do status a cada 30s
-      this._timer = setInterval(() => this.refreshStatus(), 30 * 1000);
-      // Atualiza online/offline imediatamente
-      if (typeof window !== 'undefined') {
-        window.addEventListener('online', () => this.refreshStatus());
-        window.addEventListener('offline', () => this.refreshStatus());
-      }
-    },
-
-    async refreshStatus() {
-      this.status = await Sync.status();
-    },
-
-    iniciarSetupPrimario() {
-      this.setupAberto = 'primario';
-      this.passo = 1;
-      this.form = { url: '', anonKey: '', vaultId: '' };
-      this.erroSetup = null;
-    },
-
-    iniciarSetupSecundario() {
-      this.setupAberto = 'secundario';
-      this.form = { url: '', anonKey: '', vaultId: '' };
-      this.erroSetup = null;
-    },
-
-    cancelarSetup() {
-      this.setupAberto = null;
-      this.passo = 1;
-      this.erroSetup = null;
-    },
-
-    async finalizarSetupPrimario() {
-      this.erroSetup = null;
-      this.loading = true;
-      try {
-        if (!SupabaseClient.urlValida(this.form.url)) {
-          throw new Error('URL inválida. Deve ser https://...supabase.co');
-        }
-        const vaultId = await Sync.configurarPrimario(this.form.url, this.form.anonKey);
-        // Tenta um sync inicial (sem dados → só estabelece estado)
-        await this.refreshStatus();
-        this.passo = 3;
-      } catch (e) {
-        this.erroSetup = 'Erro: ' + (e.message || String(e));
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async finalizarSetupSecundario() {
-      this.erroSetup = null;
-      this.loading = true;
-      try {
-        if (!SupabaseClient.urlValida(this.form.url)) {
-          throw new Error('URL inválida. Deve ser https://...supabase.co');
-        }
-        if (!this.form.vaultId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-          throw new Error('Vault ID inválido. Deve ser UUID v4 (formato xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)');
-        }
-        const r = await Sync.configurarSecundario(this.form.url, this.form.anonKey, this.form.vaultId);
-        this.ultimoResultado = r;
-        await this.refreshStatus();
-        this.setupAberto = null;
-        UI.toast(`Conectado! Baixados ${r.downloaded || 0} registros.`, 'success');
-      } catch (e) {
-        this.erroSetup = 'Erro: ' + (e.message || String(e));
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async sincronizarAgora() {
-      if (this.sincronizando) return;
-      this.sincronizando = true;
-      this.ultimoResultado = null;
-      try {
-        const r = await Sync.sincronizar();
-        this.ultimoResultado = r;
-        await this.refreshStatus();
-        if (r.sucesso) {
-          UI.toast(`✓ Sincronizado · ${r.uploaded || 0}↑ ${r.downloaded || 0}↓`, 'success');
-        } else {
-          UI.toast('Erro: ' + r.erro, 'error');
-        }
-      } catch (e) {
-        UI.toast('Erro: ' + e.message, 'error');
-      } finally {
-        this.sincronizando = false;
-      }
-    },
-
-    async desconectar() {
-      if (!confirm('Desconectar este dispositivo do sync? Os dados locais permanecem intactos.')) return;
-      Sync.pararAutoSync();
-      await Sync.desconectar();
-      this.autoSyncAtivo = false;
-      await DB.db.config.delete('sync_auto');
-      await this.refreshStatus();
-      UI.toast('Dispositivo desconectado', 'success');
-    },
-
-    async aplicarAutoSync() {
-      try {
-        await DB.db.config.put({ key: 'sync_auto', value: this.autoSyncAtivo });
-      } catch (_) {}
-      if (this.autoSyncAtivo && this.status.configurado) {
-        Sync.iniciarAutoSync((r) => {
-          this.ultimoResultado = r;
-          this.refreshStatus();
-        });
-      } else {
-        Sync.pararAutoSync();
-      }
-    },
-
-    async copiarSqlSetup() {
-      try {
-        await navigator.clipboard.writeText(this.sqlSetupTexto);
-        this.sqlCopiado = true;
-        setTimeout(() => { this.sqlCopiado = false; }, 3000);
-      } catch (e) {
-        UI.toast('Erro ao copiar: ' + e.message, 'error');
-      }
-    },
-
-    async copiarVaultId() {
-      try {
-        await navigator.clipboard.writeText(this.status.vaultId);
-        this.vaultIdCopiado = true;
-        setTimeout(() => { this.vaultIdCopiado = false; }, 3000);
-      } catch (e) {
-        UI.toast('Erro ao copiar: ' + e.message, 'error');
-      }
-    },
-
-    formatarUltimaSync(iso) {
-      if (!iso) return '— nunca';
-      const dt = new Date(iso);
-      const agora = new Date();
-      const diff = (agora - dt) / 1000;
-      if (diff < 60) return 'há segundos';
-      if (diff < 3600) return `há ${Math.floor(diff / 60)} min`;
-      if (diff < 86400) return `há ${Math.floor(diff / 3600)} h`;
-      return dt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+  // ============================================================
+  // CONFIGURAÇÃO LOCAL
+  // ============================================================
+  async function getConfig() {
+    if (typeof DB === 'undefined') return null;
+    try {
+      const r = await DB.db.config.get('sync');
+      return r ? r.value : null;
+    } catch (_) {
+      return null;
     }
-  };
-}
+  }
 
-window.renderSync = renderSync;
-window.sincronizacaoComponent = sincronizacaoComponent;
+  async function setConfig(cfg) {
+    await DB.db.config.put({ key: 'sync', value: cfg });
+  }
+
+  async function clearConfig() {
+    await DB.db.config.delete('sync');
+  }
+
+  function configValida(cfg) {
+    if (!cfg || !cfg.vaultId) return false;
+    if (cfg.provider === 'firebase') {
+      return !!cfg.databaseUrl;
+    }
+    // padrão (retrocompatível): Supabase
+    return !!(cfg.url && cfg.anonKey);
+  }
+
+  /**
+   * Factory: cria o cliente do provedor certo a partir da config.
+   * Config sem `provider` é tratada como Supabase (retrocompatibilidade).
+   */
+  function criarClient(cfg) {
+    if (cfg && cfg.provider === 'firebase') {
+      if (typeof FirebaseClient === 'undefined') {
+        throw new Error('FirebaseClient não carregado');
+      }
+      return FirebaseClient.criar(cfg);
+    }
+    return SupabaseClient.criar(cfg);
+  }
+
+  // ============================================================
+  // HELPERS — ext_id (identificador externo, persistente entre dispositivos)
+  // ============================================================
+  function gerarExtId() {
+    return SupabaseClient.gerarVaultId();  // reutiliza UUID v4
+  }
+
+  function chaveRegistro(tabela, extId) {
+    return `${tabela}/${extId}`;
+  }
+
+  // ============================================================
+  // PREPARA REGISTROS LOCAIS PARA UPLOAD
+  // ============================================================
+  /**
+   * Lê todos os registros de uma tabela e prepara para upload (cifra cada um).
+   * Atribui ext_id aos registros que não têm.
+   * Retorna { uploads: [...], modificados: [...] }
+   *   uploads: prontos para enviar ao servidor
+   *   modificados: registros locais que ganharam ext_id (precisam ser salvos)
+   */
+  async function prepararUpload(tabela, desdeIso) {
+    const dek = DB.getDEK();
+    const todos = await DB.db[tabela].toArray();
+    const uploads = [];
+    const modificados = [];
+
+    for (const r of todos) {
+      // Atribui ext_id se ainda não tem
+      let extId = r._extId;
+      if (!extId) {
+        extId = gerarExtId();
+        r._extId = extId;
+        modificados.push(r);
+      }
+
+      // Pula registros não modificados desde último sync
+      const ultimaMod = r.updatedAt || r.createdAt;
+      if (desdeIso && ultimaMod && ultimaMod <= desdeIso && r._lastSyncedAt && r._lastSyncedAt >= ultimaMod) {
+        continue;
+      }
+
+      // Cifra o objeto inteiro (menos campos transitórios) com a DEK
+      const limpo = { ...r };
+      delete limpo._lastSyncedAt;
+      // _extId fica dentro do payload para identificar o registro em outros dispositivos
+      const cifrado = await CryptoModule.encrypt(dek, limpo);
+
+      uploads.push({
+        record_key: chaveRegistro(tabela, extId),
+        encrypted_blob: cifrado,
+        client_updated_at: ultimaMod || new Date().toISOString(),
+        deleted: r.deleted ? true : false,
+        version: 1
+      });
+    }
+
+    return { uploads, modificados };
+  }
+
+  // ============================================================
+  // APLICA REGISTROS REMOTOS NO LOCAL
+  // ============================================================
+  /**
+   * Para cada registro baixado: decifra, encontra correspondente local pelo
+   * ext_id (ou cria novo), e aplica last-write-wins por client_updated_at.
+   * Retorna { aplicados, conflitos }.
+   */
+  async function aplicarDownloads(linhas) {
+    const dek = DB.getDEK();
+    let aplicados = 0;
+    const conflitos = [];
+
+    for (const linha of linhas) {
+      // record_key: 'tabela/extId'
+      const m = (linha.record_key || '').match(/^([^/]+)\/(.+)$/);
+      if (!m) continue;
+      const tabela = m[1];
+      const extId = m[2];
+      if (!TABELAS_SYNC.includes(tabela)) continue;
+
+      let decifrado;
+      try {
+        decifrado = await CryptoModule.decrypt(dek, linha.encrypted_blob);
+      } catch (e) {
+        // DEK errada — registro veio cifrado com outra senha
+        conflitos.push({ tabela, extId, motivo: 'falha_decifrar' });
+        continue;
+      }
+
+      // Busca registro local com mesmo ext_id
+      const todosLocais = await DB.db[tabela].toArray();
+      const local = todosLocais.find(r => r._extId === extId);
+
+      const remotoUpdatedAt = decifrado.updatedAt || linha.client_updated_at;
+      const localUpdatedAt = local ? (local.updatedAt || local.createdAt) : null;
+
+      if (linha.deleted) {
+        // Deleção remota
+        if (local) {
+          await DB.db[tabela].update(local.id, {
+            deleted: 1,
+            _lastSyncedAt: linha.server_updated_at,
+            updatedAt: remotoUpdatedAt
+          });
+          aplicados++;
+        }
+        continue;
+      }
+
+      if (!local) {
+        // Registro novo: insere
+        const { id, ...resto } = decifrado;  // descarta id remoto, deixa Dexie gerar
+        resto._extId = extId;
+        resto._lastSyncedAt = linha.server_updated_at;
+        await DB.db[tabela].add(resto);
+        aplicados++;
+        continue;
+      }
+
+      // Conflito potencial: ambos modificados
+      if (localUpdatedAt && localUpdatedAt > remotoUpdatedAt) {
+        // Local mais recente — não sobrescreve, marca conflito (mas mantém local)
+        conflitos.push({
+          tabela, extId,
+          motivo: 'local_mais_recente',
+          localUpdatedAt, remotoUpdatedAt
+        });
+        continue;
+      }
+
+      // Remoto vence (last-write-wins)
+      const { id: _, ...restoRemoto } = decifrado;
+      restoRemoto._extId = extId;
+      restoRemoto._lastSyncedAt = linha.server_updated_at;
+      await DB.db[tabela].update(local.id, restoRemoto);
+      aplicados++;
+
+      // Se houve sobrescrita real (não só sync inicial), registra audit
+      if (localUpdatedAt && remotoUpdatedAt > localUpdatedAt) {
+        await DB.audit('SYNC_OVERWROTE', tabela, local.id, {
+          remoteUpdatedAt: remotoUpdatedAt,
+          localUpdatedAt
+        });
+      }
+    }
+
+    return { aplicados, conflitos };
+  }
+
+  // ============================================================
+  // OPERAÇÃO PRINCIPAL: SINCRONIZAR
+  // ============================================================
+  /**
+   * Executa um ciclo completo: pull → apply → push.
+   * Retorna { sucesso, uploaded, downloaded, conflitos, erro? }
+   */
+  async function sincronizar() {
+    const cfg = await getConfig();
+    if (!configValida(cfg)) {
+      return { sucesso: false, erro: 'Sync não configurado' };
+    }
+    if (!DB.isUnlocked()) {
+      return { sucesso: false, erro: 'Cofre bloqueado' };
+    }
+
+    const client = criarClient(cfg);
+
+    let downloaded = 0;
+    let uploaded = 0;
+    let conflitos = [];
+
+    try {
+      // 1. PULL: baixa registros modificados desde último sync
+      const sinceIso = cfg.lastSyncedAt || null;
+      const remotos = await client.downloadDesde(sinceIso);
+      const r = await aplicarDownloads(remotos);
+      downloaded = r.aplicados;
+      conflitos = r.conflitos;
+
+      // 2. PUSH: por tabela, prepara e envia
+      const novoSinceIso = new Date().toISOString();
+      for (const tabela of TABELAS_SYNC) {
+        const { uploads, modificados } = await prepararUpload(tabela, cfg.lastSyncedAt);
+        // Persiste os _extId atribuídos
+        for (const m of modificados) {
+          await DB.db[tabela].update(m.id, { _extId: m._extId });
+        }
+        if (uploads.length > 0) {
+          await client.uploadLote(uploads);
+          // Marca registros como sincronizados
+          for (const r of await DB.db[tabela].toArray()) {
+            if (r._extId && (!r._lastSyncedAt || r._lastSyncedAt < novoSinceIso)) {
+              await DB.db[tabela].update(r.id, { _lastSyncedAt: novoSinceIso });
+            }
+          }
+          uploaded += uploads.length;
+        }
+      }
+
+      // 3. Atualiza marca de último sync (use servidor como referência)
+      cfg.lastSyncedAt = novoSinceIso;
+      cfg.lastSyncSucess = true;
+      cfg.lastSyncError = null;
+      await setConfig(cfg);
+
+      await DB.audit('SYNC_OK', 'sync', null, { downloaded, uploaded, conflitos: conflitos.length });
+
+      return { sucesso: true, downloaded, uploaded, conflitos };
+    } catch (e) {
+      cfg.lastSyncSucess = false;
+      cfg.lastSyncError = e.message || String(e);
+      cfg.lastSyncErrorAt = new Date().toISOString();
+      await setConfig(cfg);
+      await DB.audit('SYNC_FAIL', 'sync', null, { erro: e.message });
+      return { sucesso: false, erro: e.message || String(e), downloaded, uploaded };
+    }
+  }
+
+  // ============================================================
+  // AUTO-SYNC PERIÓDICO
+  // ============================================================
+  let autoTimer = null;
+  let autoIntervaloMs = 5 * 60 * 1000;  // 5 min default
+
+  function iniciarAutoSync(callback) {
+    pararAutoSync();
+    autoTimer = setInterval(async () => {
+      const cfg = await getConfig();
+      if (!configValida(cfg) || !DB.isUnlocked()) return;
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+      const r = await sincronizar();
+      if (callback) callback(r);
+    }, autoIntervaloMs);
+  }
+
+  function pararAutoSync() {
+    if (autoTimer) {
+      clearInterval(autoTimer);
+      autoTimer = null;
+    }
+  }
+
+  // ============================================================
+  // PAREAMENTO ENTRE DISPOSITIVOS
+  // ============================================================
+  /**
+   * Setup inicial: cria configuração de sync no primeiro dispositivo.
+   * Retorna o vaultId que precisa ser copiado para outros dispositivos.
+   */
+  async function configurarPrimario(url, anonKey) {
+    const vaultId = SupabaseClient.gerarVaultId();
+    const cfg = {
+      url, anonKey, vaultId,
+      lastSyncedAt: null,
+      configuradoEm: new Date().toISOString(),
+      papel: 'primario'
+    };
+    // Testa conexão
+    const client = criarClient(cfg);
+    const ok = await client.testar();
+    if (!ok) {
+      throw new Error('Não consegui conectar ao Supabase. Verifique URL e chave anon.');
+    }
+    await setConfig(cfg);
+    return vaultId;
+  }
+
+  /**
+   * Pareamento secundário: usa vault_id de outro dispositivo + mesma senha mestre.
+   * NÃO altera a senha local, apenas configura sync usando a DEK atual.
+   */
+  async function configurarSecundario(url, anonKey, vaultId) {
+    const cfg = {
+      url, anonKey, vaultId,
+      lastSyncedAt: null,
+      configuradoEm: new Date().toISOString(),
+      papel: 'secundario'
+    };
+    const client = criarClient(cfg);
+    const ok = await client.testar();
+    if (!ok) {
+      throw new Error('Não consegui conectar ao Supabase. Verifique URL/chave.');
+    }
+    await setConfig(cfg);
+    // Faz um pull inicial para popular este dispositivo
+    return await sincronizar();
+  }
+
+  /**
+   * Setup inicial com Firebase (Realtime Database) no primeiro dispositivo.
+   * Retorna o vaultId que precisa ser copiado para os outros dispositivos.
+   */
+  async function configurarPrimarioFirebase(databaseUrl) {
+    const vaultId = SupabaseClient.gerarVaultId();
+    const cfg = {
+      provider: 'firebase',
+      databaseUrl, vaultId,
+      lastSyncedAt: null,
+      configuradoEm: new Date().toISOString(),
+      papel: 'primario'
+    };
+    const client = criarClient(cfg);
+    const ok = await client.testar();
+    if (!ok) {
+      throw new Error('Não consegui conectar ao Firebase. Verifique a URL do banco e as regras de acesso.');
+    }
+    await setConfig(cfg);
+    return vaultId;
+  }
+
+  /**
+   * Pareamento secundário com Firebase: usa o vaultId do primeiro dispositivo
+   * + a mesma senha mestre. Faz um pull inicial para popular este aparelho.
+   */
+  async function configurarSecundarioFirebase(databaseUrl, vaultId) {
+    const cfg = {
+      provider: 'firebase',
+      databaseUrl, vaultId,
+      lastSyncedAt: null,
+      configuradoEm: new Date().toISOString(),
+      papel: 'secundario'
+    };
+    const client = criarClient(cfg);
+    const ok = await client.testar();
+    if (!ok) {
+      throw new Error('Não consegui conectar ao Firebase. Verifique a URL do banco e as regras.');
+    }
+    await setConfig(cfg);
+    return await sincronizar();
+  }
+
+  /**
+   * Desconecta este dispositivo do sync. Não apaga dados nem do servidor nem locais.
+   * Apenas remove a configuração local — outros dispositivos continuam funcionando.
+   */
+  async function desconectar() {
+    pararAutoSync();
+    await clearConfig();
+  }
+
+  /**
+   * Estado atual para a UI: configurado? última sync? online?
+   */
+  async function status() {
+    const cfg = await getConfig();
+    if (!cfg) return { configurado: false };
+    const online = typeof navigator !== 'undefined' ? navigator.onLine !== false : true;
+    return {
+      configurado: true,
+      provider: cfg.provider || 'supabase',
+      vaultId: cfg.vaultId,
+      url: cfg.provider === 'firebase' ? cfg.databaseUrl : cfg.url,
+      papel: cfg.papel || 'primario',
+      lastSyncedAt: cfg.lastSyncedAt || null,
+      lastSyncSucess: cfg.lastSyncSucess === true,
+      lastSyncError: cfg.lastSyncError || null,
+      online
+    };
+  }
+
+  const api = {
+    TABELAS_SYNC,
+    getConfig, setConfig, clearConfig, configValida,
+    configurarPrimario,
+    configurarSecundario,
+    configurarPrimarioFirebase,
+    configurarSecundarioFirebase,
+    desconectar,
+    sincronizar,
+    iniciarAutoSync, pararAutoSync,
+    status,
+    // helpers expostos para testes
+    _prepararUpload: prepararUpload,
+    _aplicarDownloads: aplicarDownloads
+  };
+
+  if (typeof window !== 'undefined') window.Sync = api;
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+})();

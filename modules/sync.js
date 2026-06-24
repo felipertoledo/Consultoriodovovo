@@ -53,7 +53,26 @@
   }
 
   function configValida(cfg) {
-    return !!(cfg && cfg.url && cfg.anonKey && cfg.vaultId);
+    if (!cfg || !cfg.vaultId) return false;
+    if (cfg.provider === 'firebase') {
+      return !!cfg.databaseUrl;
+    }
+    // padrão (retrocompatível): Supabase
+    return !!(cfg.url && cfg.anonKey);
+  }
+
+  /**
+   * Factory: cria o cliente do provedor certo a partir da config.
+   * Config sem `provider` é tratada como Supabase (retrocompatibilidade).
+   */
+  function criarClient(cfg) {
+    if (cfg && cfg.provider === 'firebase') {
+      if (typeof FirebaseClient === 'undefined') {
+        throw new Error('FirebaseClient não carregado');
+      }
+      return FirebaseClient.criar(cfg);
+    }
+    return SupabaseClient.criar(cfg);
   }
 
   // ============================================================
@@ -222,7 +241,7 @@
       return { sucesso: false, erro: 'Cofre bloqueado' };
     }
 
-    const client = SupabaseClient.criar(cfg);
+    const client = criarClient(cfg);
 
     let downloaded = 0;
     let uploaded = 0;
@@ -315,7 +334,7 @@
       papel: 'primario'
     };
     // Testa conexão
-    const client = SupabaseClient.criar(cfg);
+    const client = criarClient(cfg);
     const ok = await client.testar();
     if (!ok) {
       throw new Error('Não consegui conectar ao Supabase. Verifique URL e chave anon.');
@@ -335,13 +354,56 @@
       configuradoEm: new Date().toISOString(),
       papel: 'secundario'
     };
-    const client = SupabaseClient.criar(cfg);
+    const client = criarClient(cfg);
     const ok = await client.testar();
     if (!ok) {
       throw new Error('Não consegui conectar ao Supabase. Verifique URL/chave.');
     }
     await setConfig(cfg);
     // Faz um pull inicial para popular este dispositivo
+    return await sincronizar();
+  }
+
+  /**
+   * Setup inicial com Firebase (Realtime Database) no primeiro dispositivo.
+   * Retorna o vaultId que precisa ser copiado para os outros dispositivos.
+   */
+  async function configurarPrimarioFirebase(databaseUrl) {
+    const vaultId = SupabaseClient.gerarVaultId();
+    const cfg = {
+      provider: 'firebase',
+      databaseUrl, vaultId,
+      lastSyncedAt: null,
+      configuradoEm: new Date().toISOString(),
+      papel: 'primario'
+    };
+    const client = criarClient(cfg);
+    const ok = await client.testar();
+    if (!ok) {
+      throw new Error('Não consegui conectar ao Firebase. Verifique a URL do banco e as regras de acesso.');
+    }
+    await setConfig(cfg);
+    return vaultId;
+  }
+
+  /**
+   * Pareamento secundário com Firebase: usa o vaultId do primeiro dispositivo
+   * + a mesma senha mestre. Faz um pull inicial para popular este aparelho.
+   */
+  async function configurarSecundarioFirebase(databaseUrl, vaultId) {
+    const cfg = {
+      provider: 'firebase',
+      databaseUrl, vaultId,
+      lastSyncedAt: null,
+      configuradoEm: new Date().toISOString(),
+      papel: 'secundario'
+    };
+    const client = criarClient(cfg);
+    const ok = await client.testar();
+    if (!ok) {
+      throw new Error('Não consegui conectar ao Firebase. Verifique a URL do banco e as regras.');
+    }
+    await setConfig(cfg);
     return await sincronizar();
   }
 
@@ -363,8 +425,9 @@
     const online = typeof navigator !== 'undefined' ? navigator.onLine !== false : true;
     return {
       configurado: true,
+      provider: cfg.provider || 'supabase',
       vaultId: cfg.vaultId,
-      url: cfg.url,
+      url: cfg.provider === 'firebase' ? cfg.databaseUrl : cfg.url,
       papel: cfg.papel || 'primario',
       lastSyncedAt: cfg.lastSyncedAt || null,
       lastSyncSucess: cfg.lastSyncSucess === true,
@@ -378,6 +441,8 @@
     getConfig, setConfig, clearConfig, configValida,
     configurarPrimario,
     configurarSecundario,
+    configurarPrimarioFirebase,
+    configurarSecundarioFirebase,
     desconectar,
     sincronizar,
     iniciarAutoSync, pararAutoSync,

@@ -1,6 +1,6 @@
 {
-  "version": "0.23.0",
-  "buildDate": "2026-06-21",
-  "codename": "Pré-cadastro do paciente",
-  "notes": "Pagina standalone pre-cadastro.html (link enviado ao paciente antes da consulta): ele preenche os dados e a pagina gera um codigo (CDV1:base64) que vai direto ao medico (WhatsApp/copia-cola), sem servidor — mantem zero-knowledge. No CDV, botao Importar pre-cadastro no cadastro de paciente novo decodifica o codigo e preenche a ficha. Novo: modules/precadastro.js (encode/decode com whitelist e sanitizacao), pre-cadastro.html (NAO precacheada, independente do app). Alterado: components/paciente-form.js (botao + modal teleportado + importarPreCadastro), index.html (script precadastro.js), service-worker.js (precache precadastro.js)."
+  "version": "0.24.0",
+  "buildDate": "2026-06-23",
+  "codename": "Sincronização via Firebase",
+  "notes": "Adicionado Firebase Realtime Database como provedor alternativo de sincronizacao, ao lado do Supabase ja existente. Novo modules/firebase-client.js (REST API do RTDB, sem SDK, espelha a interface do supabase-client). sync.js ganhou factory de provedor (criarClient) e funcoes configurarPrimarioFirebase/configurarSecundarioFirebase; config sem campo provider continua sendo tratada como Supabase (retrocompativel). Tela de Sincronizacao com seletor de provedor (Firebase/Supabase), campos e instrucoes condicionais. Dados locais permanecem a fonte da verdade; sync apenas replica."
 }

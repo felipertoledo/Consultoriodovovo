@@ -14,7 +14,7 @@
    `updatefound`; o index.html mostra banner pro usuário.
    ============================================================ */
 
-const CACHE_VERSION = 'v0.23.0';
+const CACHE_VERSION = 'v0.24.0';
 const CACHE_NAME = `cdv-cache-${CACHE_VERSION}`;
 
 // Lista exaustiva de arquivos a pré-cachear no install
@@ -63,11 +63,11 @@ const PRECACHE_ASSETS = [
   './modules/imagem.js',
   './modules/exames-lab.js',
   './modules/supabase-client.js',
+  './modules/firebase-client.js',
   './modules/sync.js',
   './modules/hiperdia.js',
   './modules/sparkline.js',
   './modules/financeiro-core.js',
-  './modules/precadastro.js',
   './modules/tema.js',
 
   // Componentes de tela
