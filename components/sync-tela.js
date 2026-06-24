@@ -356,6 +356,7 @@ function sincronizacaoComponent() {
     mostrarKey: false,
     erroSetup: null,
     sincronizando: false,
+    loading: false,
     autoSyncAtivo: false,
     ultimoResultado: null,
     sqlCopiado: false,

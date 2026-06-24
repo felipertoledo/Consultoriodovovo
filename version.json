@@ -1,6 +1,6 @@
 {
-  "version": "0.24.2",
+  "version": "0.24.3",
   "buildDate": "2026-06-24",
-  "codename": "Sincronização via Firebase (fix guard)",
-  "notes": "Corrigido TypeError no console da tela de sincronizacao: a expressao x-text do bloco de erro lia ultimoResultado.erro sem proteger contra null (ultimoResultado inicia null e o Alpine avalia a expressao mesmo com o bloco oculto). Adicionado guard 'ultimoResultado && ultimoResultado.erro', consistente com as demais leituras. Bug pre-existente, nao relacionado ao Firebase. Apenas components/sync-tela.js alterado; CACHE_VERSION bumpado para forcar re-cache."
+  "codename": "Sincronização via Firebase (fix loading)",
+  "notes": "Declarado loading:false no estado da tela de sincronizacao. 'loading' era usado nos botoes de ativar/conectar (:disabled e x-show) e nos metodos via this.loading, mas nunca foi declarado no estado inicial, causando ReferenceError 'loading is not defined' na primeira renderizacao e deixando o botao de ativar sem texto. Analise estatica confirmou ser a unica variavel ausente. Apenas components/sync-tela.js alterado; CACHE_VERSION bumpado para v0.24.3."
 }
