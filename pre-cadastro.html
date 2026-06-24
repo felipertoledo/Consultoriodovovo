@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Ficha de pré-atendimento — Consultório do Vovô</title>
+<style>
+  :root{
+    --verde:#2F5E4F; --verde-esc:#244a3e; --verde-claro:#eef4f1; --verde-borda:#cfe0d8;
+    --terra:#B26A43; --bg:#f6f8f7; --surface:#ffffff; --texto:#1f2a26; --muted:#6b7d76;
+    --borda:#dfe6e3; --radius:14px; --erro:#c0492f;
+    --shadow:0 1px 3px rgba(20,40,33,.06), 0 6px 24px rgba(20,40,33,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--texto);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.5;-webkit-text-size-adjust:100%}
+  .wrap{max-width:760px;margin:0 auto;padding:20px 16px 64px}
+  header.top{display:flex;align-items:center;gap:14px;padding:8px 2px 18px}
+  .logo{width:46px;height:46px;border-radius:50%;background:var(--verde);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;flex-shrink:0}
+  .top h1{font-size:1.15rem;margin:0;line-height:1.2}
+  .top .sub{font-size:.82rem;color:var(--muted)}
+  .intro{background:var(--verde-claro);border:1px solid var(--verde-borda);border-radius:var(--radius);padding:16px 18px;margin-bottom:22px;font-size:.95rem}
+  .intro strong{color:var(--verde-esc)}
+  .bloco{background:var(--surface);border:1px solid var(--borda);border-radius:var(--radius);padding:18px 18px 20px;margin-bottom:16px;box-shadow:var(--shadow)}
+  .bloco h2{display:flex;align-items:center;gap:10px;font-size:1.02rem;margin:0 0 4px}
+  .bloco h2 .n{color:var(--verde);font-weight:800;font-variant-numeric:tabular-nums}
+  .bloco .hint{font-size:.82rem;color:var(--muted);margin:0 0 14px}
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:1fr 1fr 1fr}
+  @media(max-width:560px){.g2,.g3{grid-template-columns:1fr}}
+  .field{display:flex;flex-direction:column;gap:6px;min-width:0}
+  .field.col-2{grid-column:span 2}
+  @media(max-width:560px){.field.col-2{grid-column:span 1}}
+  label{font-size:.86rem;font-weight:600;color:#33433d}
+  label .req{color:var(--erro)}
+  label .opt{color:var(--muted);font-weight:400;font-size:.8rem}
+  input,select,textarea{font:inherit;color:var(--texto);background:var(--surface);border:1.5px solid var(--borda);border-radius:10px;padding:11px 12px;width:100%;transition:border-color .15s, box-shadow .15s}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--verde);box-shadow:0 0 0 3px rgba(47,94,79,.12)}
+  textarea{resize:vertical;min-height:84px}
+  .age{font-size:.82rem;color:var(--muted)}
+  .seg{display:flex;gap:8px;flex-wrap:wrap}
+  .seg button{flex:1;min-width:96px;background:var(--surface);border:1.5px solid var(--borda);border-radius:10px;padding:11px;font:inherit;cursor:pointer;color:var(--texto)}
+  .seg button.on{background:var(--verde);border-color:var(--verde);color:#fff;font-weight:600}
+  .actions{position:sticky;bottom:0;background:linear-gradient(transparent, var(--bg) 28%);padding:18px 0 6px;margin-top:8px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--verde);color:#fff;border:none;border-radius:12px;padding:15px;font-size:1.05rem;font-weight:700;cursor:pointer;box-shadow:var(--shadow)}
+  .btn:active{transform:translateY(1px)}
+  .btn.sec{background:var(--surface);color:var(--verde);border:1.5px solid var(--verde-borda)}
+  .err-banner{background:#fdecea;border:1px solid #f3c4bb;color:var(--erro);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:.9rem;display:none}
+  /* resultado */
+  .resultado{display:none;margin-top:18px}
+  .resultado.show{display:block}
+  .res-card{background:var(--verde-claro);border:1px solid var(--verde-borda);border-radius:var(--radius);padding:18px}
+  .res-card h3{margin:0 0 6px;color:var(--verde-esc);font-size:1.05rem}
+  .res-card p{margin:0 0 14px;font-size:.92rem}
+  .codigo{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.78rem;background:#fff;border:1px solid var(--verde-borda);border-radius:10px;padding:12px;max-height:120px;overflow:auto;word-break:break-all;user-select:all;color:#3a4a44}
+  .res-btns{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+  .ok-msg{color:var(--verde);font-weight:600;font-size:.9rem;text-align:center;display:none;margin-top:8px}
+  footer{text-align:center;font-size:.78rem;color:var(--muted);margin-top:28px;padding:0 10px}
+  .privacy{font-size:.8rem;color:var(--muted);background:#fff;border:1px dashed var(--borda);border-radius:10px;padding:12px 14px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="logo" id="logo">CV</div>
+    <div>
+      <h1 id="h-consultorio">Consultório do Vovô</h1>
+      <div class="sub" id="h-medico">Felipe Ribeiro Toledo · Medicina de Família e Comunidade</div>
+    </div>
+  </header>
+
+  <div class="intro">
+    <strong>Bem-vindo(a)!</strong> Este é um cadastro rápido para agilizar sua consulta.
+    Preencha o que você souber — só o <strong>nome</strong> é obrigatório, o resto é opcional.
+    No final, toque em <strong>“Gerar meu código”</strong> e envie o código para o consultório.
+  </div>
+
+  <div class="err-banner" id="errBanner"></div>
+
+  <form id="form" novalidate>
+
+    <!-- 01 -->
+    <section class="bloco">
+      <h2><span class="n">01</span> Dados pessoais</h2>
+      <div class="grid g2">
+        <div class="field col-2">
+          <label>Nome completo <span class="req">*</span></label>
+          <input type="text" id="nome" autocomplete="name" placeholder="Seu nome completo">
+        </div>
+        <div class="field">
+          <label>Data de nascimento</label>
+          <input type="date" id="dataNascimento" max="2100-12-31">
+          <span class="age" id="age"></span>
+        </div>
+        <div class="field">
+          <label>Sexo</label>
+          <select id="sexo">
+            <option value="">—</option>
+            <option>Feminino</option><option>Masculino</option>
+            <option>Intersexo</option><option>Não declarado</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Identidade de gênero <span class="opt">(opcional)</span></label>
+          <input type="text" id="identidadeGenero" placeholder="Se quiser informar">
+        </div>
+        <div class="field">
+          <label>Estado civil</label>
+          <select id="estadoCivil">
+            <option value="">—</option>
+            <option>Solteiro(a)</option><option>Casado(a)</option><option>União estável</option>
+            <option>Divorciado(a)</option><option>Viúvo(a)</option><option>Separado(a)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Profissão / ocupação</label>
+          <input type="text" id="profissao" placeholder="Ex: Aposentada, Professor">
+        </div>
+        <div class="field">
+          <label>Escolaridade</label>
+          <select id="escolaridade">
+            <option value="">—</option>
+            <option>Sem escolaridade</option><option>Fundamental incompleto</option>
+            <option>Fundamental completo</option><option>Médio incompleto</option>
+            <option>Médio completo</option><option>Superior incompleto</option>
+            <option>Superior completo</option><option>Pós-graduação</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- 02 -->
+    <section class="bloco">
+      <h2><span class="n">02</span> Situação (opcional)</h2>
+      <p class="hint">Só se quiser informar. Ajuda a entender seu contexto.</p>
+      <div class="grid g3">
+        <div class="field col-2" style="grid-column:1/-1">
+          <label>Tipo de atendimento</label>
+          <div class="seg" id="seg-tipoVaga">
+            <button type="button" data-v="sus">SUS</button>
+            <button type="button" data-v="particular">Particular</button>
+            <button type="button" data-v="convenio">Convênio</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Fonte de renda principal</label>
+          <select id="fonteRenda">
+            <option value="">—</option>
+            <option value="formal">Trabalho formal (CLT/servidor)</option>
+            <option value="informal">Trabalho informal / autônomo</option>
+            <option value="aposentadoria">Aposentadoria</option>
+            <option value="pensao">Pensão</option>
+            <option value="bpc">BPC/LOAS</option>
+            <option value="bolsa_familia">Bolsa Família / auxílio</option>
+            <option value="desempregado">Sem fonte de renda / desempregado(a)</option>
+            <option value="outra">Outra</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Renda pessoal</label>
+          <select id="rendaPessoal">
+            <option value="">—</option>
+            <option value="sem_renda">Sem renda</option>
+            <option value="ate_1">Até 1 salário mínimo</option>
+            <option value="1_2">1 a 2 salários mínimos</option>
+            <option value="2_3">2 a 3 salários mínimos</option>
+            <option value="3_5">3 a 5 salários mínimos</option>
+            <option value="mais_5">Mais de 5 salários mínimos</option>
+            <option value="nao_informado">Prefere não informar</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Renda familiar</label>
+          <select id="rendaFamiliar">
+            <option value="">—</option>
+            <option value="sem_renda">Sem renda</option>
+            <option value="ate_1">Até 1 salário mínimo</option>
+            <option value="1_2">1 a 2 salários mínimos</option>
+            <option value="2_3">2 a 3 salários mínimos</option>
+            <option value="3_5">3 a 5 salários mínimos</option>
+            <option value="mais_5">Mais de 5 salários mínimos</option>
+            <option value="nao_informado">Prefere não informar</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 -->
+    <section class="bloco">
+      <h2><span class="n">03</span> Documentos</h2>
+      <div class="grid g2">
+        <div class="field">
+          <label>CPF</label>
+          <input type="text" id="cpf" inputmode="numeric" placeholder="000.000.000-00" maxlength="14">
+        </div>
+        <div class="field">
+          <label>RG</label>
+          <input type="text" id="rg" placeholder="00.000.000-0">
+        </div>
+        <div class="field">
+          <label>Cartão SUS (CNS) <span class="opt">(se tiver)</span></label>
+          <input type="text" id="cns" inputmode="numeric" placeholder="000 0000 0000 0000">
+        </div>
+        <div class="field">
+          <label>Convênio / plano <span class="opt">(se tiver)</span></label>
+          <input type="text" id="convenio" placeholder="Nome do plano">
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 -->
+    <section class="bloco">
+      <h2><span class="n">04</span> Contato</h2>
+      <div class="grid g2">
+        <div class="field">
+          <label>WhatsApp / celular</label>
+          <input type="tel" id="whatsapp" inputmode="numeric" placeholder="(19) 99999-9999" maxlength="16">
+        </div>
+        <div class="field">
+          <label>Telefone fixo</label>
+          <input type="tel" id="telefone" inputmode="numeric" placeholder="(19) 3333-3333" maxlength="16">
+        </div>
+        <div class="field col-2">
+          <label>E-mail</label>
+          <input type="email" id="email" autocomplete="email" placeholder="email@exemplo.com">
+        </div>
+      </div>
+    </section>
+
+    <!-- 05 -->
+    <section class="bloco">
+      <h2><span class="n">05</span> Endereço</h2>
+      <div class="grid g3">
+        <div class="field col-2" style="grid-column:1/-1">
+          <label>Logradouro</label>
+          <input type="text" id="logradouro" placeholder="Rua, avenida…">
+        </div>
+        <div class="field">
+          <label>Número</label>
+          <input type="text" id="numero" inputmode="numeric" placeholder="123">
+        </div>
+        <div class="field">
+          <label>Complemento</label>
+          <input type="text" id="complemento" placeholder="Apto, bloco…">
+        </div>
+        <div class="field">
+          <label>Bairro</label>
+          <input type="text" id="bairro">
+        </div>
+        <div class="field">
+          <label>Cidade</label>
+          <input type="text" id="cidade">
+        </div>
+        <div class="field">
+          <label>UF</label>
+          <input type="text" id="uf" placeholder="SP" maxlength="2" style="text-transform:uppercase">
+        </div>
+        <div class="field">
+          <label>CEP</label>
+          <input type="text" id="cep" inputmode="numeric" placeholder="00000-000" maxlength="9">
+        </div>
+      </div>
+    </section>
+
+    <!-- 06 -->
+    <section class="bloco">
+      <h2><span class="n">06</span> Contato de emergência</h2>
+      <p class="hint">Alguém que possamos contatar se necessário.</p>
+      <div class="grid g3">
+        <div class="field">
+          <label>Nome</label>
+          <input type="text" id="emergenciaNome" placeholder="Nome do contato">
+        </div>
+        <div class="field">
+          <label>Parentesco / vínculo</label>
+          <input type="text" id="emergenciaParentesco" placeholder="Filha, cônjuge…">
+        </div>
+        <div class="field">
+          <label>WhatsApp / telefone</label>
+          <input type="tel" id="emergenciaTelefone" inputmode="numeric" placeholder="(19) 99999-9999" maxlength="16">
+        </div>
+      </div>
+    </section>
+
+    <!-- 07 -->
+    <section class="bloco">
+      <h2><span class="n">07</span> Observações</h2>
+      <p class="hint">Algo que queira nos contar antes da consulta.</p>
+      <div class="field">
+        <label>Notas</label>
+        <textarea id="observacoes" placeholder="Mora sozinho(a)? Tem dificuldade de locomoção? Quem traz à consulta? Preferências de contato?"></textarea>
+      </div>
+    </section>
+
+    <div class="actions">
+      <button type="button" class="btn" id="btnGerar">Gerar meu código</button>
+    </div>
+  </form>
+
+  <!-- resultado -->
+  <div class="resultado" id="resultado">
+    <div class="res-card">
+      <h3>✓ Pronto, <span id="resNome">paciente</span>!</h3>
+      <p>Toque em <strong>Copiar código</strong> e cole na conversa com o consultório.
+         Se preferir, use o botão do WhatsApp.</p>
+      <div class="codigo" id="codigoOut"></div>
+      <div class="res-btns">
+        <button type="button" class="btn" id="btnCopiar">📋 Copiar código</button>
+        <button type="button" class="btn sec" id="btnWhats" style="display:none">Enviar pelo WhatsApp</button>
+        <button type="button" class="btn sec" id="btnEditar">Voltar e revisar</button>
+      </div>
+      <div class="ok-msg" id="okMsg">Copiado! Agora cole na conversa com o consultório.</div>
+    </div>
+    <div class="privacy">
+      🔒 Seus dados <strong>não são salvos em nenhum servidor</strong>. Este código vai direto para o seu médico —
+      ninguém mais tem acesso. Depois que o consultório registrar, você pode apagar a mensagem se quiser.
+    </div>
+  </div>
+
+  <footer>
+    Consultório do Vovô · ficha de pré-atendimento<br>
+    Em caso de <strong>emergência</strong>, procure o pronto-socorro mais próximo ou ligue 192 (SAMU).
+  </footer>
+</div>
+
+<script>
+/* ===== PERSONALIZE AQUI (opcional) ===== */
+const CONFIG = {
+  consultorio: 'Consultório do Vovô',
+  medico: 'Felipe Ribeiro Toledo · Medicina de Família e Comunidade',
+  // Coloque seu número com DDI/DDD (só números) para habilitar o botão do WhatsApp.
+  // Ex.: '5519999998888'. Deixe '' para mostrar só o botão de copiar.
+  whatsappDestino: ''
+};
+
+/* ===== Codificação (IDÊNTICA a modules/precadastro.js) ===== */
+const PREFIXO = 'CDV1:';
+const CAMPOS = ['nome','dataNascimento','sexo','identidadeGenero','estadoCivil','profissao','escolaridade','tipoVaga','rendaPessoal','rendaFamiliar','fonteRenda','cpf','rg','cns','convenio','whatsapp','telefone','email','logradouro','numero','complemento','bairro','cidade','uf','cep','emergenciaNome','emergenciaParentesco','emergenciaTelefone','observacoes'];
+function utf8ToB64(str){const b=new TextEncoder().encode(str);let s='';for(let i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return btoa(s);}
+function encode(obj){const o={};for(const k of CAMPOS){let v=obj[k];if(v==null)continue;v=String(v).slice(0,2000).trim();if(v)o[k]=v;}return PREFIXO+utf8ToB64(JSON.stringify(o));}
+
+/* ===== Máscaras leves ===== */
+function mascaraCPF(v){v=v.replace(/\D/g,'').slice(0,11);return v.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');}
+function mascaraCEP(v){v=v.replace(/\D/g,'').slice(0,8);return v.replace(/(\d{5})(\d)/,'$1-$2');}
+function mascaraTel(v){v=v.replace(/\D/g,'').slice(0,11);if(v.length<=10)return v.replace(/(\d{2})(\d)/,'($1) $2').replace(/(\d{4})(\d)/,'$1-$2');return v.replace(/(\d{2})(\d)/,'($1) $2').replace(/(\d{5})(\d)/,'$1-$2');}
+function ligaMascara(id,fn){const el=document.getElementById(id);if(el)el.addEventListener('input',()=>{const p=el.selectionStart;el.value=fn(el.value);});}
+ligaMascara('cpf',mascaraCPF);
+ligaMascara('cep',mascaraCEP);
+['whatsapp','telefone','emergenciaTelefone'].forEach(id=>ligaMascara(id,mascaraTel));
+
+/* ===== Idade ===== */
+document.getElementById('dataNascimento').addEventListener('input',function(){
+  const v=this.value; const a=document.getElementById('age');
+  if(!v){a.textContent='';return;}
+  const d=new Date(v); if(isNaN(d)){a.textContent='';return;}
+  const hoje=new Date(); let idade=hoje.getFullYear()-d.getFullYear();
+  const m=hoje.getMonth()-d.getMonth(); if(m<0||(m===0&&hoje.getDate()<d.getDate()))idade--;
+  a.textContent = (idade>=0&&idade<140)? idade+' anos' : '';
+});
+
+/* ===== Segmented (tipo de atendimento) ===== */
+let tipoVaga='';
+document.querySelectorAll('#seg-tipoVaga button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    if(b.classList.contains('on')){b.classList.remove('on');tipoVaga='';return;}
+    document.querySelectorAll('#seg-tipoVaga button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); tipoVaga=b.dataset.v;
+  });
+});
+
+/* ===== Header personalizado ===== */
+document.getElementById('h-consultorio').textContent=CONFIG.consultorio;
+document.getElementById('h-medico').textContent=CONFIG.medico;
+
+/* ===== Coleta + gerar ===== */
+function coletar(){
+  const o={tipoVaga};
+  CAMPOS.forEach(k=>{ if(k==='tipoVaga')return; const el=document.getElementById(k); if(el)o[k]=el.value; });
+  if(o.uf)o.uf=o.uf.toUpperCase();
+  return o;
+}
+const errBanner=document.getElementById('errBanner');
+document.getElementById('btnGerar').addEventListener('click',()=>{
+  errBanner.style.display='none';
+  const dados=coletar();
+  if(!dados.nome || !dados.nome.trim()){
+    errBanner.textContent='Por favor, preencha pelo menos o nome completo.';
+    errBanner.style.display='block';
+    document.getElementById('nome').focus();
+    window.scrollTo({top:0,behavior:'smooth'});
+    return;
+  }
+  const codigo=encode(dados);
+  document.getElementById('codigoOut').textContent=codigo;
+  document.getElementById('resNome').textContent=dados.nome.trim().split(' ')[0];
+  // WhatsApp
+  const bw=document.getElementById('btnWhats');
+  if(CONFIG.whatsappDestino){
+    const msg=encodeURIComponent('Olá! Segue meu pré-cadastro para a consulta:\n\n'+codigo);
+    bw.style.display='flex';
+    bw.onclick=()=>window.open('https://wa.me/'+CONFIG.whatsappDestino+'?text='+msg,'_blank');
+  }
+  document.getElementById('resultado').classList.add('show');
+  document.getElementById('resultado').scrollIntoView({behavior:'smooth'});
+});
+
+/* ===== Copiar ===== */
+document.getElementById('btnCopiar').addEventListener('click',async()=>{
+  const cod=document.getElementById('codigoOut').textContent;
+  const ok=document.getElementById('okMsg');
+  try{
+    await navigator.clipboard.writeText(cod);
+    ok.style.display='block';
+  }catch(e){
+    // fallback: seleciona o texto para cópia manual
+    const r=document.createRange(); r.selectNodeContents(document.getElementById('codigoOut'));
+    const s=window.getSelection(); s.removeAllRanges(); s.addRange(r);
+    ok.textContent='Selecione e copie o código acima (toque e segure → Copiar).';
+    ok.style.display='block';
+  }
+});
+document.getElementById('btnEditar').addEventListener('click',()=>{
+  document.getElementById('resultado').classList.remove('show');
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+</script>
+</body>
+</html>

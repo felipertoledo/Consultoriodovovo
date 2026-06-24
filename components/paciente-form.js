@@ -27,6 +27,10 @@ function renderPacienteForm(container, id) {
           </div>
         </div>
         <div class="page-actions">
+          <button class="btn btn-secondary" @click="abrirImportar()" x-show="isNew">
+            <svg class="icon"><use href="#i-clipboard"></use></svg>
+            Importar pré-cadastro
+          </button>
           <button class="btn btn-secondary" @click="abrirDocumentos()" x-show="!isNew">
             <svg class="icon"><use href="#i-file"></use></svg>
             Gerar documento
@@ -438,6 +442,34 @@ function renderPacienteForm(container, id) {
           </button>
         </nav>
       </div>
+
+      <!-- Modal: importar pré-cadastro do paciente -->
+      <template x-teleport="body">
+        <div x-show="modalImportar" x-cloak class="modal-overlay" @click.self="fecharImportar()">
+          <div class="modal-sheet" style="max-width: 520px" @click.stop>
+            <div class="modal-head">
+              <h3>Importar pré-cadastro</h3>
+              <button class="btn btn-sm btn-icon btn-ghost" @click="fecharImportar()">
+                <svg class="icon"><use href="#i-x"></use></svg>
+              </button>
+            </div>
+            <p class="text-sm muted mb-3">
+              Cole abaixo o código que o paciente enviou (começa com <code>CDV1:</code>).
+              Os campos preenchidos por ele serão lançados na ficha — depois é só revisar e salvar.
+            </p>
+            <textarea class="textarea" rows="5" x-model="codigoImportar"
+                      placeholder="Cole aqui o código (CDV1:...)"
+                      style="font-family: var(--font-mono); font-size: 0.8rem; word-break: break-all;"></textarea>
+            <div class="mt-4 flex gap-2" style="justify-content: flex-end">
+              <button class="btn btn-secondary" @click="fecharImportar()" :disabled="importando">Cancelar</button>
+              <button class="btn btn-primary" @click="confirmarImportar()" :disabled="importando">
+                <span x-show="!importando">Preencher ficha</span>
+                <span x-show="importando">Lendo…</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </template>
     </div>
   `;
 }
@@ -452,6 +484,10 @@ function pacienteForm(id) {
     autoSaveStatus: '',
     consultas: [],
     loadingConsultas: false,
+    // Importar pré-cadastro
+    modalImportar: false,
+    codigoImportar: '',
+    importando: false,
 
     async load() {
       if (!this.isNew) {
@@ -491,6 +527,42 @@ function pacienteForm(id) {
     novaConsulta() {
       const pid = typeof this.id === 'string' ? this.id : String(this.id);
       Router.navigate('/paciente/' + pid + '/consulta/nova');
+    },
+
+    // ---- Importar pré-cadastro (preenchido pelo paciente) ----
+    abrirImportar() {
+      this.codigoImportar = '';
+      this.modalImportar = true;
+    },
+    fecharImportar() {
+      this.modalImportar = false;
+    },
+    confirmarImportar() {
+      const txt = (this.codigoImportar || '').trim();
+      if (!txt) { UI.toast('Cole o código que o paciente enviou', 'error'); return; }
+      if (!window.PreCadastro) { UI.toast('Módulo de pré-cadastro não carregado', 'error'); return; }
+      this.importando = true;
+      try {
+        const dados = PreCadastro.decode(txt);
+        if (!dados || Object.keys(dados).length === 0) {
+          UI.toast('O código não trouxe nenhuma informação', 'error');
+          this.importando = false;
+          return;
+        }
+        // Preenche apenas os campos vindos do código, preservando o restante
+        this.paciente = { ...this.paciente, ...dados };
+        this.touched = true;
+        this.modalImportar = false;
+        const n = Object.keys(dados).length;
+        UI.toast('Ficha preenchida com ' + n + ' campo(s). Revise e salve.', 'success');
+        this.$nextTick(() => {
+          document.querySelectorAll('.textarea.auto-grow').forEach(el => UI.autoGrowTextarea(el));
+        });
+      } catch (e) {
+        UI.toast(e.message || 'Código inválido', 'error');
+      } finally {
+        this.importando = false;
+      }
     },
 
     rotuloVaga(v) {
