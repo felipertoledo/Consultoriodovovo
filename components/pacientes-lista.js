@@ -19,6 +19,10 @@ function renderPacientesLista(container) {
           </p>
         </div>
         <div class="page-actions">
+          <button class="btn btn-secondary" @click="abrirEnviarFicha()" title="Enviar ficha de pré-cadastro ao paciente">
+            <svg class="icon"><use href="#i-clipboard"></use></svg>
+            Enviar ficha
+          </button>
           <button class="btn btn-primary" @click="$dispatch('navigate', '/paciente/novo')">
             <svg class="icon"><use href="#i-plus"></use></svg>
             Novo paciente
@@ -160,6 +164,42 @@ function renderPacientesLista(container) {
           </div>
         </template>
       </div>
+
+      <!-- Modal: Enviar ficha de pré-cadastro ao paciente -->
+      <template x-teleport="body">
+        <div x-show="modalFicha" x-cloak class="modal-overlay" @click.self="fecharEnviarFicha()">
+          <div class="modal-sheet" style="max-width: 540px" @click.stop>
+            <div class="modal-head">
+              <h3>Enviar ficha de pré-cadastro</h3>
+              <button class="btn btn-sm btn-icon btn-ghost" @click="fecharEnviarFicha()">
+                <svg class="icon"><use href="#i-x"></use></svg>
+              </button>
+            </div>
+            <p class="text-sm muted mb-3">
+              Mande este link para o paciente preencher a ficha antes da consulta.
+              O que ele preencher volta como um código — depois é só abrir
+              <strong>Novo paciente → Importar pré-cadastro</strong> e colar.
+              Nada fica em servidor: o código vem direto para você.
+            </p>
+            <div x-text="linkPreCad"
+                 style="font-family: var(--font-mono); font-size: 0.78rem; word-break: break-all; user-select: all; padding: 10px 12px; border-radius: 8px; background: var(--bg-sunken); color: var(--text-secondary);"></div>
+            <div class="mt-4 flex gap-2" style="flex-wrap: wrap; justify-content: flex-end">
+              <button class="btn btn-secondary" @click="abrirFichaNova()">
+                <svg class="icon"><use href="#i-file"></use></svg>
+                Abrir a ficha
+              </button>
+              <button class="btn btn-secondary" @click="copiarLinkFicha()">
+                <svg class="icon"><use href="#i-copy"></use></svg>
+                Copiar link
+              </button>
+              <button class="btn btn-primary" @click="enviarFichaWhats()">
+                <svg class="icon"><use href="#i-whatsapp"></use></svg>
+                WhatsApp
+              </button>
+            </div>
+          </div>
+        </div>
+      </template>
     </div>
   `;
 }
@@ -170,6 +210,8 @@ function pacientesLista() {
     filtered: [],
     search: '',
     loading: true,
+    modalFicha: false, // modal "Enviar ficha de pré-cadastro"
+    linkPreCad: '',    // link público da ficha (montado ao abrir)
     enriq: {},        // pacienteId → { nivel, ultimaConsulta, condicoes, paSerie, carregado }
     filtroCond: null, // rótulo de condição crônica ativa (ex.: 'HAS')
     filtroVaga: null, // 'sus' | 'particular' | 'convenio'
@@ -314,6 +356,30 @@ function pacientesLista() {
 
     open(id) {
       Router.navigate('/paciente/' + id);
+    },
+
+    // ---- Enviar ficha de pré-cadastro ao paciente ----
+    abrirEnviarFicha() {
+      this.linkPreCad = (window.PreCadastro && PreCadastro.linkFicha()) || 'pre-cadastro.html';
+      this.modalFicha = true;
+    },
+    fecharEnviarFicha() {
+      this.modalFicha = false;
+    },
+    abrirFichaNova() {
+      window.open(this.linkPreCad, '_blank', 'noopener');
+    },
+    async copiarLinkFicha() {
+      try {
+        await navigator.clipboard.writeText(this.linkPreCad);
+        UI.toast('Link copiado — cole na conversa com o paciente', 'success');
+      } catch (e) {
+        UI.toast('Não consegui copiar. Selecione o link e copie manualmente.', 'error');
+      }
+    },
+    enviarFichaWhats() {
+      const msg = (window.PreCadastro && PreCadastro.mensagemFicha()) || this.linkPreCad;
+      window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener');
     },
 
     // ---- Sparkline de PA ----

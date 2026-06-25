@@ -14,13 +14,14 @@
    `updatefound`; o index.html mostra banner pro usuário.
    ============================================================ */
 
-const CACHE_VERSION = 'v0.24.4';
+const CACHE_VERSION = 'v0.25.0';
 const CACHE_NAME = `cdv-cache-${CACHE_VERSION}`;
 
 // Lista exaustiva de arquivos a pré-cachear no install
 const PRECACHE_ASSETS = [
   './',
   './index.html',
+  './pre-cadastro.html',
   './manifest.webmanifest',
 
   // Estilos
@@ -68,6 +69,7 @@ const PRECACHE_ASSETS = [
   './modules/hiperdia.js',
   './modules/sparkline.js',
   './modules/financeiro-core.js',
+  './modules/precadastro.js',
   './modules/tema.js',
 
   // Componentes de tela
