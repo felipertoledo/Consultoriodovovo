@@ -12,7 +12,7 @@ function renderSetupWizard(container) {
             <svg><use href="#i-selo"></use></svg>
           </div>
           <h1>Consultório do Vovô</h1>
-          <p class="tagline">Configuração inicial — Felipe Ribeiro Toledo · CRM-SP 216.986</p>
+          <p class="tagline">Configuração inicial</p>
         </div>
 
         <!-- Etapa 0: escolha entre criar novo ou restaurar -->
@@ -124,7 +124,7 @@ function renderSetupWizard(container) {
         <!-- Etapa 2: Chave de recuperação -->
         <template x-if="step === 2">
           <div>
-            <p class="eyebrow">Passo 2 de 2 — Lacre de segurança</p>
+            <p class="eyebrow">Passo 2 de 3 — Lacre de segurança</p>
             <h2 class="mb-2">Sua chave de recuperação</h2>
             <p class="mb-4">Anote esta chave em <strong>local físico seguro</strong> (papel, gerenciador de senhas).
             Ela permite recuperar o acesso caso você esqueça a senha mestra.</p>
@@ -153,10 +153,50 @@ function renderSetupWizard(container) {
               </label>
             </div>
 
-            <button class="btn btn-primary btn-block btn-lg" :disabled="!confirmed" @click="finish()">
+            <button class="btn btn-primary btn-block btn-lg" :disabled="!confirmed" @click="step = 3">
               <svg class="icon"><use href="#i-arrow-right"></use></svg>
-              Entrar no Consultório do Vovô
+              Continuar
             </button>
+          </div>
+        </template>
+
+        <template x-if="step === 3">
+          <div>
+            <p class="eyebrow">Passo 3 de 3 — Sua identificação</p>
+            <h2 class="mb-2">Identificação profissional</h2>
+            <p class="mb-4">Esses dados saem no cabeçalho e na assinatura das receitas, laudos e PDFs. Dá para editar depois em Configurações.</p>
+
+            <div class="form-group">
+              <label>Nome completo</label>
+              <input type="text" class="input" x-model="perfil.nome" placeholder="Ex.: Maria Silva Souza">
+            </div>
+            <div class="flex gap-2">
+              <div class="form-group" style="flex:0 0 88px"><label>Título</label><input type="text" class="input" x-model="perfil.titulo" placeholder="Médico"></div>
+              <div class="form-group" style="flex:0 0 92px"><label>Conselho</label><input type="text" class="input" x-model="perfil.conselho" placeholder="CRM"></div>
+              <div class="form-group" style="flex:0 0 70px"><label>UF</label><input type="text" class="input" x-model="perfil.uf" maxlength="2" placeholder="SP"></div>
+              <div class="form-group" style="flex:1"><label>Nº de registro</label><input type="text" class="input" x-model="perfil.registro" placeholder="123.456"></div>
+            </div>
+            <div class="form-group">
+              <label>Especialidade <span style="color:var(--text-muted)">(opcional)</span></label>
+              <input type="text" class="input" x-model="perfil.especialidade" placeholder="Medicina de Família e Comunidade">
+            </div>
+            <div class="form-group">
+              <label>Unidade / estabelecimento <span style="color:var(--text-muted)">(opcional)</span></label>
+              <input type="text" class="input" x-model="perfil.unidade" placeholder="Ex.: USF Central — em branco se atende só particular">
+            </div>
+            <div class="flex gap-2">
+              <div class="form-group" style="flex:1"><label>Município/UF p/ assinatura <span style="color:var(--text-muted)">(opcional)</span></label><input type="text" class="input" x-model="perfil.municipio" placeholder="Ex.: São Paulo - SP"></div>
+              <div class="form-group" style="flex:1"><label>Contato p/ assinatura digital <span style="color:var(--text-muted)">(opcional)</span></label><input type="text" class="input" x-model="perfil.contato" placeholder="e-mail ou telefone"></div>
+            </div>
+
+            <div class="field-error" x-show="perfil.nome.trim() && !perfil.registro.trim()">Informe o número de registro.</div>
+
+            <button class="btn btn-primary btn-block btn-lg mt-2" :disabled="!perfilValido() || working" @click="salvarPerfilEFinalizar()">
+              <svg class="icon"><use href="#i-check"></use></svg>
+              <span x-show="!working">Entrar no Consultório do Vovô</span>
+              <span x-show="working">Salvando…</span>
+            </button>
+            <button class="btn btn-ghost btn-sm btn-block mt-2" @click="pularPerfil()">Preencher depois</button>
           </div>
         </template>
       </div>
@@ -175,6 +215,7 @@ function setupWizard() {
     strength: { score: 0, label: '' },
     arquivoInfo: null,
     envelopePendente: null,
+    perfil: { nome: '', titulo: 'Médico', conselho: 'CRM', uf: '', registro: '', especialidade: '', unidade: '', municipio: '', contato: '' },
 
     init() {
       this.$watch('password', () => {
@@ -255,7 +296,7 @@ function setupWizard() {
              text-align:center;letter-spacing:.05em;word-break:break-all}</style>
         </head><body>
         <h1>Chave de Recuperação</h1>
-        <p>Consultório do Vovô · Felipe Ribeiro Toledo · CRM-SP 216.986</p>
+        <p>Consultório do Vovô</p>
         <p>Data: ${new Date().toLocaleString('pt-BR')}</p>
         <div class="key">${this.recoveryKey}</div>
         <p><strong>Guarde em local físico seguro.</strong> Esta chave permite recuperar
@@ -270,7 +311,6 @@ function setupWizard() {
     downloadRecovery() {
       const content = `Chave de Recuperação — Consultório do Vovô
 =================================================
-Felipe Ribeiro Toledo · CRM-SP 216.986
 Data: ${new Date().toLocaleString('pt-BR')}
 
 CHAVE:
@@ -289,6 +329,24 @@ os dados do prontuário ficam permanentemente inacessíveis.
       URL.revokeObjectURL(a.href);
     },
 
+    perfilValido() {
+      return this.perfil.nome.trim().length > 1 && this.perfil.registro.trim().length > 0;
+    },
+    async salvarPerfilEFinalizar() {
+      if (!this.perfilValido() || this.working) return;
+      this.working = true;
+      try {
+        const p = await DB.setPerfil(this.perfil);
+        if (window.PDFBuilder) PDFBuilder.setMedico(p);
+        this.finish();
+      } catch (e) {
+        UI.toast('Erro ao salvar perfil: ' + e.message, 'error');
+        this.working = false;
+      }
+    },
+    pularPerfil() {
+      this.finish();
+    },
     finish() {
       Router.navigate('/');
     }

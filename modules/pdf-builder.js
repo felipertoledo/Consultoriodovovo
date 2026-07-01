@@ -10,13 +10,33 @@ const PDFBuilder = (() => {
   const PAGE_HEIGHT = 297;
   const CONTENT_WIDTH = PAGE_WIDTH - MARGIN.left - MARGIN.right;
 
-  // Identificação do médico (config global)
+  // Identificação do profissional — populada no 1º acesso via setMedico(perfil).
+  // Sem defaults pessoais: fica em branco até o perfil ser configurado.
   const MEDICO = {
-    nome: 'Felipe Ribeiro Toledo',
+    nome: '',
     titulo: 'Médico',
-    crm: 'CRM-SP 216.986',
-    unidade: 'USF Estiva Gerbi'
+    crm: '',
+    unidade: '',
+    municipio: '',
+    contato: ''
   };
+
+  // Monta "CONSELHO-UF 000000" a partir do perfil
+  function crmString(p) {
+    const consUf = [p.conselho || 'CRM', String(p.uf || '').toUpperCase()].filter(Boolean).join('-');
+    return [consUf, p.registro || ''].filter(Boolean).join(' ').trim();
+  }
+
+  // Popula a identidade a partir do perfil salvo (chamado no desbloqueio)
+  function setMedico(perfil) {
+    if (!perfil) return;
+    MEDICO.nome = perfil.nome || '';
+    MEDICO.titulo = perfil.titulo || 'Médico';
+    MEDICO.crm = crmString(perfil);
+    MEDICO.unidade = perfil.unidade || '';
+    MEDICO.municipio = perfil.municipio || '';
+    MEDICO.contato = perfil.contato || '';
+  }
 
   // ---- Cria um novo documento jsPDF com margens e config padrão ----
   function novoPDF() {
@@ -509,7 +529,7 @@ const PDFBuilder = (() => {
           const signedBlob = await Signer.signPDF(currentBlob, senha, {
             lembrarSenha: lembrar,
             reason: 'Documento médico - ' + tipo,
-            location: 'USF Estiva Gerbi - SP'
+            location: (MEDICO.municipio || MEDICO.unidade || '')
           });
           currentBlob = signedBlob;
           pdfWasSigned = true;
@@ -997,6 +1017,7 @@ const PDFBuilder = (() => {
   // ---- API pública ----
   return {
     MEDICO,
+    setMedico,
     MARGIN,
     PAGE_WIDTH,
     PAGE_HEIGHT,

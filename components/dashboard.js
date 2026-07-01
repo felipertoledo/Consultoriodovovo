@@ -13,7 +13,7 @@ function renderDashboard(container) {
       <div class="masthead">
         <div class="page-header" style="margin-bottom: 0">
           <div>
-            <p class="eyebrow"><span x-text="saudacao">Bom dia</span>, Felipe<span x-show="plantao"> — bom plantão</span></p>
+            <p class="eyebrow"><span x-text="saudacao">Bom dia</span><span x-show="nomeMedico" x-text="', ' + nomeMedico"></span><span x-show="plantao"> — bom plantão</span></p>
             <h1 class="masthead-date" x-text="today"></h1>
             <div class="masthead-meta">
               <span x-text="'Dia ' + edicao + ' do ano'"></span>
@@ -337,6 +337,7 @@ function dashboardScreen() {
     stats: { pacientes: 0, consultas: 0 },
     today: '',
     saudacao: 'Olá',
+    nomeMedico: '',
     plantao: false,
     edicao: 0,
     version: '0.1.0',
@@ -451,6 +452,7 @@ function dashboardScreen() {
     },
 
     async load() {
+      try { const _p = await DB.getPerfil(); if (_p) { this.nomeMedico = (_p.nome||'').trim().split(' ')[0] || ''; if (window.PDFBuilder) PDFBuilder.setMedico(_p); } } catch (_e) {}
       const hora = new Date().getHours();
       this.saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
       this.plantao = hora >= 22 || hora < 6;

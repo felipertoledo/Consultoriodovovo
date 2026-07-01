@@ -56,9 +56,11 @@ const ShareService = (() => {
     const primeiroNome = (paciente.nome || '').split(/\s+/)[0] || 'paciente';
     const tipoLower = (tipoDocumento || 'documento').toLowerCase();
 
-    return `Olá, ${primeiroNome}! Segue o(a) ${tipoLower} da nossa consulta. ` +
-           `Atenciosamente, Felipe Ribeiro Toledo — Médico — CRM-SP 216.986. ` +
-           `USF Estiva Gerbi.`;
+    const M = (window.PDFBuilder && PDFBuilder.MEDICO) || {};
+    const assinatura = [M.nome, M.titulo, M.crm].filter(Boolean).join(' — ');
+    const unidade = M.unidade ? ` ${M.unidade}.` : '';
+    return `Olá, ${primeiroNome}! Segue o(a) ${tipoLower} da nossa consulta.` +
+           (assinatura ? ` Atenciosamente, ${assinatura}.` : '') + unidade;
   }
 
   // ---- Estratégia 1: Web Share API com arquivos ----

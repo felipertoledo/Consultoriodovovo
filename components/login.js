@@ -12,7 +12,7 @@ function renderLogin(container) {
             <svg><use href="#i-selo"></use></svg>
           </div>
           <h1>Consultório do Vovô</h1>
-          <p class="tagline">Felipe Ribeiro Toledo · CRM-SP 216.986</p>
+          <p class="tagline">Prontuário eletrônico · dados criptografados no dispositivo</p>
         </div>
 
         <template x-if="mode === 'password'">

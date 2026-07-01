@@ -43,7 +43,7 @@ H.test('módulos e componentes recentes cabeados', () => {
     'modules/tema.js',
     'components/consultas-recentes.js',
     'components/hiperdia.js',
-    'components/sync.js',
+    'components/sync-tela.js',
     'components/paciente-form.js',
     'components/pacientes-lista.js'
   ];

@@ -170,4 +170,21 @@ H.test('audit registra ações', async () => {
   H.assert(Array.isArray(recente) && recente.length > 0, 'audit vazio');
 });
 
+H.section('Perfil profissional');
+H.test('getPerfil começa null', async () => {
+  const p = await DB.getPerfil();
+  H.assert(p === null, 'perfil deveria começar null');
+});
+H.test('setPerfil salva e normaliza', async () => {
+  const salvo = await DB.setPerfil({ nome: '  Ana Souza ', conselho: 'crm', uf: 'sp', registro: '123.456', unidade: 'USF X' });
+  H.assert(salvo.nome === 'Ana Souza', 'nome não normalizado (trim)');
+  H.assert(salvo.conselho === 'CRM', 'conselho não virou maiúsculo');
+  H.assert(salvo.uf === 'SP', 'uf não virou maiúscula');
+  H.assert(salvo.titulo === 'Médico', 'título default ausente');
+});
+H.test('getPerfil devolve o que foi salvo', async () => {
+  const p = await DB.getPerfil();
+  H.assert(p && p.nome === 'Ana Souza' && p.registro === '123.456', 'perfil não persistiu');
+});
+
 H.run();

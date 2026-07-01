@@ -958,6 +958,31 @@ const DB = (() => {
     return limpa;
   }
 
+  // ---- Perfil profissional (identidade que sai nos documentos) ----
+  // Preenchido no 1º acesso; editável em Configurações. Fonte única de
+  // nome/CRM/unidade para receitas, PDFs, compartilhamento e assinatura.
+  async function getPerfil() {
+    const entry = await db.config.get('perfil');
+    return (entry && entry.value && typeof entry.value === 'object') ? entry.value : null;
+  }
+  async function setPerfil(p) {
+    p = p || {};
+    const uf = String(p.uf || '').trim().toUpperCase().slice(0, 2);
+    const limpo = {
+      nome: String(p.nome || '').trim(),
+      titulo: String(p.titulo || 'Médico').trim() || 'Médico',
+      conselho: (String(p.conselho || 'CRM').trim().toUpperCase()) || 'CRM',
+      uf: uf,
+      registro: String(p.registro || '').trim(),
+      especialidade: String(p.especialidade || '').trim(),
+      unidade: String(p.unidade || '').trim(),
+      municipio: String(p.municipio || '').trim(),
+      contato: String(p.contato || '').trim()
+    };
+    await db.config.put({ key: 'perfil', value: limpo });
+    return limpo;
+  }
+
   async function wipeEverything() {
     await db.pacientes.clear();
     await db.consultas.clear();
@@ -996,6 +1021,7 @@ const DB = (() => {
     // Lançamentos financeiros
     createLancamento, getLancamento, updateLancamento, softDeleteLancamento,
     listLancamentos, listMesesComLancamentos, getImpostos, setImpostos,
+    getPerfil, setPerfil,
     // Audit
     audit, getRecentAudit,
     // Danger

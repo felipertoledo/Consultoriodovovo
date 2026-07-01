@@ -6,7 +6,7 @@
 const ClinicalData = (() => {
 
   // ============================================================
-  // REMUME — base operacional Felipe (REMUME SJBV + Estiva Gerbi)
+  // REMUME — base operacional (REMUME SJBV + Estiva Gerbi)
   // Formato: "nome dose apresentação"
   // ============================================================
   const REMUME = [

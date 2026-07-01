@@ -2,7 +2,7 @@
    signer.js — Assinatura digital ICP-Brasil A1 (.pfx/.p12)
 
    Workflow:
-   1. Felipe cadastra o certificado A1 uma vez (Configurações):
+   1. O usuário cadastra o certificado A1 uma vez (Configurações):
       - sobe o arquivo .pfx
       - informa a senha
       - sistema valida com node-forge
@@ -313,8 +313,8 @@ const Signer = (() => {
         pwd: password,
         permission: opcoes.permission || 1, // 1 = permite anotações; 2 = só formulários; 3 = nada
         reason: opcoes.reason || 'Prescrição médica',
-        location: opcoes.location || 'USF Estiva Gerbi - SP',
-        contact: opcoes.contact || 'felipertoledo@gmail.com'
+        location: opcoes.location || (window.PDFBuilder && PDFBuilder.MEDICO.municipio) || (window.PDFBuilder && PDFBuilder.MEDICO.unidade) || '',
+        contact: opcoes.contact || (window.PDFBuilder && PDFBuilder.MEDICO.contato) || ''
       };
 
       const signer = new Zga.PdfSigner(sopt);

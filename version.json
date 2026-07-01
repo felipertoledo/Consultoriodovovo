@@ -1,6 +1,6 @@
 {
-  "version": "0.25.0",
-  "buildDate": "2026-06-24",
-  "codename": "Pré-cadastro integrado",
-  "notes": "Integração completa da ficha de pré-cadastro do paciente. (1) Novo modulo modules/precadastro.js (encode/decode/limpar/pareceCodigo + linkFicha/mensagemFicha), que faltava: o botao 'Importar pre-cadastro' no formulario de novo paciente ja existia e chamava PreCadastro.decode, mas o modulo nunca tinha sido publicado — agora funciona. (2) Novo botao 'Enviar ficha' na tela Pacientes, com modal: abrir a ficha no proprio site (nova aba), copiar o link, ou enviar por WhatsApp. (3) modules/precadastro.js e pre-cadastro.html adicionados ao precache (abrem offline). Ciclo fechado: medico envia a ficha -> paciente preenche na pagina publica -> gera codigo CDV1 -> medico cola em Importar pre-cadastro. Zero-knowledge preservado: o codigo viaja direto paciente->medico, nada passa por servidor. 19/19 testes de test_precadastro.js verdes. CACHE_VERSION v0.25.0."
+  "version": "0.26.0",
+  "buildDate": "2026-07-01",
+  "codename": "Identidade configurável",
+  "notes": "Identidade profissional (nome, conselho/UF/registro, especialidade, unidade, município e contato) deixou de ser chumbada e passou a ser configurada no 1º acesso (novo passo do assistente), editável em Configurações > Identificação profissional, e replicada automaticamente em receitas, laudos, PDFs, mensagem de compartilhamento e assinatura digital. Fonte única: PDFBuilder.MEDICO, populado no desbloqueio via PDFBuilder.setMedico(perfil). Perfil salvo no cofre (config), portanto viaja no backup. CACHE_VERSION v0.26.0."
 }

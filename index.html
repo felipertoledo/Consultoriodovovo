@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="Consultório do Vovô — Prontuário eletrônico do Dr. Felipe Ribeiro Toledo (CRM-SP 216.986). Dados criptografados localmente.">
+  <meta name="description" content="Consultório do Vovô — Prontuário eletrônico local-first, com dados criptografados no dispositivo.">
   <meta name="theme-color" content="#0C2F25">
   <meta name="robots" content="noindex, nofollow">
 
@@ -785,7 +785,7 @@
                 <div class="brand-logo"><svg><use href="#i-selo"/></svg></div>
                 <div>
                   <div class="brand-name">Consultório<br>do Vovô</div>
-                  <div class="brand-tagline">CRM-SP 216.986</div>
+                  <div class="brand-tagline"></div>
                 </div>
               </div>
 
@@ -985,6 +985,17 @@
           if (window.CmdK) CmdK.fechar();
           Router.navigate('/');
         }
+      });
+
+      // Carrega o perfil profissional no desbloqueio e alimenta os documentos
+      Auth.on(async (event) => {
+        if (event !== 'unlocked') return;
+        try {
+          const p = await DB.getPerfil();
+          if (p && window.PDFBuilder) PDFBuilder.setMedico(p);
+          const tag = document.querySelector('.brand-tagline');
+          if (tag && window.PDFBuilder) tag.textContent = PDFBuilder.MEDICO.crm || '';
+        } catch (e) { console.warn('Perfil não carregado:', e); }
       });
 
       // Esconde o loader e inicia

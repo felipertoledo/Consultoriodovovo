@@ -12,6 +12,31 @@ function renderConfig(container) {
         </div>
       </div>
 
+      <div class="card mt-4">
+        <h3 class="card-title mb-4">👤 Identificação profissional</h3>
+        <p class="field-help mb-3">Sai no cabeçalho e na assinatura de receitas, laudos e PDFs.</p>
+        <div class="form-group">
+          <label>Nome completo</label>
+          <input type="text" class="input" x-model="perfil.nome">
+        </div>
+        <div class="flex gap-2">
+          <div class="form-group" style="flex:0 0 88px"><label>Título</label><input type="text" class="input" x-model="perfil.titulo"></div>
+          <div class="form-group" style="flex:0 0 92px"><label>Conselho</label><input type="text" class="input" x-model="perfil.conselho"></div>
+          <div class="form-group" style="flex:0 0 70px"><label>UF</label><input type="text" class="input" x-model="perfil.uf" maxlength="2"></div>
+          <div class="form-group" style="flex:1"><label>Nº registro</label><input type="text" class="input" x-model="perfil.registro"></div>
+        </div>
+        <div class="form-group"><label>Especialidade <span style="color:var(--text-muted)">(opcional)</span></label><input type="text" class="input" x-model="perfil.especialidade"></div>
+        <div class="form-group"><label>Unidade / estabelecimento <span style="color:var(--text-muted)">(opcional)</span></label><input type="text" class="input" x-model="perfil.unidade"></div>
+        <div class="flex gap-2">
+          <div class="form-group" style="flex:1"><label>Município/UF p/ assinatura <span style="color:var(--text-muted)">(opcional)</span></label><input type="text" class="input" x-model="perfil.municipio"></div>
+          <div class="form-group" style="flex:1"><label>Contato p/ assinatura digital <span style="color:var(--text-muted)">(opcional)</span></label><input type="text" class="input" x-model="perfil.contato"></div>
+        </div>
+        <div class="field-help mt-2" x-show="perfil.nome.trim()">Sai como: <strong x-text="assinaturaPreview()"></strong></div>
+        <button class="btn btn-primary mt-3" :disabled="perfilOcupado" @click="salvarPerfil()">
+          <svg class="icon"><use href="#i-check"></use></svg> Salvar identificação
+        </button>
+      </div>
+
       <div class="card mt-4" style="border-color: var(--color-primary); border-width: 2px">
         <h3 class="card-title mb-4">💾 Backup do cofre</h3>
 
@@ -618,7 +643,36 @@ function configScreen() {
     certWorking: false,
     senhaCacheAtiva: false,
 
+    perfil: { nome:'', titulo:'Médico', conselho:'CRM', uf:'', registro:'', especialidade:'', unidade:'', municipio:'', contato:'' },
+    perfilOcupado: false,
+    assinaturaPreview() {
+      const p = this.perfil;
+      const consUf = [p.conselho || 'CRM', (p.uf||'').toUpperCase()].filter(Boolean).join('-');
+      const crm = [consUf, p.registro].filter(Boolean).join(' ').trim();
+      return [p.nome, p.titulo, crm].filter(Boolean).join(' — ');
+    },
+    async carregarPerfil() {
+      try {
+        const p = await DB.getPerfil();
+        if (p) { this.perfil = Object.assign(this.perfil, p); if (window.PDFBuilder) PDFBuilder.setMedico(p); }
+      } catch (e) { /* ainda não configurado */ }
+    },
+    async salvarPerfil() {
+      if (this.perfilOcupado) return;
+      if (!this.perfil.nome.trim() || !this.perfil.registro.trim()) { UI.toast('Informe ao menos nome e número de registro', 'error'); return; }
+      this.perfilOcupado = true;
+      try {
+        const p = await DB.setPerfil(this.perfil);
+        this.perfil = Object.assign(this.perfil, p);
+        if (window.PDFBuilder) PDFBuilder.setMedico(p);
+        const tag = document.querySelector('.brand-tagline');
+        if (tag && window.PDFBuilder) tag.textContent = PDFBuilder.MEDICO.crm || '';
+        UI.toast('Identificação salva — já vale para os próximos documentos', 'success');
+      } catch (e) { UI.toast('Erro ao salvar: ' + e.message, 'error'); }
+      finally { this.perfilOcupado = false; }
+    },
     async load() {
+      await this.carregarPerfil();
       try {
         this.auditEntries = await DB.getRecentAudit(50);
       } catch (e) { console.error(e); }

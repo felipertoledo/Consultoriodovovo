@@ -29,7 +29,7 @@ const componentes = [
   'components/prescricao-rapida.js',
   'components/config.js',
   'components/documentos.js',
-  'components/sync.js',
+  'components/sync-tela.js',
   'components/consulta-form.js',
   'components/exame-psiquico.js',
   'components/login.js',

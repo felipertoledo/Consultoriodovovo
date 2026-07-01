@@ -563,11 +563,11 @@ const PDFDocumentsExtra = (() => {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(15, 23, 42);
-    doc.text('Felipe Ribeiro Toledo — Médico — CRM-SP 216.986',
+    doc.text(`${PDFBuilder.MEDICO.nome} — ${PDFBuilder.MEDICO.titulo} — ${PDFBuilder.MEDICO.crm}`,
       (linhaInicio + linhaFim) / 2, yLinha + 5, { align: 'center' });
     doc.setFontSize(8);
     doc.setTextColor(71, 85, 105);
-    doc.text('USF Estiva Gerbi · Assinatura e carimbo',
+    doc.text(`${PDFBuilder.MEDICO.unidade ? PDFBuilder.MEDICO.unidade + ' · ' : ''}Assinatura e carimbo`,
       (linhaInicio + linhaFim) / 2, yLinha + 10, { align: 'center' });
 
     // Aviso de arquivo físico
