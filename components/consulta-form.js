@@ -43,6 +43,16 @@ function renderConsultaForm(container, pacienteId, consultaId) {
         </div>
       </div>
 
+      <div class="card mb-3" style="border-color: var(--color-primary); display:flex; align-items:center; gap:10px" x-show="herdadoDe" x-cloak>
+        <svg class="icon" style="flex:0 0 auto"><use href="#i-clipboard"></use></svg>
+        <div style="flex:1; font-size:.9em">
+          Antecedentes, hábitos e medicações em uso foram <strong>trazidos da última consulta</strong>
+          (<span x-text="formatDate(herdadoDe)"></span>). Revise e atualize o que mudou.
+        </div>
+        <button class="btn btn-ghost btn-sm" @click="limparHerdados()" style="flex:0 0 auto">Limpar herdados</button>
+        <button class="btn btn-ghost btn-sm" @click="herdadoDe = ''" style="flex:0 0 auto">Entendi</button>
+      </div>
+
       <div class="workbench has-map">
         <div>
           <div class="folha">
@@ -746,6 +756,8 @@ function consultaForm(pacienteId, consultaId) {
     pacienteId: parseInt(pacienteId, 10),
     consultaId: consultaId,
     isNew: !consultaId,
+    herdadoDe: '',
+    camposHerdaveis: ['antecedentes','antecedentesTexto','cirurgias','familiares','familiaresTexto','tabagismo','macosAno','alcool','atividadeFisica','sono','medicacoesUso'],
     paciente: { nome: '', dataNascimento: '', sexo: '', tipoVaga: '' },
     consulta: emptyConsulta(),
     saving: false,
@@ -786,6 +798,14 @@ function consultaForm(pacienteId, consultaId) {
     cirurgiasComuns: ClinicalData.CIRURGIAS_COMUNS,
     familiaresComuns: ClinicalData.FAMILIARES_COMUNS,
 
+    limparHerdados() {
+      for (const campo of this.camposHerdaveis) {
+        this.consulta[campo] = Array.isArray(this.consulta[campo]) ? [] : '';
+      }
+      this.herdadoDe = '';
+      this.touch();
+    },
+
     async load() {
       try {
         this.paciente = await DB.getPaciente(this.pacienteId) || this.paciente;
@@ -798,6 +818,26 @@ function consultaForm(pacienteId, consultaId) {
           }
         } else {
           this.consulta.dataHora = new Date().toISOString();
+          // Herda os campos que pertencem ao paciente (não mudam entre consultas)
+          // a partir da última consulta. O médico revisa via banner.
+          try {
+            const anteriores = await DB.listConsultasByPaciente(this.pacienteId);
+            if (anteriores && anteriores.length) {
+              const ultima = anteriores[0];
+              let herdouAlgo = false;
+              for (const campo of this.camposHerdaveis) {
+                const v = ultima[campo];
+                if (Array.isArray(v) && v.length) {
+                  this.consulta[campo] = JSON.parse(JSON.stringify(v));
+                  herdouAlgo = true;
+                } else if (typeof v === 'string' && v.trim()) {
+                  this.consulta[campo] = v;
+                  herdouAlgo = true;
+                }
+              }
+              if (herdouAlgo) this.herdadoDe = ultima.dataHora || '';
+            }
+          } catch (e) { console.warn('Herança de antecedentes falhou:', e); }
         }
 
         // Monta o componente de exame psíquico

@@ -380,6 +380,8 @@ const PDFBuilder = (() => {
 
   // ---- Helper completo para abrir um modal de preview ----
   function previewModal(doc, nomeArquivo, tipo, paciente) {
+    // Defesa em profundidade: 'tipo' vai para innerHTML — escapar sempre.
+    const _esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const blob = doc.output('blob');
     const url = URL.createObjectURL(blob);
 
@@ -392,7 +394,7 @@ const PDFBuilder = (() => {
     overlay.innerHTML = `
       <div class="pdf-preview-modal">
         <div class="pdf-preview-header">
-          <h3 style="margin:0">${tipo}</h3>
+          <h3 style="margin:0">${_esc(tipo)}</h3>
           <div class="flex gap-2" style="flex-wrap: wrap">
             <button class="btn btn-success text-sm" id="pdf-btn-whatsapp" title="Enviar PDF para o paciente via WhatsApp">
               <span style="color: #25D366">📱</span> WhatsApp

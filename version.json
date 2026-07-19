@@ -1,6 +1,6 @@
 {
-  "version": "0.26.0",
-  "buildDate": "2026-07-01",
-  "codename": "Identidade configurável",
-  "notes": "Identidade profissional (nome, conselho/UF/registro, especialidade, unidade, município e contato) deixou de ser chumbada e passou a ser configurada no 1º acesso (novo passo do assistente), editável em Configurações > Identificação profissional, e replicada automaticamente em receitas, laudos, PDFs, mensagem de compartilhamento e assinatura digital. Fonte única: PDFBuilder.MEDICO, populado no desbloqueio via PDFBuilder.setMedico(perfil). Perfil salvo no cofre (config), portanto viaja no backup. CACHE_VERSION v0.26.0."
+  "version": "0.27.0",
+  "buildDate": "2026-07-19",
+  "codename": "Herança de antecedentes + CSP",
+  "notes": "(1) Antecedentes pessoais/familiares, cirurgias, hábitos e medicações em uso — dados do paciente que não mudam entre consultas — passam a ser herdados automaticamente da última consulta ao abrir uma consulta NOVA, com banner de revisão e botão 'Limpar herdados'. Consulta em edição não é afetada. (2) Segurança: adicionada Content-Security-Policy (restringe connect-src a self+Supabase, bloqueando exfiltração; object-src none; base-uri/form-action self) e escape defensivo do rótulo de documento no preview de PDF. CACHE_VERSION v0.27.0."
 }
