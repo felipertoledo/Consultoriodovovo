@@ -3,7 +3,9 @@
    ============================================================ */
 
 const Auth = (() => {
-  const IDLE_TIMEOUT_MS = 15 * 60 * 1000;  // 15 minutos
+  // Tempo de inatividade até trancar automaticamente. 0 = desabilitado
+  // (sem tempo limite). Configurável em Configurações, aplicado no desbloqueio.
+  let idleTimeoutMs = 0;
   const MIN_PASSWORD_LENGTH = 12;
 
   let idleTimer = null;
@@ -71,11 +73,20 @@ const Auth = (() => {
   // ---- Idle timer ----
   function resetIdle() {
     if (!DB.isUnlocked()) return;
-    if (idleTimer) clearTimeout(idleTimer);
+    if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+    // 0 (ou negativo) = sem tempo limite: não arma nenhum timer.
+    if (!idleTimeoutMs || idleTimeoutMs <= 0) return;
     idleTimer = setTimeout(() => {
       console.log('Idle timeout — trancando cofre');
       lock();
-    }, IDLE_TIMEOUT_MS);
+    }, idleTimeoutMs);
+  }
+
+  // Define o tempo de inatividade (minutos). 0/<=0 desativa (sem limite).
+  function setIdleTimeout(minutes) {
+    const m = Number(minutes);
+    idleTimeoutMs = (m > 0) ? m * 60 * 1000 : 0;
+    resetIdle();
   }
 
   function startIdleTimer() {
@@ -130,7 +141,8 @@ const Auth = (() => {
     passwordStrength,
     on,
     isUnlocked: () => DB.isUnlocked(),
-    IDLE_TIMEOUT_MS,
+    setIdleTimeout,
+    getIdleTimeoutMin: () => Math.round(idleTimeoutMs / 60000),
     MIN_PASSWORD_LENGTH
   };
 })();

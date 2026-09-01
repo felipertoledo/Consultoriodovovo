@@ -187,4 +187,20 @@ H.test('getPerfil devolve o que foi salvo', async () => {
   H.assert(p && p.nome === 'Ana Souza' && p.registro === '123.456', 'perfil não persistiu');
 });
 
+H.section('Tempo de inatividade (auto-tranco)');
+H.test('idle começa em 0 (nunca)', async () => {
+  const v = await DB.getIdleTimeoutMin();
+  H.assert(v === 0, 'padrão deveria ser 0 (sem limite)');
+});
+H.test('set/get idle persiste minutos válidos', async () => {
+  await DB.setIdleTimeoutMin(30);
+  H.assert((await DB.getIdleTimeoutMin()) === 30, 'não persistiu 30');
+});
+H.test('valores inválidos/negativos viram 0 (nunca)', async () => {
+  await DB.setIdleTimeoutMin(-5);
+  H.assert((await DB.getIdleTimeoutMin()) === 0, 'negativo deveria virar 0');
+  await DB.setIdleTimeoutMin('abc');
+  H.assert((await DB.getIdleTimeoutMin()) === 0, 'texto deveria virar 0');
+});
+
 H.run();

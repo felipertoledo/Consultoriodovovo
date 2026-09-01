@@ -823,7 +823,6 @@
                 <button class="nav-item" onclick="Auth.lock().then(() => Router.navigate('/'))">
                   <svg class="icon"><use href="#i-lock"/></svg>
                   <span>Bloquear cofre</span>
-                  <span class="nav-kbd">15 min</span>
                 </button>
               </div>
 
@@ -996,7 +995,9 @@
           if (p && window.PDFBuilder) PDFBuilder.setMedico(p);
           const tag = document.querySelector('.brand-tagline');
           if (tag && window.PDFBuilder) tag.textContent = PDFBuilder.MEDICO.crm || '';
-        } catch (e) { console.warn('Perfil não carregado:', e); }
+          const idleMin = await DB.getIdleTimeoutMin();
+          if (window.Auth && Auth.setIdleTimeout) Auth.setIdleTimeout(idleMin);
+        } catch (e) { console.warn('Perfil/idle não carregado:', e); }
       });
 
       // Esconde o loader e inicia

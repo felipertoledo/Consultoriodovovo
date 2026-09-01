@@ -307,7 +307,7 @@ function renderDashboard(container) {
                 <li><strong>Assinatura ICP-Brasil A1</strong> — PAdES PKCS#7, verificável em Adobe Reader e ITI gov.br</li>
                 <li><strong>Backup criptografado</strong> .cdv-backup com checksum SHA-256 + restore</li>
                 <li><strong>PWA instalável</strong> — Service Worker, 100% offline depois do primeiro acesso</li>
-                <li><strong>Trilha de auditoria</strong> local + idle lock em 15 minutos</li>
+                <li><strong>Trilha de auditoria</strong> local + bloqueio manual (auto-bloqueio configurável)</li>
                 <li><strong>Agenda e busca ativa</strong> — retornos em PT-BR ("30 dias", "3 meses"), faltosos</li>
                 <li><strong>Painel Hiperdia</strong> — semáforo de risco HAS/DM por última PA/glicemia</li>
                 <li><strong>Templates de prescrição</strong> — receitas frequentes salvas e re-aplicáveis</li>

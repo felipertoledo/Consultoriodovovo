@@ -1,6 +1,6 @@
 {
-  "version": "0.27.0",
-  "buildDate": "2026-07-19",
-  "codename": "Herança de antecedentes + CSP",
-  "notes": "(1) Antecedentes pessoais/familiares, cirurgias, hábitos e medicações em uso — dados do paciente que não mudam entre consultas — passam a ser herdados automaticamente da última consulta ao abrir uma consulta NOVA, com banner de revisão e botão 'Limpar herdados'. Consulta em edição não é afetada. (2) Segurança: adicionada Content-Security-Policy (restringe connect-src a self+Supabase, bloqueando exfiltração; object-src none; base-uri/form-action self) e escape defensivo do rótulo de documento no preview de PDF. CACHE_VERSION v0.27.0."
+  "version": "0.28.0",
+  "buildDate": "2026-07-26",
+  "codename": "Sem tranco por inatividade",
+  "notes": "Auto-bloqueio por inatividade agora é configurável e vem DESLIGADO por padrão (Nunca — sem tempo limite), resolvendo o tranco no meio de consultas longas com transcrição. Configurável em Configurações > Trancar o cofre (Nunca/15min/30min/1h/2h/4h), aplicado no desbloqueio. Bloqueio manual segue claro na barra lateral, no topo e em Configurações. Fechar/recarregar a aba sempre encerra a sessão (DEK só em memória). CACHE_VERSION v0.28.0."
 }

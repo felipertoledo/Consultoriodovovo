@@ -958,6 +958,19 @@ const DB = (() => {
     return limpa;
   }
 
+  // ---- Tempo de inatividade até trancar (minutos; 0 = nunca) ----
+  async function getIdleTimeoutMin() {
+    const entry = await db.config.get('idleTimeoutMin');
+    const v = entry ? Number(entry.value) : 0;
+    return (Number.isFinite(v) && v > 0) ? v : 0;
+  }
+  async function setIdleTimeoutMin(min) {
+    const v = Number(min);
+    const limpo = (Number.isFinite(v) && v > 0) ? Math.round(v) : 0;
+    await db.config.put({ key: 'idleTimeoutMin', value: limpo });
+    return limpo;
+  }
+
   // ---- Perfil profissional (identidade que sai nos documentos) ----
   // Preenchido no 1º acesso; editável em Configurações. Fonte única de
   // nome/CRM/unidade para receitas, PDFs, compartilhamento e assinatura.
@@ -1022,6 +1035,7 @@ const DB = (() => {
     createLancamento, getLancamento, updateLancamento, softDeleteLancamento,
     listLancamentos, listMesesComLancamentos, getImpostos, setImpostos,
     getPerfil, setPerfil,
+    getIdleTimeoutMin, setIdleTimeoutMin,
     // Audit
     audit, getRecentAudit,
     // Danger

@@ -407,10 +407,24 @@ function renderConfig(container) {
       </div>
 
       <div class="card mt-4">
-        <h3 class="card-title mb-4">Bloquear cofre</h3>
-        <p class="text-sm mb-4">Trava o acesso imediatamente. Você precisará digitar a senha novamente.
-        Bloqueio automático ocorre após 15 minutos de inatividade.</p>
-        <button class="btn btn-secondary" @click="lock()">Bloquear agora</button>
+        <h3 class="card-title mb-4">🔒 Trancar o cofre</h3>
+        <p class="text-sm mb-3">Trava o acesso na hora — você precisará digitar a senha de novo.
+        O botão <strong>Bloquear cofre</strong> também fica sempre na barra lateral e no topo da tela.</p>
+        <button class="btn btn-secondary mb-4" @click="lock()">
+          <svg class="icon"><use href="#i-lock"></use></svg> Bloquear agora
+        </button>
+        <div class="form-group">
+          <label>Trancar sozinho após inatividade</label>
+          <select class="input" x-model.number="idleTimeoutMin" @change="salvarIdleTimeout()">
+            <option :value="0">Nunca — sem tempo limite</option>
+            <option :value="15">15 minutos</option>
+            <option :value="30">30 minutos</option>
+            <option :value="60">1 hora</option>
+            <option :value="120">2 horas</option>
+            <option :value="240">4 horas</option>
+          </select>
+          <p class="field-help mt-2">Em <strong>Nunca</strong>, o CDV não tranca sozinho — bom para consultas longas com transcrição. Trancar manualmente, ou fechar/recarregar a aba, sempre encerra a sessão.</p>
+        </div>
       </div>
 
       <div class="card mt-4">
@@ -645,6 +659,13 @@ function configScreen() {
 
     perfil: { nome:'', titulo:'Médico', conselho:'CRM', uf:'', registro:'', especialidade:'', unidade:'', municipio:'', contato:'' },
     perfilOcupado: false,
+    idleTimeoutMin: 0,
+    async salvarIdleTimeout() {
+      const min = Number(this.idleTimeoutMin) || 0;
+      await DB.setIdleTimeoutMin(min);
+      if (window.Auth && Auth.setIdleTimeout) Auth.setIdleTimeout(min);
+      UI.toast(min > 0 ? `Trancará após ${min} min de inatividade` : 'Não trancará por inatividade', 'success');
+    },
     assinaturaPreview() {
       const p = this.perfil;
       const consUf = [p.conselho || 'CRM', (p.uf||'').toUpperCase()].filter(Boolean).join('-');
@@ -673,6 +694,7 @@ function configScreen() {
     },
     async load() {
       await this.carregarPerfil();
+      this.idleTimeoutMin = await DB.getIdleTimeoutMin();
       try {
         this.auditEntries = await DB.getRecentAudit(50);
       } catch (e) { console.error(e); }
