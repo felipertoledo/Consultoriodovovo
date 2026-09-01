@@ -42,6 +42,77 @@ function renderPacienteForm(container, id) {
         </div>
       </div>
 
+      <!-- Cabeçalho clínico (face sheet) — derivado da última consulta -->
+      <div class="ch mb-4" x-show="!isNew && resumo" x-cloak>
+        <div class="ch-id">
+          <div class="avatar" aria-hidden="true" x-text="iniciais(paciente.nome)"></div>
+          <div class="ch-idt">
+            <div class="ch-nome" x-text="paciente.nome"></div>
+            <div class="ch-sub">
+              <span x-show="paciente.dataNascimento" x-text="calcAge(paciente.dataNascimento) + ' anos'"></span>
+              <span x-show="paciente.sexo" x-text="paciente.sexo"></span>
+              <span x-show="paciente.dataNascimento" x-text="'nascimento ' + formatDate(paciente.dataNascimento)"></span>
+              <span x-show="paciente.tipoVaga" class="vaga-badge-mini" :class="'vaga-badge-' + paciente.tipoVaga" x-text="rotuloVaga(paciente.tipoVaga)"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="alergia" :class="(resumo && (resumo.alergias || resumo.alergiaSemDetalhe)) ? '' : 'none'" role="alert">
+          <svg class="icon"><use href="#i-alert"></use></svg>
+          <div>
+            <template x-if="resumo && resumo.alergias"><span><b>Alergias:</b> <span x-text="resumo.alergias"></span></span></template>
+            <template x-if="resumo && !resumo.alergias && resumo.alergiaSemDetalhe"><span><b>Alergia registrada</b> nos antecedentes, sem o agente — preencha "Alergias" na próxima consulta.</span></template>
+            <template x-if="resumo && !resumo.alergias && !resumo.alergiaSemDetalhe"><span>Nenhuma alergia registrada — confirme na consulta.</span></template>
+          </div>
+        </div>
+
+        <div class="ch-grid">
+          <div class="ch-col">
+            <h4 class="ch-h">Problemas ativos</h4>
+            <div class="tags" x-show="resumo && resumo.problemas.length">
+              <template x-for="p in (resumo ? resumo.problemas : [])" :key="p">
+                <span class="tag" :class="/HAS|DM|Dislip|DPOC|Asma|ICC|\bFA\b|DRC|Hipotireoid|Hipertireoid/i.test(p) ? 'cronico' : ''" x-text="p"></span>
+              </template>
+            </div>
+            <div class="ch-vazio" x-show="resumo && !resumo.problemas.length">Nenhum antecedente marcado.</div>
+            <div class="fam" x-show="resumo && (resumo.cirurgias.length || resumo.familiares.length || resumo.antecedentesTexto)">
+              <span x-show="resumo && resumo.cirurgias.length">Cirurgias: <span x-text="resumo ? resumo.cirurgias.join(', ') : ''"></span>. </span>
+              <span x-show="resumo && resumo.familiares.length">Família: <span x-text="resumo ? resumo.familiares.join(', ') : ''"></span>. </span>
+              <span x-show="resumo && resumo.antecedentesTexto" x-text="resumo ? resumo.antecedentesTexto : ''"></span>
+            </div>
+          </div>
+          <div class="ch-col">
+            <h4 class="ch-h">Medicações em uso</h4>
+            <ul class="meds" x-show="resumo && resumo.medicacoes.length">
+              <template x-for="m in (resumo ? resumo.medicacoes : [])" :key="m"><li x-text="m"></li></template>
+            </ul>
+            <div class="ch-vazio" x-show="resumo && !resumo.medicacoes.length">Nenhuma medicação registrada.</div>
+          </div>
+          <div class="ch-col">
+            <h4 class="ch-h">Últimos sinais vitais</h4>
+            <div class="vit" x-show="resumo && resumo.vitais">
+              <template x-for="v in (resumo && resumo.vitais ? resumo.vitais.itens : [])" :key="v.campo">
+                <span class="vit-row">
+                  <span class="k" x-text="v.rotulo"></span>
+                  <span class="v" x-text="v.valor"></span>
+                  <span class="d" :class="v.tendencia" x-text="v.tendencia ? ((v.tendencia === 'up' ? '↑ ' : (v.tendencia === 'down' ? '↓ ' : '= ')) + v.anterior) : ''"></span>
+                </span>
+              </template>
+            </div>
+            <div class="vit-when" x-show="resumo && resumo.vitais">
+              Aferidos em <span x-text="resumo && resumo.vitais ? formatDate(resumo.vitais.data) : ''"></span><span x-show="resumo && resumo.vitais && resumo.vitais.anteriorData">; setas comparam com <span x-text="resumo && resumo.vitais ? formatDate(resumo.vitais.anteriorData) : ''"></span></span>.
+            </div>
+            <div class="ch-vazio" x-show="resumo && !resumo.vitais">Nenhum sinal vital registrado.</div>
+          </div>
+        </div>
+
+        <div class="ch-foot" x-show="resumo && resumo.ultima">
+          <span><b>Última consulta</b> <span x-text="resumo && resumo.ultima ? formatDate(resumo.ultima.dataHora) : ''"></span><span x-show="resumo && resumo.ultima && resumo.ultima.queixa"> — <span x-text="resumo && resumo.ultima ? resumo.ultima.queixa : ''"></span></span></span>
+          <span><b x-text="resumo ? resumo.total : 0"></b> <span x-text="(resumo && resumo.total === 1) ? 'consulta' : 'consultas'"></span></span>
+          <span x-show="resumo && (resumo.habitos.tabagismo || resumo.habitos.alcool)"><b>Hábitos</b> <span x-text="resumo ? [resumo.habitos.tabagismo ? 'tabagismo: ' + resumo.habitos.tabagismo : '', resumo.habitos.alcool ? 'álcool: ' + resumo.habitos.alcool : ''].filter(Boolean).join(', ') : ''"></span></span>
+        </div>
+      </div>
+
       <!-- Histórico de consultas (ledger) -->
       <div class="folha mb-4" x-show="!isNew" data-spy="hist">
         <div class="sec-head" style="margin-bottom: var(--space-4)">
@@ -110,7 +181,14 @@ function renderPacienteForm(container, id) {
         </div>
       </div>
 
-      <div class="workbench has-map">
+      <!-- Cadastro (dados pessoais, contato, endereço) — recolhido quando o paciente já existe -->
+      <button type="button" class="cad-toggle" x-show="!isNew" @click="mostrarCadastro = !mostrarCadastro" :aria-expanded="mostrarCadastro ? 'true' : 'false'">
+        <svg class="icon" :style="mostrarCadastro ? 'transform: rotate(90deg)' : ''"><use href="#i-chevron-right"></use></svg>
+        <span><b>Cadastro</b> — dados pessoais, situação socioeconômica, documentos, contato, endereço</span>
+        <span class="muted" x-text="mostrarCadastro ? 'recolher' : 'mostrar'"></span>
+      </button>
+
+      <div class="workbench has-map" x-show="mostrarCadastro">
         <div>
           <div class="folha">
 
@@ -477,6 +555,8 @@ function renderPacienteForm(container, id) {
 function pacienteForm(id) {
   return {
     isNew: id === null || id === undefined,
+    mostrarCadastro: id === null || id === undefined,
+    resumo: null,
     id: id,
     paciente: emptyPaciente(),
     touched: false,
@@ -512,11 +592,14 @@ function pacienteForm(id) {
       }
     },
 
+    iniciais(nome) { return String(nome || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase() || '?'; },
+
     async carregarConsultas() {
       this.loadingConsultas = true;
       try {
         const numericId = typeof this.id === 'string' ? parseInt(this.id, 10) : this.id;
         this.consultas = await DB.listConsultasByPaciente(numericId);
+        this.resumo = window.ResumoClinico ? ResumoClinico.derivar(this.consultas) : null;
       } catch (e) {
         console.error('Erro ao carregar consultas:', e);
       } finally {

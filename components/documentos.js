@@ -585,6 +585,10 @@ function renderDocumentos(container, pacienteId, tipo) {
               Este paciente ainda não tem consultas registradas.
             </div>
           </div>
+          <label class="check-row" style="display:flex; align-items:center; gap:10px; cursor:pointer; margin-top: var(--space-2)">
+            <input type="checkbox" x-model="incluirTranscricao" style="width:18px; height:18px">
+            <span><b>Incluir a transcrição da consulta</b> <span class="muted">— o registro literal entra no fim do PDF, depois da evolução</span></span>
+          </label>
         </div>
 
         <div class="flex gap-2 justify-between" style="flex-wrap: wrap">
@@ -611,6 +615,7 @@ function documentosScreen(pacienteId, tipoInicial) {
     totalConsultasPaciente: 0,
     todasConsultas: [],
     consultaImpressaoId: '',
+    incluirTranscricao: false,
 
     dados: {
       // Receita / Controle / Azul
@@ -1064,7 +1069,8 @@ function documentosScreen(pacienteId, tipoInicial) {
         }
         const { doc, codigo } = await PDFDocumentsExtra.consultaImpressao(
           { ...this.paciente, id: this.pacienteId },
-          consulta
+          consulta,
+          { incluirTranscricao: !!this.incluirTranscricao }
         );
         const dataFmt = new Date(consulta.dataHora).toISOString().slice(0,10);
         const nomeArquivo = `Consulta_${(this.paciente.nome || 'paciente').replace(/\s+/g, '_')}_${dataFmt}`;

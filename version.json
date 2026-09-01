@@ -1,6 +1,6 @@
 {
-  "version": "0.28.1",
+  "version": "0.29.0",
   "buildDate": "2026-09-01",
-  "codename": "Correção: CSP bloqueava sync Firebase",
-  "notes": "Correção de regressão introduzida na v0.27.0: a Content-Security-Policy liberava connect-src só para Supabase e bloqueava a sincronização via Firebase Realtime Database (erro 'Failed to fetch'). connect-src agora cobre todos os providers suportados: *.supabase.co, *.firebaseio.com e *.firebasedatabase.app (os mesmos domínios que o firebase-client.js valida). CACHE_VERSION v0.28.1."
+  "codename": "Cabeçalho clínico + transcrição",
+  "notes": "Camada 1 do redesign clínico: (1) cabeçalho clínico (face sheet) na ficha do paciente — alergias em faixa sempre visível, problemas ativos, medicações em uso, últimos sinais vitais com tendência, última consulta — derivado da última consulta (módulo resumo-clinico.js); (2) cadastro demográfico recolhido por padrão em pacientes existentes; (3) banner clínico fixo no topo da consulta (alergias/medicações ficam na tela ao prescrever); (4) faixa 'consulta anterior' abaixo dos sinais vitais com setas de tendência ao vivo; (5) campo dedicado de alergias (agente e reação), herdado entre consultas; (6) campo de transcrição da consulta (seção 15) e opção 'incluir transcrição' no PDF 'Consulta para impressão'. CACHE_VERSION v0.29.0."
 }

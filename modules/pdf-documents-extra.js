@@ -497,7 +497,7 @@ const PDFDocumentsExtra = (() => {
     return { doc, codigo };
   }
 
-  async function consultaImpressao(paciente, consulta) {
+  async function consultaImpressao(paciente, consulta, opcoes = {}) {
     const doc = PDFBuilder.novoPDF();
     let y = PDFBuilder.cabecalho(doc, 'Registro de Consulta');
     y = PDFBuilder.blocoPaciente(doc, paciente, y, {
@@ -550,6 +550,22 @@ const PDFDocumentsExtra = (() => {
       }
     } catch (e) {
       console.warn('Falha ao incluir anexos na consultaImpressao:', e);
+    }
+
+    // Transcrição da consulta — opcional, escolhida na hora de imprimir
+    const transcricao = String((consulta && consulta.transcricao) || '').trim();
+    if (opcoes && opcoes.incluirTranscricao && transcricao) {
+      y = PDFBuilder.tituloSecao(doc, 'TRANSCRIÇÃO DA CONSULTA', y + 4);
+      y = PDFBuilder.escreverTexto(doc,
+        'Registro literal da conversa, transcrito automaticamente. Não substitui a evolução clínica registrada acima.',
+        y, { fontSize: 8, color: [100, 116, 139], lineHeight: 4 });
+      y = PDFBuilder.escreverTexto(doc, transcricao, y + 2, { fontSize: 9, lineHeight: 4.5 });
+      y += 4;
+    }
+    // Garante espaço para o bloco de assinatura (a transcrição pode terminar rente ao rodapé)
+    if (y > PDFBuilder.PAGE_HEIGHT - PDFBuilder.MARGIN.bottom - 45) {
+      doc.addPage();
+      y = PDFBuilder.MARGIN.top;
     }
 
     // Bloco de assinatura física manual

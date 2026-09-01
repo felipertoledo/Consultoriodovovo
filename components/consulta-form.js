@@ -43,6 +43,20 @@ function renderConsultaForm(container, pacienteId, consultaId) {
         </div>
       </div>
 
+      <!-- Banner clínico fixo: alergias e medicações ficam na tela enquanto você prescreve -->
+      <div class="cb" x-show="!isNew || anteriores.length" x-cloak aria-label="Resumo clínico fixo">
+        <div class="avatar avatar-sm" aria-hidden="true" x-text="iniciais(paciente.nome)"></div>
+        <span class="cb-nome" x-text="paciente.nome"></span>
+        <span class="cb-idade" x-show="paciente.dataNascimento" x-text="calcAge(paciente.dataNascimento) + ' a'"></span>
+        <span class="pill pill-alergia" x-show="bannerAlergias()"><svg class="icon"><use href="#i-alert"></use></svg> Alergia: <span x-text="bannerAlergias()"></span></span>
+        <span class="pill pill-ok" x-show="!bannerAlergias()">Sem alergia registrada</span>
+        <span class="pill pill-neutra" x-show="consulta.medicacoesUso.length" x-text="consulta.medicacoesUso.length + ' medicaç' + (consulta.medicacoesUso.length === 1 ? 'ão' : 'ões')"></span>
+        <span class="cb-vital" x-show="resumo && resumo.vitais && resumo.vitais.itens.some(i => i.campo === 'pa')">
+          PA <b x-text="resumo && resumo.vitais ? (resumo.vitais.itens.find(i => i.campo === 'pa') || {}).valor : ''"></b>
+          <small x-text="resumo && resumo.vitais ? formatDate(resumo.vitais.data) : ''"></small>
+        </span>
+      </div>
+
       <div class="card mb-3" style="border-color: var(--color-primary); display:flex; align-items:center; gap:10px" x-show="herdadoDe" x-cloak>
         <svg class="icon" style="flex:0 0 auto"><use href="#i-clipboard"></use></svg>
         <div style="flex:1; font-size:.9em">
@@ -149,6 +163,11 @@ function renderConsultaForm(container, pacienteId, consultaId) {
                 <textarea class="textarea auto-grow" rows="2" x-model="consulta.antecedentesTexto"
                           @input="touch(); autoGrow($event.target)"
                           placeholder="Outros antecedentes não listados acima"></textarea>
+              </div>
+              <div class="form-group">
+                <label class="label text-sm">Alergias <span class="muted">(agente e reação — aparece no cabeçalho do paciente)</span></label>
+                <input class="input" x-model="consulta.alergias" @input="touch()"
+                       placeholder="Ex.: penicilina — anafilaxia; dipirona — urticária. Deixe vazio se não há.">
               </div>
             </section>
 
@@ -287,6 +306,18 @@ function renderConsultaForm(container, pacienteId, consultaId) {
                   <input x-model="consulta.imc" readonly tabindex="-1">
                   <span class="vital-unit">kg/m² · calculado</span>
                 </div>
+              </div>
+
+              <div class="vitals-prev" x-show="resumo && resumo.vitais">
+                <span class="vitals-prev-t">Consulta anterior (<span x-text="resumo && resumo.vitais ? formatDate(resumo.vitais.data) : ''"></span>):</span>
+                <template x-for="v in (resumo && resumo.vitais ? resumo.vitais.itens : [])" :key="v.campo">
+                  <span class="vitals-prev-i">
+                    <span class="k" x-text="v.rotulo"></span>
+                    <b x-text="v.valor"></b>
+                    <span class="seta" :class="tendVital(v.campo)" x-text="setaVital(v.campo)" :title="'agora vs anterior'"></span>
+                  </span>
+                </template>
+                <span class="vitals-prev-h">Setas comparam o que você digita agora com o valor anterior.</span>
               </div>
 
               <div class="form-group mt-4" style="margin-bottom: 0">
@@ -625,6 +656,21 @@ function renderConsultaForm(container, pacienteId, consultaId) {
                 </button>
               </div>
             </section>
+
+            <!-- 15 · Transcrição da consulta -->
+            <section class="sec" data-spy="s15">
+              <span class="sec-num">15</span>
+              <div class="sec-head">
+                <h3 class="sec-title">Transcrição da consulta</h3>
+                <span class="sec-meta" x-show="consulta.transcricao" x-text="Math.max(1, Math.round(consulta.transcricao.length / 1000)) + ' mil caracteres'"></span>
+              </div>
+              <div class="form-group">
+                <label class="label text-sm">Transcrição bruta (tl;dv / áudio)</label>
+                <textarea class="textarea auto-grow" rows="4" x-model="consulta.transcricao" @input="touch()"
+                          placeholder="Cole aqui a transcrição da consulta. Fica guardada com a consulta; na impressão você escolhe se entra ou não."></textarea>
+                <div class="field-help">Cifrada junto com a consulta. A evolução clínica continua nos campos acima — a transcrição é o registro literal.</div>
+              </div>
+            </section>
           </div>
 
           <!-- Barra de ações fixa -->
@@ -688,6 +734,9 @@ function renderConsultaForm(container, pacienteId, consultaId) {
           </button>
           <button class="minimap-item" data-spy-for="s14" @click="ScrollSpy.irPara('s14')" x-show="!isNew">
             <span class="mm-dot"></span> Documentos
+          </button>
+          <button class="minimap-item" data-spy-for="s15" @click="ScrollSpy.irPara('s15')">
+            <span class="mm-dot" :class="consulta.transcricao ? 'done' : ''"></span> Transcrição
           </button>
         </nav>
       </div>
@@ -757,7 +806,9 @@ function consultaForm(pacienteId, consultaId) {
     consultaId: consultaId,
     isNew: !consultaId,
     herdadoDe: '',
-    camposHerdaveis: ['antecedentes','antecedentesTexto','cirurgias','familiares','familiaresTexto','tabagismo','macosAno','alcool','atividadeFisica','sono','medicacoesUso'],
+    camposHerdaveis: ['antecedentes','antecedentesTexto','cirurgias','familiares','familiaresTexto','tabagismo','macosAno','alcool','atividadeFisica','sono','medicacoesUso','alergias'],
+    anteriores: [],   // consultas anteriores a esta (mais recente primeiro)
+    resumo: null,     // ResumoClinico.derivar(anteriores)
     paciente: { nome: '', dataNascimento: '', sexo: '', tipoVaga: '' },
     consulta: emptyConsulta(),
     saving: false,
@@ -798,6 +849,22 @@ function consultaForm(pacienteId, consultaId) {
     cirurgiasComuns: ClinicalData.CIRURGIAS_COMUNS,
     familiaresComuns: ClinicalData.FAMILIARES_COMUNS,
 
+    // Tendência do vital digitado agora vs o último registrado (ao vivo)
+    tendVital(campo) {
+      const v = this.resumo && this.resumo.vitais && this.resumo.vitais.itens.find(i => i.campo === campo);
+      if (!v || !window.ResumoClinico) return null;
+      return ResumoClinico.tendencia(campo, this.consulta[campo], v.valor);
+    },
+    setaVital(campo) { const t = this.tendVital(campo); return t === 'up' ? '↑' : (t === 'down' ? '↓' : (t === 'flat' ? '=' : '')); },
+    // Alergias para o banner: o que está nesta consulta (herdado ou editado) ou, senão, o resumo
+    bannerAlergias() {
+      const a = String(this.consulta.alergias || '').trim();
+      if (a) return a;
+      if (this.resumo && this.resumo.alergiaSemDetalhe) return 'registrada sem detalhe — ver antecedentes';
+      return '';
+    },
+    iniciais(nome) { return String(nome || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase() || '?'; },
+
     limparHerdados() {
       for (const campo of this.camposHerdaveis) {
         this.consulta[campo] = Array.isArray(this.consulta[campo]) ? [] : '';
@@ -810,20 +877,27 @@ function consultaForm(pacienteId, consultaId) {
       try {
         this.paciente = await DB.getPaciente(this.pacienteId) || this.paciente;
 
+        // Consultas do paciente (mais recente primeiro) — base do resumo clínico e da herança
+        let todas = [];
+        try { todas = await DB.listConsultasByPaciente(this.pacienteId) || []; } catch (e) { console.warn('Consultas não carregadas:', e); }
+
         if (!this.isNew) {
           const cId = typeof this.consultaId === 'string' ? parseInt(this.consultaId, 10) : this.consultaId;
           const c = await DB.getConsulta(cId);
           if (c) {
             this.consulta = { ...emptyConsulta(), ...c };
           }
+          // "Anteriores" = as consultas antes desta (para tendência de vitais e resumo)
+          const ref = this.consulta.dataHora || '';
+          this.anteriores = todas.filter(x => x.id !== cId && (x.dataHora || '') < ref);
         } else {
           this.consulta.dataHora = new Date().toISOString();
+          this.anteriores = todas;
           // Herda os campos que pertencem ao paciente (não mudam entre consultas)
           // a partir da última consulta. O médico revisa via banner.
           try {
-            const anteriores = await DB.listConsultasByPaciente(this.pacienteId);
-            if (anteriores && anteriores.length) {
-              const ultima = anteriores[0];
+            if (this.anteriores.length) {
+              const ultima = this.anteriores[0];
               let herdouAlgo = false;
               for (const campo of this.camposHerdaveis) {
                 const v = ultima[campo];
@@ -839,6 +913,7 @@ function consultaForm(pacienteId, consultaId) {
             }
           } catch (e) { console.warn('Herança de antecedentes falhou:', e); }
         }
+        this.resumo = (window.ResumoClinico) ? ResumoClinico.derivar(this.anteriores) : null;
 
         // Monta o componente de exame psíquico
         this.$nextTick(() => {
@@ -1425,6 +1500,7 @@ function emptyConsulta() {
     queixaDuracao: '',
     hpma: '',
     medicacoesUso: [],
+    alergias: '',
     antecedentes: [],
     antecedentesTexto: '',
     cirurgias: [],
@@ -1448,7 +1524,8 @@ function emptyConsulta() {
     exames: null,  // preenchido lazy via ExamesLab.estruturaVazia() quando o card é aberto
     conduta: '',
     retorno: '',
-    sinaisAlerta: ''
+    sinaisAlerta: '',
+    transcricao: ''
   };
 }
 
