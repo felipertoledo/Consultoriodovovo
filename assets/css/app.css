@@ -5,7 +5,7 @@
    componentes não reescritos herdam o novo visual automaticamente.
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 /* ---- Reset ---- */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -161,14 +161,19 @@ kbd {
 .brand-logo {
   width: 42px; height: 42px;
   flex-shrink: 0;
-  color: var(--color-primary-300);
+  color: var(--color-signal);
+  background: var(--bg-sidebar-deep);
+  border: 1.5px solid color-mix(in srgb, var(--color-signal) 45%, transparent);
+  border-radius: 50%;
+  display: grid; place-items: center;
+  padding: 8px;
 }
 .brand-logo svg { width: 100%; height: 100%; }
 .brand-name {
   font-family: var(--font-display);
   font-weight: var(--weight-semibold);
   font-size: var(--text-lg);
-  color: #F6F4ED;
+  color: #FFFFFF;
   letter-spacing: -0.01em;
   line-height: 1.15;
 }
@@ -211,7 +216,7 @@ kbd {
 .nav-item:hover { background: rgba(246, 244, 237, 0.07); text-decoration: none; }
 .nav-item:hover .icon { opacity: 1; }
 .nav-item.active {
-  background: rgba(246, 244, 237, 0.10);
+  background: color-mix(in srgb, var(--color-signal) 12%, transparent);
   color: #FFFFFF;
   font-weight: var(--weight-semibold);
 }
@@ -222,9 +227,9 @@ kbd {
   top: 8px; bottom: 8px;
   width: 3px;
   border-radius: 3px;
-  background: var(--color-primary-300);
+  background: var(--color-signal);
 }
-.nav-item.active .icon { opacity: 1; color: var(--color-primary-300); }
+.nav-item.active .icon { opacity: 1; color: var(--color-signal); }
 .nav-kbd {
   margin-left: auto;
   font-family: var(--font-mono);
@@ -314,12 +319,12 @@ kbd {
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  min-height: 38px;
-  border-radius: var(--radius-md);
-  font-weight: var(--weight-semibold);
+  padding: var(--space-2) var(--space-5);
+  min-height: 44px;
+  border-radius: var(--radius-full);
+  font-weight: var(--weight-bold);
   font-size: var(--text-sm);
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
   transition: background var(--transition-fast), border-color var(--transition-fast),
               color var(--transition-fast), box-shadow var(--transition-fast),
               transform var(--transition-fast);
@@ -450,7 +455,7 @@ kbd {
 .input, .textarea, .select {
   width: 100%;
   padding: var(--space-2) var(--space-3);
-  min-height: 42px;
+  min-height: 44px;
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   background: var(--bg-surface);
@@ -647,7 +652,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--color-primary-
   place-items: center;
   font-weight: var(--weight-bold);
   font-size: var(--text-sm);
-  color: #F6F4ED;
+  color: #FFFFFF;
   flex-shrink: 0;
   letter-spacing: 0.03em;
 }
@@ -744,7 +749,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--color-primary-
 }
 .toast {
   background: var(--color-primary-950);
-  color: #F6F4ED;
+  color: #FFFFFF;
   padding: var(--space-3) var(--space-5);
   border-radius: var(--radius-md);
   border-left: 4px solid var(--color-primary-400);
@@ -1539,7 +1544,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--color-primary-
 .chip.active {
   background: var(--color-primary-700);
   border-color: var(--color-primary-700);
-  color: #F6F4ED;
+  color: #FFFFFF;
 }
 [data-theme="dark"] .chip:hover { color: var(--color-primary); }
 [data-theme="dark"] .chip.active {
@@ -1688,7 +1693,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--color-primary-
   place-items: center;
   font-size: 10px;
   font-weight: var(--weight-bold);
-  color: #F6F4ED;
+  color: #FFFFFF;
   flex-shrink: 0;
   letter-spacing: 0.03em;
 }
@@ -1704,7 +1709,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--color-primary-
   display: grid;
   place-items: center;
   background: var(--color-primary-700);
-  color: #F6F4ED;
+  color: #FFFFFF;
   box-shadow: var(--shadow-lg), 0 0 0 4px var(--bg-surface);
 }
 [data-theme="dark"] .bottombar-item.is-fab .fab-circle {
@@ -1838,7 +1843,7 @@ body {
   cursor: pointer;
   font-size: var(--text-xs);
 }
-.rail-toggle:hover { border-style: solid; color: #F6F4ED; }
+.rail-toggle:hover { border-style: solid; color: #FFFFFF; }
 .rail-toggle .icon { width: 15px; height: 15px; transition: transform var(--transition-fast); }
 .app-shell[data-rail="min"] .rail-toggle .icon { transform: rotate(180deg); }
 .app-shell[data-rail="min"] .rail-toggle span { display: none; }
@@ -1870,20 +1875,20 @@ body {
 .sec-num {
   position: absolute;
   left: 0;
-  top: calc(var(--space-6) - 6px);
-  width: 44px;
-  font-family: var(--font-display);
+  top: calc(var(--space-6) + 1px);
+  font-family: var(--font-mono);
   font-weight: var(--weight-semibold);
-  font-size: 30px;
-  line-height: 1;
-  color: var(--color-primary-700);
-  opacity: 0.30;
-  text-align: right;
+  font-size: 12.5px;
+  line-height: 1.2;
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  border-radius: 8px;
+  padding: 3px 7px;
   user-select: none;
   font-variant-numeric: tabular-nums;
 }
-.sec:first-of-type .sec-num { top: calc(var(--space-2) - 4px); }
-[data-theme="dark"] .sec-num { color: var(--color-primary); opacity: 0.34; }
+.sec:first-of-type .sec-num { top: calc(var(--space-2) + 3px); }
+[data-theme="dark"] .sec-num { background: color-mix(in srgb, var(--color-primary) 14%, transparent); }
 .sec-head {
   display: flex;
   align-items: baseline;
@@ -1892,9 +1897,9 @@ body {
   margin-bottom: var(--space-4);
 }
 .sec-title {
-  font-family: var(--font-display);
+  font-family: var(--font-sans);
   font-size: var(--text-lg);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-extrabold);
   color: var(--text-primary);
   letter-spacing: -0.01em;
 }
@@ -2042,8 +2047,8 @@ body {
 .code-pill.cid  { background: #DBE7F4; color: #1E3A5F; }
 [data-theme="dark"] .code-pill.ciap { background: rgba(62, 223, 151, 0.16); color: #9FEFCB; }
 [data-theme="dark"] .code-pill.cid  { background: rgba(120, 170, 255, 0.16); color: #A8C6F0; }
-.btn.code-on-ciap { background: var(--color-primary-700); color: #F6F4ED; border-color: var(--color-primary-700); }
-.btn.code-on-cid  { background: #2A4D7A; color: #F6F4ED; border-color: #2A4D7A; }
+.btn.code-on-ciap { background: var(--color-primary-700); color: #FFFFFF; border-color: var(--color-primary-700); }
+.btn.code-on-cid  { background: #2A4D7A; color: #FFFFFF; border-color: #2A4D7A; }
 [data-theme="dark"] .btn.code-on-ciap { background: var(--color-primary); color: #07150F; border-color: var(--color-primary); }
 [data-theme="dark"] .btn.code-on-cid  { background: #6E9FE0; color: #0B1726; border-color: #6E9FE0; }
 
@@ -2138,7 +2143,7 @@ body {
   color: var(--text-secondary);
   cursor: pointer;
 }
-.seg button.on { background: var(--color-primary-700); color: #F6F4ED; }
+.seg button.on { background: var(--color-primary-700); color: #FFFFFF; }
 [data-theme="dark"] .seg button.on { background: var(--color-primary); color: #07150F; }
 .psy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: var(--space-3); }
 .psy-dom {
@@ -2449,7 +2454,7 @@ body {
   font-weight: var(--weight-bold);
 }
 .step.on { color: var(--text-primary); font-weight: var(--weight-semibold); }
-.step.on .st-num { background: var(--color-primary-700); border-color: var(--color-primary-700); color: #F6F4ED; }
+.step.on .st-num { background: var(--color-primary-700); border-color: var(--color-primary-700); color: #FFFFFF; }
 [data-theme="dark"] .step.on .st-num { background: var(--color-primary); border-color: var(--color-primary); color: #07150F; }
 .step.done .st-num { background: var(--color-primary-100); border-color: var(--color-primary-300); color: var(--color-primary-900); }
 .step-sep { flex: 1; min-width: 18px; height: 1px; background: var(--border-default); }
@@ -2586,3 +2591,52 @@ body {
   .ch-nome { font-size: var(--text-xl); }
   .cb .cb-vital { margin-left: 0; }
 }
+
+
+/* ============================================================
+   REDESIGN 2026 — overrides finais (aplicados por último)
+   ============================================================ */
+/* Folha: fio sólido entre seções (em vez de tracejado) */
+.sec + .sec { border-top: 1px solid var(--border-subtle); }
+
+/* Chips em pílula */
+.chip { border-radius: var(--radius-full); font-weight: var(--weight-semibold); }
+
+/* Hero do dia (dashboard): bloco verde-profundo com sinal menta */
+.hero-next {
+  background: var(--color-brand);
+  color: #FFFFFF;
+  border: 0;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+}
+.hero-next .hero-eyebrow { color: var(--color-signal); font-weight: var(--weight-bold); }
+.hero-next .hero-pulse { background: var(--color-signal); box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-signal) 25%, transparent); }
+.hero-next .hero-name { color: #FFFFFF; }
+.hero-next .hero-note { color: #B9D3C7; }
+.hero-next .hero-when, .hero-next .hero-time { color: #86A99A; }
+.hero-next .btn-primary { background: var(--color-signal); border-color: var(--color-signal); color: #06130D; }
+.hero-next .btn-primary:hover { background: var(--color-signal-700); border-color: var(--color-signal-700); }
+.hero-next .btn-secondary, .hero-next .btn-ghost { color: #FFFFFF; border-color: rgba(255,255,255,.22); background: rgba(255,255,255,.06); }
+
+/* Cabeçalho clínico: lombada e avatar na cor da marca; anel menta no avatar grande */
+.ch { border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); }
+.ch::before { background: var(--color-brand); }
+.avatar { background: var(--color-brand); color: #FFFFFF; }
+.ch .avatar { width: 60px; height: 60px; font-size: 22px; box-shadow: 0 0 0 3px var(--bg-surface), 0 0 0 5px var(--color-signal); }
+.ch-nome { font-size: clamp(1.6rem, 2.8vw, 2.1rem); letter-spacing: -0.015em; }
+.ch-h { font-weight: var(--weight-bold); font-size: var(--text-xs); }
+[data-theme="dark"] .avatar { color: #FFFFFF; }
+
+/* Números clínicos em mono (não em serifa) */
+.stat-tile-num, .consulta-data-day { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* Banner clínico fixo em pílula */
+.cb { border-radius: var(--radius-full); padding: 8px 14px 8px 8px; }
+
+/* Cards de conteúdo: raio de card, sombra do token */
+.card, .folha { border-radius: var(--radius-lg); }
+
+/* Marca na barra lateral */
+.brand-name { color: #FFFFFF; }
+.brand-tagline { color: var(--text-on-sidebar-dim); }

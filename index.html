@@ -8,7 +8,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.firebaseio.com https://*.firebasedatabase.app; frame-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="Consultório do Vovô — Prontuário eletrônico local-first, com dados criptografados no dispositivo.">
-  <meta name="theme-color" content="#0C2F25">
+  <meta name="theme-color" content="#0B3D33">
   <meta name="robots" content="noindex, nofollow">
 
   <!-- PWA / iOS Safari -->
@@ -621,15 +621,15 @@
   </script>
 
   <!-- Banner de atualização do Service Worker (oculto por padrão) -->
-  <div id="sw-update-banner" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; background: var(--color-primary-950, #061B15); color: #F6F4ED; padding: 14px 20px; border-radius: 12px; border: 1px solid rgba(246,244,237,0.14); box-shadow: 0 24px 56px rgba(10,27,21,0.35); gap: 16px; align-items: center; max-width: 90vw;">
+  <div id="sw-update-banner" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; background: var(--color-primary-950, #061B15); color: #FFFFFF; padding: 14px 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 24px 56px rgba(10,27,21,0.35); gap: 16px; align-items: center; max-width: 90vw;">
     <div>
       <strong>Nova versão disponível</strong>
       <div style="font-size: 13px; opacity: 0.85; margin-top: 2px">Recarregue para atualizar o consultório</div>
     </div>
-    <button id="sw-update-btn" style="background: #F6F4ED; color: #0E3A2D; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+    <button id="sw-update-btn" style="background: #FFFFFF; color: #0B3D33; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer;">
       Atualizar
     </button>
-    <button id="sw-dismiss-btn" style="background: transparent; color: #F6F4ED; border: 1px solid rgba(246,244,237,0.4); padding: 8px 12px; border-radius: 8px; cursor: pointer;" title="Adiar até a próxima vez que abrir o app">
+    <button id="sw-dismiss-btn" style="background: transparent; color: #FFFFFF; border: 1px solid rgba(255,255,255,0.4); padding: 8px 12px; border-radius: 8px; cursor: pointer;" title="Adiar até a próxima vez que abrir o app">
       Depois
     </button>
   </div>

@@ -257,7 +257,7 @@ function setupWizard() {
     },
 
     strengthColor() {
-      const colors = ['#C13E3E', '#C13E3E', '#B97718', '#B97718', '#2A8B60', '#2A8B60', '#2A8B60'];
+      const colors = ['#E5484D', '#E5484D', '#D98E1E', '#D98E1E', '#127A54', '#127A54', '#127A54'];
       return colors[this.strength.score] || '#8A938E';
     },
 
@@ -291,8 +291,8 @@ function setupWizard() {
       const w = window.open('', '_blank');
       w.document.write(`
         <html><head><title>Chave de Recuperação — Consultório do Vovô</title>
-        <style>body{font-family:monospace;padding:40px;max-width:600px;margin:auto;color:#1A2420}
-        .key{font-size:24px;padding:20px;border:2px dashed #0E3A2D;background:#FAF8F3;
+        <style>body{font-family:monospace;padding:40px;max-width:600px;margin:auto;color:#0F1F19}
+        .key{font-size:24px;padding:20px;border:2px dashed #0B3D33;background:#F3F6F5;
              text-align:center;letter-spacing:.05em;word-break:break-all}</style>
         </head><body>
         <h1>Chave de Recuperação</h1>
