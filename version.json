@@ -1,6 +1,6 @@
 {
-  "version": "0.28.0",
-  "buildDate": "2026-07-26",
-  "codename": "Sem tranco por inatividade",
-  "notes": "Auto-bloqueio por inatividade agora é configurável e vem DESLIGADO por padrão (Nunca — sem tempo limite), resolvendo o tranco no meio de consultas longas com transcrição. Configurável em Configurações > Trancar o cofre (Nunca/15min/30min/1h/2h/4h), aplicado no desbloqueio. Bloqueio manual segue claro na barra lateral, no topo e em Configurações. Fechar/recarregar a aba sempre encerra a sessão (DEK só em memória). CACHE_VERSION v0.28.0."
+  "version": "0.28.1",
+  "buildDate": "2026-09-01",
+  "codename": "Correção: CSP bloqueava sync Firebase",
+  "notes": "Correção de regressão introduzida na v0.27.0: a Content-Security-Policy liberava connect-src só para Supabase e bloqueava a sincronização via Firebase Realtime Database (erro 'Failed to fetch'). connect-src agora cobre todos os providers suportados: *.supabase.co, *.firebaseio.com e *.firebasedatabase.app (os mesmos domínios que o firebase-client.js valida). CACHE_VERSION v0.28.1."
 }
