@@ -8,7 +8,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.firebaseio.com https://*.firebasedatabase.app; frame-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="Consultório do Vovô — Prontuário eletrônico local-first, com dados criptografados no dispositivo.">
-  <meta name="theme-color" content="#0B3D33">
+  <meta name="theme-color" content="#8B1E2D">
   <meta name="robots" content="noindex, nofollow">
 
   <!-- PWA / iOS Safari -->
@@ -111,12 +111,8 @@
     <defs>
       <!-- Selo da botica: carimbo circular com folha-prontuário -->
       <symbol id="i-selo" viewBox="0 0 48 48" fill="none" stroke="currentColor">
-        <circle cx="24" cy="24" r="21" stroke-width="2.4"/>
-        <circle cx="24" cy="24" r="16.5" stroke-width="1" stroke-dasharray="2.5 3.5" opacity="0.65"/>
-        <path d="M24 13.5v21" stroke-width="2.4" stroke-linecap="round"/>
-        <path d="M24 19c-2.8-1.2-4.6-3.4-5.2-6.2 2.9.2 5 1.6 6.2 4M24 19c2.8-1.2 4.6-3.4 5.2-6.2-2.9.2-5 1.6-6.2 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
-        <path d="M24 26.5c-3.2-1.3-5.3-3.8-6-7 3.3.3 5.8 1.9 7 4.7M24 26.5c3.2-1.3 5.3-3.8 6-7-3.3.3-5.8 1.9-7 4.7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
-        <path d="M19.5 34.5h9" stroke-width="2.4" stroke-linecap="round"/>
+        <circle cx="24" cy="24" r="20" stroke-width="2.6"/>
+        <path d="M24 14.5v19M14.5 24h19" stroke-width="4.4" stroke-linecap="round"/>
       </symbol>
       <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>
@@ -621,7 +617,7 @@
   </script>
 
   <!-- Banner de atualização do Service Worker (oculto por padrão) -->
-  <div id="sw-update-banner" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; background: var(--color-primary-950, #061B15); color: #FFFFFF; padding: 14px 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 24px 56px rgba(10,27,21,0.35); gap: 16px; align-items: center; max-width: 90vw;">
+  <div id="sw-update-banner" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; background: var(--color-primary-950, #5E121E); color: #FFFFFF; padding: 14px 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 24px 56px rgba(10,27,21,0.35); gap: 16px; align-items: center; max-width: 90vw;">
     <div>
       <strong>Nova versão disponível</strong>
       <div style="font-size: 13px; opacity: 0.85; margin-top: 2px">Recarregue para atualizar o consultório</div>
@@ -781,6 +777,18 @@
       }
 
       // Helpers de layout
+      // Rótulo do tempo de auto-tranco (selo no botão "Bloquear cofre")
+      function rotuloLock(min) {
+        const m = (typeof min === 'number') ? min : ((window.Auth && Auth.getIdleTimeoutMin) ? Auth.getIdleTimeoutMin() : 0);
+        if (!m || m <= 0) return 'nunca';
+        return (m >= 60 && m % 60 === 0) ? (m / 60) + ' h' : m + ' min';
+      }
+      function atualizarLockBadge() {
+        const el = document.getElementById('lockBadge');
+        if (el) el.textContent = rotuloLock();
+      }
+      window.atualizarLockBadge = atualizarLockBadge;
+
       function renderAppShell(activeRoute) {
         const r = activeRoute;
         app.innerHTML = `
@@ -824,9 +832,10 @@
                   <span id="temaIcone" style="width:18px; text-align:center">${iconeTema(window.Tema && Tema.get())}</span>
                   <span>Tema: <strong id="temaLabel">${labelTema(window.Tema && Tema.get())}</strong></span>
                 </button>
-                <button class="nav-item" onclick="Auth.lock().then(() => Router.navigate('/'))">
+                <button class="nav-item" onclick="Auth.lock().then(() => Router.navigate('/'))" title="Tranca automática por inatividade: ${rotuloLock()}">
                   <svg class="icon"><use href="#i-lock"/></svg>
                   <span>Bloquear cofre</span>
+                  <span class="nav-kbd" id="lockBadge">${rotuloLock()}</span>
                 </button>
               </div>
 
@@ -999,9 +1008,13 @@
           if (p && window.PDFBuilder) PDFBuilder.setMedico(p);
           const tag = document.querySelector('.brand-tagline');
           if (tag && window.PDFBuilder) tag.textContent = PDFBuilder.MEDICO.crm || '';
+        } catch (e) { console.warn('Perfil não carregado:', e); }
+        // Tempo de auto-tranco — bloco próprio, para nunca ser pulado por erro no perfil
+        try {
           const idleMin = await DB.getIdleTimeoutMin();
           if (window.Auth && Auth.setIdleTimeout) Auth.setIdleTimeout(idleMin);
-        } catch (e) { console.warn('Perfil/idle não carregado:', e); }
+        } catch (e) { console.warn('Idle não carregado:', e); }
+        atualizarLockBadge();
       });
 
       // Esconde o loader e inicia

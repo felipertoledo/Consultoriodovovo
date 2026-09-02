@@ -1,98 +1,96 @@
 /* ============================================================
-   Consultório do Vovô — Design Tokens v3 · "Clínica do Vovô, 2026"
+   Consultório do Vovô — Design Tokens v5 · "Vermelho clínico"
    ------------------------------------------------------------
-   Manter a alma, modernizar o corpo.
-   · Verde profundo  — âncora da marca (barra lateral, avatar, hero)
-   · Verde de ação   — botões e links (AA sobre branco)
-   · Fósforo/menta   — assinatura: indicador ativo, anel do avatar
-   · Coral           — alergia e alerta clínico
-   · Âmbar           — atenção (agenda "agora", chave de recuperação)
-   · Névoa           — canvas cool-neutral; superfícies brancas
-   Tipos: Fraunces (nome da casa, nome do paciente, títulos) ·
-          Manrope (interface) · JetBrains Mono (números clínicos)
+   Identidade de clínica: vermelho carmim como marca, branco
+   hospitalar e cinzas frios como base. Nada de verde.
+   · Marca (carmim profundo)  — barra lateral, nome, hero, lombada
+   · Ação (vermelho clínico)  — botões e links (6,0:1 com branco)
+   · Alergia = pulseira       — vermelho sólido com texto branco
+   · Âmbar / verde / azul     — avisos, ok, informação (semânticos)
+   Tipos: IBM Plex Sans (interface e títulos) · IBM Plex Mono (números)
    ============================================================ */
 
 :root {
-  /* ---- Marca (verde profundo) ---- */
-  --color-brand:       #0B3D33;
-  --color-brand-deep:  #08221C;
-  --color-signal:      #3DDC97;   /* fósforo / menta — assinatura */
-  --color-signal-700:  #1FBF7C;
+  /* ---- Marca ---- */
+  --color-brand:       #8B1E2D;
+  --color-brand-deep:  #5E121E;
+  --color-signal:      #FF6B73;   /* destaque sobre fundos escuros */
+  --color-signal-700:  #E0505A;
 
-  /* ---- Primária = verde de ação ---- */
-  --color-primary-50:  #EAF6F0;
-  --color-primary-100: #D3EEDF;
-  --color-primary-200: #A8DEC3;
-  --color-primary-300: #6FC9A2;
-  --color-primary-400: #3DB585;
-  --color-primary-500: #127A54;
-  --color-primary-600: #0F6646;
-  --color-primary-700: #0C543A;
-  --color-primary:     #127A54;   /* 5,3:1 com texto branco */
-  --color-primary-800: #0B3D33;
-  --color-primary-900: #08221C;
-  --color-primary-950: #05160F;
+  /* ---- Primária = vermelho de ação ---- */
+  --color-primary-50:  #FCEEF0;
+  --color-primary-100: #F8D6DA;
+  --color-primary-200: #F0A9B1;
+  --color-primary-300: #E57C88;
+  --color-primary-400: #D4485A;
+  --color-primary-500: #C0212F;
+  --color-primary-600: #A31B28;
+  --color-primary-700: #8B1E2D;
+  --color-primary:     #C0212F;
+  --color-primary-800: #5E121E;
+  --color-primary-900: #3F0B14;
+  --color-primary-950: #2A0710;
 
-  /* ---- Âmbar (atenção / destaque) ---- */
-  --color-accent-100: #FBF1DF;
-  --color-accent-300: #EFC77A;
-  --color-accent-400: #E8B45A;
-  --color-accent-500: #D98E1E;
-  --color-accent:     #D98E1E;
-  --color-accent-700: #8A5A0E;
+  /* ---- Âmbar (atenção) ---- */
+  --color-accent-100: #FBEFD9;
+  --color-accent-300: #F2C572;
+  --color-accent-400: #E9AE46;
+  --color-accent-500: #D97706;
+  --color-accent:     #D97706;
+  --color-accent-700: #92500A;
 
-  /* ---- Neutros frios (névoa & tinta) ---- */
-  --color-neutral-50:  #F7F9F8;
-  --color-neutral-100: #EBF0EE;
-  --color-neutral-200: #DCE4E1;
-  --color-neutral-300: #C4CFCA;
-  --color-neutral-400: #96A39E;
-  --color-neutral-500: #6E7C76;
-  --color-neutral-600: #52605A;
-  --color-neutral-700: #3F4E47;
-  --color-neutral-800: #263631;
-  --color-neutral-900: #0F1F19;
+  /* ---- Neutros frios (branco hospitalar & grafite) ---- */
+  --color-neutral-50:  #F9FAFB;
+  --color-neutral-100: #EEF0F3;
+  --color-neutral-200: #E4E7EC;
+  --color-neutral-300: #CFD4DC;
+  --color-neutral-400: #98A2B0;
+  --color-neutral-500: #6F7A88;
+  --color-neutral-600: #525C69;
+  --color-neutral-700: #3D4551;
+  --color-neutral-800: #252B34;
+  --color-neutral-900: #161A20;
 
   /* ---- Semânticas ---- */
-  --color-success: #127A54;
-  --color-warning: #D98E1E;
-  --color-danger:  #E5484D;   /* coral clínico */
-  --color-info:    #2F7FB8;
+  --color-success: #1E8E5A;
+  --color-warning: #D97706;
+  --color-danger:  #C0212F;
+  --color-info:    #2563EB;
 
   /* ---- Semáforo clínico ---- */
-  --semaforo-verde:    #127A54;
-  --semaforo-amarelo:  #D98E1E;
-  --semaforo-vermelho: #E5484D;
-  --semaforo-cinza:    #96A39E;
+  --semaforo-verde:    #1E8E5A;
+  --semaforo-amarelo:  #D97706;
+  --semaforo-vermelho: #C0212F;
+  --semaforo-cinza:    #98A2B0;
 
   /* ---- Backgrounds ---- */
-  --bg-app:     #F3F6F5;                 /* névoa */
+  --bg-app:     #F6F7F9;
   --bg-surface: #FFFFFF;
-  --bg-sunken:  #EBF0EE;
-  --bg-overlay: rgba(11, 61, 51, 0.55);
-  --bg-sidebar: #0B3D33;
-  --bg-sidebar-deep: #08221C;
+  --bg-sunken:  #EEF0F3;
+  --bg-overlay: rgba(22, 26, 32, 0.55);
+  --bg-sidebar: #8B1E2D;
+  --bg-sidebar-deep: #5E121E;
 
   /* ---- Texto ---- */
-  --text-primary:   #0F1F19;             /* tinta */
-  --text-secondary: #3F5149;
-  --text-muted:     #5F716A;             /* 4,7:1 sobre névoa, 5,2:1 sobre branco */
-  --text-inverse:   #EAF1ED;
+  --text-primary:   #161A20;
+  --text-secondary: #3D4551;
+  --text-muted:     #5C6572;             /* 5,5:1 sobre o canvas */
+  --text-inverse:   #F3F4F6;
   --text-on-primary: #FFFFFF;
-  --text-on-sidebar: #CFE0D8;
-  --text-on-sidebar-dim: #86A99A;
+  --text-on-sidebar: #FBE9EB;
+  --text-on-sidebar-dim: #E4A9B0;        /* 4,6:1 sobre a barra */
 
   /* ---- Bordas ---- */
-  --border-subtle:  #E1E8E5;
-  --border-default: #CBD6D1;
-  --border-strong:  #96A39E;
-  --border-focus:   #127A54;
-  --ring-focus:     rgba(18, 122, 84, 0.25);
+  --border-subtle:  #E4E7EC;
+  --border-default: #CFD4DC;
+  --border-strong:  #98A2B0;
+  --border-focus:   #C0212F;
+  --ring-focus:     rgba(192, 33, 47, 0.22);
 
   /* ---- Tipografia ---- */
-  --font-display: 'Fraunces', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
-  --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+  --font-display: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans:    'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono:    'IBM Plex Mono', 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
 
   --text-xs:   0.75rem;
   --text-sm:   0.875rem;
@@ -101,7 +99,7 @@
   --text-xl:   1.25rem;
   --text-2xl:  1.5rem;
   --text-3xl:  1.875rem;
-  --text-4xl:  2.375rem;
+  --text-4xl:  2.25rem;
 
   --leading-tight:   1.2;
   --leading-normal:  1.5;
@@ -111,38 +109,38 @@
   --weight-medium:    500;
   --weight-semibold:  600;
   --weight-bold:      700;
-  --weight-extrabold: 800;
+  --weight-extrabold: 700;
 
-  --tracking-wide: 0.08em;
+  --tracking-wide: 0.06em;
 
   /* ---- Espaçamentos (escala 4px) ---- */
   --space-1:  0.25rem; --space-2:  0.5rem;  --space-3:  0.75rem; --space-4:  1rem;
   --space-5:  1.25rem; --space-6:  1.5rem;  --space-8:  2rem;    --space-10: 2.5rem;
   --space-12: 3rem;    --space-16: 4rem;    --space-20: 5rem;
 
-  /* ---- Raios (hierarquia: controle 10 · card 14 · hero 20 · pílula) ---- */
+  /* ---- Raios (clínico: cantos discretos) ---- */
   --radius-sm:   0.375rem;
-  --radius-md:   0.625rem;
-  --radius-lg:   0.875rem;
-  --radius-xl:   1.25rem;
+  --radius-md:   0.5rem;
+  --radius-lg:   0.75rem;
+  --radius-xl:   1rem;
   --radius-full: 9999px;
 
-  /* ---- Sombras (tingidas de verde, nunca cinza) ---- */
-  --shadow-sm:  0 1px 2px rgba(11, 61, 51, 0.05);
-  --shadow-md:  0 1px 2px rgba(11, 61, 51, 0.06), 0 2px 10px rgba(11, 61, 51, 0.05);
-  --shadow-lg:  0 8px 28px rgba(11, 61, 51, 0.10), 0 2px 6px rgba(11, 61, 51, 0.05);
-  --shadow-xl:  0 24px 56px rgba(11, 61, 51, 0.16), 0 6px 16px rgba(11, 61, 51, 0.08);
+  /* ---- Sombras (planas, frias) ---- */
+  --shadow-sm:  0 1px 2px rgba(22, 26, 32, 0.05);
+  --shadow-md:  0 1px 3px rgba(22, 26, 32, 0.06), 0 1px 2px rgba(22, 26, 32, 0.04);
+  --shadow-lg:  0 8px 24px rgba(22, 26, 32, 0.08), 0 2px 6px rgba(22, 26, 32, 0.04);
+  --shadow-xl:  0 20px 48px rgba(22, 26, 32, 0.14), 0 6px 16px rgba(22, 26, 32, 0.06);
 
   /* ---- Layout ---- */
-  --sidebar-width: 276px;
-  --header-height: 64px;
+  --sidebar-width: 268px;
+  --header-height: 60px;
   --max-content-width: 1240px;
   --bottombar-height: 62px;
 
   /* ---- Transições ---- */
-  --transition-fast: 130ms cubic-bezier(.4,0,.2,1);
-  --transition-base: 210ms cubic-bezier(.4,0,.2,1);
-  --transition-slow: 340ms cubic-bezier(.22,1,.36,1);
+  --transition-fast: 120ms cubic-bezier(.4,0,.2,1);
+  --transition-base: 200ms cubic-bezier(.4,0,.2,1);
+  --transition-slow: 320ms cubic-bezier(.22,1,.36,1);
 
   /* ---- Z-index ---- */
   --z-base: 1; --z-sticky: 10; --z-overlay: 100; --z-modal: 1000; --z-palette: 1500; --z-toast: 2000;
@@ -150,63 +148,63 @@
 
 /* ============================================================
    MODO ESCURO · "Plantão"
-   Verde-negro tingido pela marca; menta como ação e sinal.
+   Grafite neutro (sem verde), barra em vinho, vermelho-rosa como ação.
    ============================================================ */
 [data-theme="dark"] {
-  --color-brand:       #08221C;
-  --color-brand-deep:  #050F0C;
-  --color-signal:      #3DDC97;
-  --color-signal-700:  #5FE7AB;
+  --color-brand:       #4A0F19;
+  --color-brand-deep:  #33090F;
+  --color-signal:      #FF8A92;
+  --color-signal-700:  #FFA5AB;
 
-  --color-primary:     #3DDC97;
-  --color-primary-500: #3DDC97;
-  --color-primary-600: #2FCB88;
-  --color-primary-700: #27996B;
-  --color-primary-800: #0B3D33;
-  --color-primary-900: #08221C;
+  --color-primary:     #F26B75;
+  --color-primary-500: #F26B75;
+  --color-primary-600: #E85560;
+  --color-primary-700: #C0212F;
+  --color-primary-800: #8B1E2D;
+  --color-primary-900: #5E121E;
 
-  --color-accent-100: #332612;
-  --color-accent-300: #8F5A0F;
-  --color-accent-400: #E8B45A;
-  --color-accent-500: #F0B75E;
-  --color-accent:     #F0B75E;
-  --color-accent-700: #F5CF8E;
+  --color-accent-100: #33230F;
+  --color-accent-300: #92500A;
+  --color-accent-400: #E9AE46;
+  --color-accent-500: #F0A64A;
+  --color-accent:     #F0A64A;
+  --color-accent-700: #F5C77E;
 
-  --bg-app:     #0A1512;
-  --bg-surface: #12211C;
-  --bg-sunken:  #0E1A16;
-  --bg-overlay: rgba(2, 8, 6, 0.78);
-  --bg-sidebar: #08221C;
-  --bg-sidebar-deep: #050F0C;
+  --bg-app:     #111318;
+  --bg-surface: #191C24;
+  --bg-sunken:  #14161C;
+  --bg-overlay: rgba(4, 5, 8, 0.78);
+  --bg-sidebar: #4A0F19;
+  --bg-sidebar-deep: #33090F;
 
-  --text-primary:   #EAF1ED;
-  --text-secondary: #B6C6BE;
-  --text-muted:     #86998F;
-  --text-inverse:   #0A1512;
-  --text-on-primary: #06130D;
-  --text-on-sidebar: #CFE0D8;
-  --text-on-sidebar-dim: #7A968A;
+  --text-primary:   #E9ECF1;
+  --text-secondary: #B3BAC6;
+  --text-muted:     #8B94A3;
+  --text-inverse:   #111318;
+  --text-on-primary: #1A0507;
+  --text-on-sidebar: #FBE9EB;
+  --text-on-sidebar-dim: #D99AA1;
 
-  --border-subtle:  #1E2E28;
-  --border-default: #2C4038;
-  --border-strong:  #4A5E55;
-  --border-focus:   #3DDC97;
-  --ring-focus:     rgba(61, 223, 151, 0.22);
+  --border-subtle:  #262B36;
+  --border-default: #343B48;
+  --border-strong:  #4E5766;
+  --border-focus:   #F26B75;
+  --ring-focus:     rgba(242, 107, 117, 0.22);
 
-  --color-success: #3DDC97;
-  --color-warning: #F0B75E;
-  --color-danger:  #FF7B7F;
-  --color-info:    #7CB8E0;
+  --color-success: #4CC38A;
+  --color-warning: #F0A64A;
+  --color-danger:  #F26B75;
+  --color-info:    #7AA7F5;
 
-  --semaforo-verde:    #3DDC97;
-  --semaforo-amarelo:  #F0B75E;
-  --semaforo-vermelho: #FF7B7F;
-  --semaforo-cinza:    #6E8076;
+  --semaforo-verde:    #4CC38A;
+  --semaforo-amarelo:  #F0A64A;
+  --semaforo-vermelho: #F26B75;
+  --semaforo-cinza:    #6B7483;
 
-  --shadow-sm:  0 0 0 1px rgba(234, 241, 237, 0.04);
-  --shadow-md:  0 0 0 1px rgba(234, 241, 237, 0.05), 0 2px 10px rgba(0, 0, 0, 0.35);
-  --shadow-lg:  0 0 0 1px rgba(234, 241, 237, 0.06), 0 10px 30px rgba(0, 0, 0, 0.5);
-  --shadow-xl:  0 0 0 1px rgba(234, 241, 237, 0.07), 0 24px 56px rgba(0, 0, 0, 0.6);
+  --shadow-sm:  0 0 0 1px rgba(233, 236, 241, 0.04);
+  --shadow-md:  0 0 0 1px rgba(233, 236, 241, 0.05), 0 2px 10px rgba(0, 0, 0, 0.35);
+  --shadow-lg:  0 0 0 1px rgba(233, 236, 241, 0.06), 0 10px 30px rgba(0, 0, 0, 0.5);
+  --shadow-xl:  0 0 0 1px rgba(233, 236, 241, 0.07), 0 24px 56px rgba(0, 0, 0, 0.6);
 }
 
 /* Anti-flash de tema */

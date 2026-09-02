@@ -415,7 +415,7 @@ function renderConfig(container) {
         </button>
         <div class="form-group">
           <label>Trancar sozinho após inatividade</label>
-          <select class="input" x-model.number="idleTimeoutMin" @change="salvarIdleTimeout()">
+          <select class="input" x-model.number="idleTimeoutMin" @change="salvarIdleTimeout($event)">
             <option :value="0">Nunca — sem tempo limite</option>
             <option :value="15">15 minutos</option>
             <option :value="30">30 minutos</option>
@@ -424,6 +424,7 @@ function renderConfig(container) {
             <option :value="240">4 horas</option>
           </select>
           <p class="field-help mt-2">Em <strong>Nunca</strong>, o CDV não tranca sozinho — bom para consultas longas com transcrição. Trancar manualmente, ou fechar/recarregar a aba, sempre encerra a sessão.</p>
+          <div class="field-help mt-2">Em vigor agora: <b x-text="rotuloIdle(idleEmVigor)"></b> <span class="muted">(lido do próprio relógio de inatividade)</span></div>
         </div>
       </div>
 
@@ -660,11 +661,18 @@ function configScreen() {
     perfil: { nome:'', titulo:'Médico', conselho:'CRM', uf:'', registro:'', especialidade:'', unidade:'', municipio:'', contato:'' },
     perfilOcupado: false,
     idleTimeoutMin: 0,
-    async salvarIdleTimeout() {
-      const min = Number(this.idleTimeoutMin) || 0;
+    idleEmVigor: 0,
+    rotuloIdle(m) { m = Number(m) || 0; if (m <= 0) return 'nunca'; return (m >= 60 && m % 60 === 0) ? (m / 60) + ' h' : m + ' min'; },
+    async salvarIdleTimeout(ev) {
+      // Lê o valor direto do <select>: independe da ordem x-model/@change
+      const bruto = (ev && ev.target && ev.target.value !== undefined) ? ev.target.value : this.idleTimeoutMin;
+      const min = Number(bruto) || 0;
+      this.idleTimeoutMin = min;
       await DB.setIdleTimeoutMin(min);
       if (window.Auth && Auth.setIdleTimeout) Auth.setIdleTimeout(min);
-      UI.toast(min > 0 ? `Trancará após ${min} min de inatividade` : 'Não trancará por inatividade', 'success');
+      this.idleEmVigor = (window.Auth && Auth.getIdleTimeoutMin) ? Auth.getIdleTimeoutMin() : min;
+      if (window.atualizarLockBadge) window.atualizarLockBadge();
+      UI.toast(min > 0 ? `Trancará após ${this.rotuloIdle(min)} de inatividade` : 'Não trancará por inatividade', 'success');
     },
     assinaturaPreview() {
       const p = this.perfil;
@@ -695,6 +703,7 @@ function configScreen() {
     async load() {
       await this.carregarPerfil();
       this.idleTimeoutMin = await DB.getIdleTimeoutMin();
+      this.idleEmVigor = (window.Auth && Auth.getIdleTimeoutMin) ? Auth.getIdleTimeoutMin() : this.idleTimeoutMin;
       try {
         this.auditEntries = await DB.getRecentAudit(50);
       } catch (e) { console.error(e); }

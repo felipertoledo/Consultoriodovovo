@@ -1,6 +1,6 @@
 {
-  "version": "0.30.0",
-  "buildDate": "2026-09-01",
-  "codename": "Clínica do Vovô, edição 2026",
-  "notes": "Redesign visual completo (tokens v3): paleta nova — verde profundo como âncora da marca, verde de ação AA (#127A54) em botões/links, fósforo/menta como assinatura (indicador ativo da navegação, anel do avatar, hero do dia), coral para alergia/alerta, âmbar mantido para atenção, canvas névoa cool-neutral com superfícies brancas. Tipografia: Manrope em toda a interface (títulos de seção em 800), Fraunces só para o nome da casa, nome do paciente e títulos de página, JetBrains Mono para números clínicos. Botões em pílula com alvo 44px, inputs 44px, numeração de seção como etiqueta mono, sombras tingidas de verde, modo escuro 'Plantão' com menta como ação. Contrastes AA verificados (muted 4,7:1; botão 5,3:1). CACHE_VERSION v0.30.0."
+  "version": "0.31.0",
+  "buildDate": "2026-09-02",
+  "codename": "Vermelho clínico",
+  "notes": "Redesign completo e profundo (tokens v5): identidade de clínica em vermelho carmim — barra lateral e hero na cor da marca (#8B1E2D), botões/links em vermelho de ação AA (#C0212F, 6,0:1), branco hospitalar e cinzas frios como base, item ativo da navegação em pílula branca. Tipografia inteira nova: IBM Plex Sans (interface e títulos) + IBM Plex Mono (números clínicos). Formas clínicas: botões retangulares de canto discreto, cards planos, raios menores. Faixa de alergia como pulseira de hospital (vermelho sólido, texto branco); botão destrutivo contornado para não se confundir com o primário. Ícone do app, favicon e selo da marca refeitos (anel + cruz). Modo escuro em grafite neutro com barra vinho. Purga total de resíduos da paleta antiga. Correção: tempo de auto-tranco — gravação lê direto do seletor (independe da ordem x-model/@change), aplicação no desbloqueio em bloco próprio, e selo vivo no botão 'Bloquear cofre' mostrando o tempo em vigor; teste automatizado da lógica de inatividade. CACHE_VERSION v0.31.0."
 }
